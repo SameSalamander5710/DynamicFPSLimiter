@@ -13,7 +13,7 @@ This script solves the issue by dynamically adjusting the base FPS limit in dema
 # What This Script Does
 This script uses PowerShell to monitor GPU usage in real-time and dynamically adjust frame limits based on system load. 
 
-Example of How It Works:
+Example of How It Works (all values can be adjusted in the script file):
 - If GPU usage exceeds 80% for 2 consecutive seconds, the script reduces the frame limit by X.
 - If GPU usage drops below 70% for 3 consecutive seconds, the script increases the frame limit by X, up to the original cap.
 - Frame rate adjustments (inc./dec. by 'X') are triggered via hotkeys set in RTSS (Rivatuner Statistics Server).
