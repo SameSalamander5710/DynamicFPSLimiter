@@ -28,7 +28,7 @@ Example of How It Works:
   - Enable HotkeyHandler in the Plugins tab of the RTSS setup.
     - By default, '-' key decreases FPS by X, and '=' key increases FPS by X.
     - If you change these, update the two .ahk files accordingly. You can leave it as is unless these keys are used in the game.
-  - Start the game with the higher base FPS limit.
+  - Start the game with the higher base FPS limit set on RTSS.
 - Install AutoHotKey v2 (https://www.autohotkey.com/)
   - Take note of the installation directory, as it needs to be updated in DynamicFPSLimit.ps1.
 - PowerShell:
