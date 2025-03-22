@@ -37,7 +37,7 @@ Example of How It Works:
     - Check current policy with 'Get-ExecutionPolicy'
     - Change policy with 'Set-ExecutionPolicy RemoteSigned -Scope CurrentUser'
     - When prompted, type Y to confirm the change
-    - **NOTE!** It is generally not safe to allow this and run scripts off the internet. Read the contents of the .ps1 files here, and if satisfied, proceed.
+    - <span style="color: yellow;">**NOTE!**</span> It is generally not safe to allow this and run scripts off the internet. Read the contents of the .ps1 files here, and if satisfied, proceed.
     - If blocked, use 'Unblock-File -Path .\DynamicFPSLimit.ps1'  to unblock the script
      
 # To run the script:
