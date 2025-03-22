@@ -11,12 +11,12 @@ Normally, you have two ways to set an FPS cap:
 This script solves the issue by dynamically adjusting the base FPS limit in demanding areas, reducing input lag while still allowing higher frame rates in less intensive regions. As a result, you get a smoother and more responsive gaming experience without compromising too much performance.
 
 # What This Script Does
-This script uses PowerShell to monitor GPU usage in real-time and dynamically adjust frame limits based on system load. It helps maintain optimal performance by lowering the frame cap when GPU usage is high and restoring it when usage decreases.
+This script uses PowerShell to monitor GPU usage in real-time and dynamically adjust frame limits based on system load. 
 
 Example of How It Works:
-- If GPU usage exceeds 80% for 2 consecutive seconds, the script reduces the frame limit by X FPS.
-- If GPU usage drops below 70% for 3 consecutive seconds, the script increases the frame limit by X FPS, up to the original cap.
-- Frame rate adjustments are triggered via hotkeys set in RTSS (Rivatuner Statistics Server).
+- If GPU usage exceeds 80% for 2 consecutive seconds, the script reduces the frame limit by X.
+- If GPU usage drops below 70% for 3 consecutive seconds, the script increases the frame limit by X, up to the original cap.
+- Frame rate adjustments (inc./dec. by 'X') are triggered via hotkeys set in RTSS (Rivatuner Statistics Server).
 - By default, GPU usage is checked every 1 second, but this interval can be adjusted.
 
 # Requirements
@@ -39,6 +39,14 @@ Example of How It Works:
     - When prompted, type Y to confirm the change
     - **NOTE!** It is generally not safe to allow this and run scripts off the internet. Read the contents of the .ps1 files here, and if satisfied, proceed.
     - If blocked, use 'Unblock-File -Path .\DynamicFPSLimit.ps1'  to unblock the script
+     
+# To run the script:
+- To run the script, open 'DynamicFPSLimit.ps1' with PowerShell.
+  - If you open the script before starting the game, you might encounter an error. You can safely ignore this.
+  - Keep RTSS running in the background.
+  - Close the PowerShell window when you're done gaming.
+
+You can edit the script to disable printing the GPU usage and changes every second if you prefer.
 
 Handling Multiple GPUs:
   - If you have multiple GPUs, the script sums up total GPU utilization.
