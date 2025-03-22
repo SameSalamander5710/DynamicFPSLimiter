@@ -4,6 +4,7 @@ $UsageCutoffForDecrease = 80
 $DelayBeforeDecrease = 2 
 $UsageCutoffForIncrease = 70
 $DelayBeforeIncrease = 3
+$CounterRefreshDelay = 1 # Wait for X seconds before checking again
 
 # Initialize counters, states and file paths
 $highUsageCounter = 0
@@ -45,7 +46,7 @@ while ($true) {
         $lowUsageCounter = 0
     }
 
-    # Wait for 1 second before checking again
-    Start-Sleep -Seconds 1
+    # Wait for X second before checking again
+    Start-Sleep -Seconds $CounterRefreshDelay
 }
 
