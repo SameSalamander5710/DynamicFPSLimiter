@@ -41,7 +41,7 @@ Example of How It Works:
     - If blocked, use 'Unblock-File -Path .\DynamicFPSLimit.ps1'  to unblock the script
 
 Handling Multiple GPUs:
-    - If you have multiple GPUs, the script sums up total GPU utilization.
-    - To target a specific GPU:
-      - Run GetGPUInstance.ps1 to find the correct GPU instance.
-      - Replace the instance ID in DynamicFPSLimit.ps1 accordingly.
+  - If you have multiple GPUs, the script sums up total GPU utilization.
+  - To target a specific GPU:
+    - Run GetGPUInstance.ps1 to find the correct GPU instance.
+    - Replace the instance ID in DynamicFPSLimit.ps1 accordingly.
