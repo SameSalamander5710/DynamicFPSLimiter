@@ -1,6 +1,8 @@
 # DynamicFPSLimiter
 A PowerShell script to assess GPU usage and dynamically use AutoHotKey (AHK) to alter FPS limits via RivaTuner Statistics Server (RTSS)
 
+Note: This uses AutoHotKey, which can get flagged by games with Anti-cheat, so please use with caution! 
+
 # The Concept
 This script was developed to enhance the gaming experience when using Lossless Scaling Frame Generation (LSFG) on a single GPU. LSFG works best when the game runs with an FPS cap that leaves enough GPU headroom for frame generation. However, if GPU usage hits 100%—which may also cause the game’s base FPS to drop—you may experience input lag, which is undesirable.
 
