@@ -1,4 +1,4 @@
-# Set user specific values
+# Set user-specific values
 $ahkExePath = "C:\Program Files\AutoHotkey\v2\AutoHotkey64.exe" # change this to your specific directory
 $UsageCutoffForDecrease = 80
 $DelayBeforeDecrease = 2 
