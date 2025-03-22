@@ -1,0 +1,2 @@
+Send "{=}"  ; Simulate pressing =
+
