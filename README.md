@@ -42,7 +42,7 @@ Example of How It Works (all values can be adjusted in the script file):
     - **NOTE!** It is generally not safe to allow this and run scripts off the internet. Read the contents of the .ps1 files here, and if satisfied, proceed.
     - If blocked, use 'Unblock-File -Path .\DynamicFPSLimit.ps1'  to unblock the script
      
-# To run the script:
+# Running the script:
 - To run the script, open 'DynamicFPSLimit.ps1' with PowerShell.
   - If you open the script before starting the game, you might encounter an error. You can safely ignore this.
   - Keep RTSS running in the background.
@@ -50,8 +50,13 @@ Example of How It Works (all values can be adjusted in the script file):
 
 You can edit the script to disable printing the GPU usage and changes every second if you prefer.
 
+# Miscellaneous
+
 Handling Multiple GPUs:
   - If you have multiple GPUs, the script sums up total GPU utilization.
   - To target a specific GPU:
     - Run GetGPUInstance.ps1 to find the correct GPU instance.
     - Replace the instance ID in DynamicFPSLimit.ps1 accordingly.
+
+Link to the original post on Reddit: 
+https://www.reddit.com/r/losslessscaling/s/rWgWyrEEca
