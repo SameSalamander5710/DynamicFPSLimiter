@@ -47,7 +47,7 @@ Example of How It Works (all values can be adjusted in the script file):
   - If you open the script before starting the game, you might encounter an error. You can safely ignore this.
   - Keep RTSS running in the background.
   - Close the PowerShell window when you're done gaming.
-- When starting a new gaming session (e.g., restarting the game or starting a new game), close and run the script again, and ensure the starting FPS in RTSS is set at the higher FPS cap. This ensures proper initialisation of variables in the script. 
+- When starting a new gaming session (e.g., restarting the game or starting a new game), close and run the script again, and ensure the starting frame limit in RTSS is set at the higher FPS cap. This ensures proper initialisation of variables in the script. 
 
 You can edit the script to disable printing the GPU usage and changes every second if you prefer.
 
