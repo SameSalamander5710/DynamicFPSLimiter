@@ -42,7 +42,7 @@ Example of How It Works (all values can be adjusted in the script file):
     - **NOTE!** It is generally not safe to allow this and run scripts off the internet. Read the contents of the .ps1 files here, and if satisfied, proceed.
     - If blocked, use 'Unblock-File -Path .\DynamicFPSLimit.ps1'  to unblock the script
      
-# Running the script:
+# Running the script
 - To run the script, open 'DynamicFPSLimit.ps1' with PowerShell.
   - If you open the script before starting the game, you might encounter an error. You can safely ignore this.
   - Keep RTSS running in the background.
