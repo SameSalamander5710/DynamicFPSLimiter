@@ -1,4 +1,4 @@
-# DynamicFPSLimiter
+# DynamicFPSLimiter v1.0
 A PowerShell script to assess GPU usage and dynamically use AutoHotKey (AHK) to alter FPS limits via RivaTuner Statistics Server (RTSS)
 
 **Note:** This uses AutoHotKey, which can get flagged by games with Anti-cheat, so please use with caution! 
