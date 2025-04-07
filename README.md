@@ -22,6 +22,7 @@ This app solves the issue by dynamically adjusting the base FPS limit in demandi
 
 <img src="/Docs/Images/DynamicFPSLimiter_01.png" style="width: 450px; max-width: 100%;" />
 
+For more example images, check [here.](/Docs/Images/Examples.md)
 
 - **Global Dynamic FPS Cap:**
   - Outside its use with Lossless Scaling (LSFG), this app can be used to set a general, game-agnostic dynamic FPS cap for your global profile. Simply set the RTSS frame rate limit and ‘Max FPS limit’ to your monitor’s refresh rate before launching a game, and the app will automatically adjust your FPS to keep GPU usage below your desired threshold.
