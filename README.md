@@ -62,7 +62,7 @@ For more example images, check [here.](/Docs/Examples.md)
 
 The DynamicFPSLimiter app uses a simple PowerShell command to monitor GPU usage in real-time and dynamically adjust the frame limit based on system load.
 
-How It Works (with default values, but customizable):
+How It Works (with ~default~ random values, but this customizable):
 - **When GPU usage exceeds 80% for 2 consecutive seconds:**
   - The app reduces the frame limit by 5 FPS (or multiples of 5) to bring the FPS below the average of the last two seconds when GPU usage was high.
   - Example: If the FPS drops from a capped 60 FPS to 48 FPS, the new frame limit will be set to 45 FPS.
