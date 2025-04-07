@@ -50,7 +50,8 @@ For more example images, check [here.](/Docs/Examples.md)
     - Test that your RTSS hotkeys are working by clicking the ‘Dec. limit’ or ‘Inc. limit’ buttons in the app:
   <img src="/Docs/Images/RTSS_11.png" style="width: 6000px; max-width: 100%;" />
 
-Once everything is set up, you're good to go!
+3. Once everything is set up, you're good to go!
+   - Click **'Start'** either before or after launching the game, and the app will begin adjusting the framerate limit in RTSS automatically.
 
 > [!TIP]
 > - The hotkey presses are sent **globally**, which means they will also affect your game while it's running. To avoid unintended inputs, choose hotkeys that **aren’t already bound in-game**, and avoid keys that could interfere with typing in chat or search boxes.
