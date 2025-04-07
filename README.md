@@ -1,9 +1,17 @@
-[README and documentation for new app in progress]
+# Dynamic FPS Limiter v2.0
+A GUI app to assess GPU usage and dynamically adjust frame rate limits via RTSS using AutoHotKey. 
 
-# DynamicFPSLimiter v2.0! 
-A GUI app to assess GPU usage and dynamically adjust frame limits via RTSS using hotkeys.
+> [!NOTE]
+> - This app requires Rivatuner Statistics Server (RTSS) to function.
 
-# The Concept
+## Table of Contents
+- [The Concept](#the-concept)
+- [Installation](#installation)
+- [Setup](#setup)
+- [What The App Does](#what-the-app-does)
+- [Troubleshooting](#troubleshooting)
+
+## The Concept
 This app was developed to enhance the gaming experience when using Lossless Scaling Frame Generation (LSFG). LSFG works best when the game runs with an FPS cap that leaves enough GPU headroom for frame generation. However, if GPU usage hits 100%—which may also cause the game’s base FPS to drop—you may experience input lag, which is undesirable.
 
 Typically, you have two ways to set an FPS cap:
@@ -12,35 +20,57 @@ Typically, you have two ways to set an FPS cap:
 
 This app solves the issue by dynamically adjusting the base FPS limit in demanding areas, reducing input lag while still allowing higher frame rates in less intensive regions. As a result, you get a smoother and more responsive gaming experience without compromising too much performance.
 
-## Table of Contents
-- [Installation](#installation)
-- [What The App Does](#what-the-app-does)
-- [Requirements](#requirements)
-- Miscellaneous
+<img src="/Docs/Images/DynamicFPSLimiter_01.png" style="width: 450px; max-width: 100%;" />
 
-## Detailed Instructions
-- Setting up Hotkeys in RTSS
-- What each option does
+
+- **Global Dynamic FPS Cap:**
+  - Outside its use with Lossless Scaling (LSFG), this app can be used to set a general, game-agnostic dynamic FPS cap for your global profile. Simply set the RTSS frame rate limit and ‘Max FPS limit’ to your monitor’s refresh rate before launching a game, and the app will automatically adjust your FPS to keep GPU usage below your desired threshold.
+- **Improved Adaptive Frame Generation (AFG) Experience:**
+  - For a better experience with adaptive frame generation (AFG) from Lossless Scaling, set both the AFG target and ‘Max FPS limit’ to the same value. The app will then adjust the base FPS to reach an equilibrium, ensuring enough GPU headroom is available to minimize potential input delays.
 
 ## Installation
 
 > [!CAUTION]
-> The app uses an AutoHotKey (AHK) library within Python to send the hotkey presses to RTSS. This may get flagged by games with Anti-cheat, so please use with caution!
+> - Unlike the previous iteration of the idea using scripts, this app does not require the installation of AutoHotKey (AHK), Python, or any changes to PowerShell policies.
+> - **HOWEVER**, the app uses AHK internally to send the hotkey presses to RTSS. This can get flagged by games with Anti-cheat, so please use with caution!
+
 
 1. Download the `DynamicFPSLimiter.zip` file from the latest release (Add link)
-2. Extract the zip file to the desired location
+2. Extract the zip file to a desired location
 3. Run `DynamicFPSLimiter.exe`
 
-## Requirements
-Set up working Hotkeys in RTSS to increase/decrease frame limit by a set amount (e.g.: Increase/Decrease by 5). Find more information here (Add link)
+## Setup
+
+1. Configure RTSS hotkeys
+    - First, install and set up hotkeys in RTSS to increase or decrease the framerate limit by a fixed amount (e.g., ±5 FPS). For detailed instructions, see [RTSS Hotkey Setup](docs/RTSS_Hotkey_Setup.md).
+2. Before starting, make sure of the following:
+    - The framerate limit in RTSS matches the 'Max FPS limit' value in DynamicFPSLimiter.
+    - The 'frame rate step' and hotkeys in the app are the same as those configured in RTSS.
+    - Test that your RTSS hotkeys are working by clicking the ‘Dec. limit’ or ‘Inc. limit’ buttons in the app:
+  <img src="/Docs/Images/RTSS_11.png" style="width: 6000px; max-width: 100%;" />
+3. Once everything is set up, you're good to go!
 
 ## What The App Does
 
-This script uses PowerShell to monitor GPU usage in real-time and dynamically adjust frame limits based on system load. 
+The DynamicFPSLimiter app uses a simple PowerShell command to monitor GPU usage in real-time and dynamically adjust the frame limit based on system load.
 
-Example of how it works with the default values (all values can be adjusted in the app):
-- If GPU usage exceeds 80% for 2 consecutive seconds, the app reduces the frame limit by 5 or its multiples.
-  - It adjusts the frame cap by multiples of 5 required to get below the average FPS of the last two seconds where the GPU usage is beyond the threshold. For example, if the FPS drops from a capped 60 FPS to 48 FPS, then it sets the new frame limit to 45 fps.
-- If GPU usage drops below 70% for 2 consecutive seconds, the app increases the frame limit by 5. This happens incrementally as long as the GPU load stays below 70%, until the original frame cap is met.
-- Frame rate adjustments (inc./dec. by '5') are triggered via hotkeys set in RTSS (Rivatuner Statistics Server).
-- The GPU usage and FPS are checked every 1 second, so the time delays need to be set in integer multiples of 1.
+How It Works (with default values, but customizable):
+- **When GPU usage exceeds 80% for 2 consecutive seconds:**
+  - The app reduces the frame limit by 5 FPS (or multiples of 5) to bring the FPS below the average of the last two seconds when GPU usage was high.
+  - Example: If the FPS drops from a capped 60 FPS to 48 FPS, the new frame limit will be set to 45 FPS.
+- **When GPU usage drops below 70% for 2 consecutive seconds:**
+  - The app increases the frame limit by 5 FPS. This continues as long as the GPU load stays below 70%, until the original frame cap is reached.
+- **If GPU usage or FPS drops below 20% or 20 FPS respectively:**
+  - The app does not trigger any FPS cap change. This is to prevent loading screens or other low-performance states from unnecessarily affecting the FPS cap.
+- **Frame rate adjustments** (increases/decreases by 5 FPS) are triggered using **hotkeys set in RTSS**.
+- The app checks **GPU usage and FPS every second**, so time delays should be set as integer multiples of 1 second.
+
+
+## Troubleshooting
+
+Check out the [Troubleshooting Guide](docs/Troubleshooting.md) for a list of known bugs, common problems, and their solutions.
+
+## Disclaimer
+
+- This app is a personal project created for fun and is **not officially affiliated** with RTSS, AutoHotKey, or Lossless Scaling.
+- As a hobby project, **updates and bug fixes may be delayed** or may not be provided regularly.
