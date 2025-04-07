@@ -36,7 +36,7 @@ For more example images, check [here.](/Docs/Examples.md)
 > - **HOWEVER**, the app uses AHK internally to send the hotkey presses to RTSS. This can get flagged by games with Anti-cheat, so please use with caution!
 
 
-1. Download the `DynamicFPSLimiter.zip` file from the latest release (Add link)
+1. Download the `DynamicFPSLimiter_vX.X.zip` file from the latest release [here.](https://github.com/SameSalamander5710/DynamicFPSLimiter/releases)
 2. Extract the zip file to a desired location
 3. Run `DynamicFPSLimiter.exe`
 
