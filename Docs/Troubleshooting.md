@@ -7,7 +7,7 @@ The app uses GPU resources to render its GUI. On lower-end systems or when GPU l
 
 **Solution:**
 
-Run the app minimized to reduce GPU impact.
+Keep the app running minimized to reduce GPU impact.
 
 ## 2. Conflicts with Lossless Scaling
 
@@ -47,7 +47,7 @@ If your game suddenly drops to extremely low FPS right after launching the app, 
 
 **Example:**
 
-If your RTSS profile starts with a limit of 0 (uncapped), and the app sends a "decrease FPS" command of -5, your FPS cap becomes 5.
+If your RTSS profile starts with a limit of 0 (uncapped), and the app sends a "increase FPS" command of 5, your FPS cap becomes 5.
 
 **Solution:**
 
