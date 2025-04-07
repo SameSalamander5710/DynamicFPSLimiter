@@ -22,4 +22,3 @@
   <img src="/Docs/Images/DynamicFPSLimiter_03.png" width="45%" />
 </p>
 
-Note: Example images are not meant as comparable graphs, but to offer an understanding of the based steps.
