@@ -76,4 +76,6 @@ In the RTSS properties window:
 
 Your hotkeys are now set! Confirm that they work by testing them with the DynamicFPSLimiter app. If the hotkeys increase and decrease the framerate limit as expected, you're ready to go.
 
+Check [https://www.autohotkey.com/docs/v2/lib/Send.htm](https://www.autohotkey.com/docs/v2/lib/Send.htm) for AutoHotKey key names. 
+
 <img src="/Docs/Images/RTSS_11.png" width="90%" />
