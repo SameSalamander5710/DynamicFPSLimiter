@@ -86,3 +86,7 @@ Check out the [Troubleshooting Guide](/Docs/Troubleshooting.md) for a list of kn
 ## v1.0 
 
 For the older interaction of the same idea, see: [DynamicFPSLimiter v1.0](/legacy_scripts/)
+
+## Miscellaneous
+
+For the reddit post associated with the release, see [https://www.reddit.com/r/losslessscaling/comments/1jtliw4/dynamicfpslimiter_v20_gui_app_to_automatically/](https://www.reddit.com/r/losslessscaling/comments/1jtliw4/dynamicfpslimiter_v20_gui_app_to_automatically/)
