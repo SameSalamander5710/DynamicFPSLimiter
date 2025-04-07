@@ -42,7 +42,7 @@ This app solves the issue by dynamically adjusting the base FPS limit in demandi
 ## Setup
 
 1. Configure RTSS hotkeys
-    - First, install and set up hotkeys in RTSS to increase or decrease the framerate limit by a fixed amount (e.g., ±5 FPS). For detailed instructions, see [RTSS Hotkey Setup](docs/RTSS_Hotkey_Setup.md).
+    - First, install and set up hotkeys in RTSS to increase or decrease the framerate limit by a fixed amount (e.g., ±5 FPS). For detailed instructions, see [RTSS Hotkey Setup](/Docs/RTSS_Hotkey_Setup.md).
 2. Before starting, make sure of the following:
     - The framerate limit in RTSS matches the 'Max FPS limit' value in DynamicFPSLimiter.
     - The 'frame rate step' and hotkeys in the app are the same as those configured in RTSS.
@@ -68,7 +68,7 @@ How It Works (with default values, but customizable):
 
 ## Troubleshooting
 
-Check out the [Troubleshooting Guide](docs/Troubleshooting.md) for a list of known bugs, common problems, and their solutions.
+Check out the [Troubleshooting Guide](/Docs/Troubleshooting.md) for a list of known bugs, common problems, and their solutions.
 
 ## Disclaimer
 
