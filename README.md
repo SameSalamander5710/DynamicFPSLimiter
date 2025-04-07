@@ -75,3 +75,7 @@ Check out the [Troubleshooting Guide](/Docs/Troubleshooting.md) for a list of kn
 
 - This app is a personal project created for fun and is **not officially affiliated** with RTSS, AutoHotKey, or Lossless Scaling.
 - As a hobby project, **updates and bug fixes may be delayed** or may not be provided regularly.
+
+## v1.0 
+
+For the older interaction of the same idea, see: [DynamicFPSLimiter v1.0](/legacy_scripts/)
