@@ -49,7 +49,13 @@ For more example images, check [here.](/Docs/Examples.md)
     - The 'frame rate step' and hotkeys in the app are the same as those configured in RTSS.
     - Test that your RTSS hotkeys are working by clicking the ‘Dec. limit’ or ‘Inc. limit’ buttons in the app:
   <img src="/Docs/Images/RTSS_11.png" style="width: 6000px; max-width: 100%;" />
-3. Once everything is set up, you're good to go!
+
+Once everything is set up, you're good to go!
+
+> [!TIP]
+> - The hotkey presses are sent **globally**, which means they will also affect your game while it's running. To avoid unintended inputs, choose hotkeys that **aren’t already bound in-game**, and avoid keys that could interfere with typing in chat or search boxes.
+>
+> - For key naming reference, check out the [AutoHotkey v2 Send documentation](https://www.autohotkey.com/docs/v2/lib/Send.htm).
 
 ## What The App Does
 
