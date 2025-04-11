@@ -85,7 +85,7 @@ Check out the [Troubleshooting Guide](/Docs/Troubleshooting.md) for a list of kn
 
 ## v1.0 
 
-For the older interaction of the same idea, see: [DynamicFPSLimiter v1.0](/legacy_scripts/)
+For the older interaction of the same idea, see: [DynamicFPSLimiter v1.0](https://github.com/SameSalamander5710/DynamicFPSLimiter/tree/legacy-main)
 
 ## Miscellaneous
 
