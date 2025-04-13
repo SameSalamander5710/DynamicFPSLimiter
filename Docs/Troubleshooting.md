@@ -35,23 +35,7 @@ Click Stop, manually adjust the FPS cap in RTSS as needed, and then Start again.
 
 ## 5. Dual GPU Systems
 
-The app calculates GPU usage by summing '3D Engine' and 'Copy' loads for each GPU and then selecting the highest value. This hasn't been fully tested on systems where Lossless Scaling runs on a secondary GPU.
-
-**Behavior to expect:**
-
-If any one GPU is above the upper usage threshold, the FPS will decrease to reduce GPU loads. The app will only allow an FPS increase when both GPUs are below the lower threshold. This could result in conservative FPS modulation.
-
-## 6. Game Drops to Very Low FPS After Starting
-
-If your game suddenly drops to extremely low FPS right after launching the app, it's likely due to an incorrect RTSS profile or cap setting.
-
-**Example:**
-
-If your RTSS profile starts with a limit of 0 (uncapped), and the app sends a "increase FPS" command of 5, your FPS cap becomes 5.
-
-**Solution:**
-
-Make sure RTSS is configured with a valid starting cap for the correct game profile.
+The app calculates GPU usage by summing '3D Engine' and 'Copy' loads for each GPU and then selecting the highest value. For dual GPU systems, use 'Detect Render GPU' with the game running, to automatically detect the GPU rendering the game, based on the GPU with the highest "3D engine" utilization.
 
 ### Still Need Help?
 
