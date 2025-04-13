@@ -3,6 +3,7 @@ A GUI app to assess GPU usage and dynamically adjust frame rate limits via RTSS.
 
 > [!NOTE]
 > - This app requires Rivatuner Statistics Server (RTSS) to function.
+> - RTSS runs as an elevated process, so DynamicFPSLimiter must be run with administrator privileges for full functionality.
 
 - Now uses [@xanderfrangos](https://github.com/xanderfrangos)'s [rtss-cli.exe](https://github.com/xanderfrangos/rtss-cli) to directly modify RTSS framerate limits—no more reliance on AutoHotkey or RTSS hotkeys.
   - All framerate control functionality is now fully handled within the DynamicFPSLimiter app—no manual updates in RTSS required.
