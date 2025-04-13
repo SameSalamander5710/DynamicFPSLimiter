@@ -1,5 +1,5 @@
-# Dynamic FPS Limiter v2.0
-A GUI app to assess GPU usage and dynamically adjust frame rate limits via RTSS using AutoHotKey. 
+# Dynamic FPS Limiter v3.0
+A GUI app to assess GPU usage and dynamically adjust frame rate limits via RTSS 
 
 > [!NOTE]
 > - This app requires Rivatuner Statistics Server (RTSS) to function.
