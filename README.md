@@ -47,9 +47,8 @@ For more example images, check [here.](/Docs/Examples.md)
 ## Setup
 
 1. Install RTSS and make sure framerate limits are being enforced in general.
-2. If needed, create dedicated profiles in RTSS for your target applications.
-3. If you're using non-Global profiles in RTSS, then in the DynamicFPSLimiter app, create a profile with the same name as the one you've set up in RTSS
-4. Once everything is set up, you’re good to go!
+2. If you're using non-Global profiles in RTSS, then in the DynamicFPSLimiter app, create a profile with the same name as the one you've set up in RTSS
+3. Once everything is set up, you’re good to go!
    - Click **'Start'** either before or after launching the game. The app will automatically set the target FPS limit and begin adjusting the framerate limit in RTSS.
    - **Note:** Any changes in the app must be made before clicking **'Start'**. Changes made during operation may not be applied.
 
