@@ -1,4 +1,4 @@
-#To make the executable, use the following
+#To make the executable, I use the following
 
 pyinstaller --onedir --uac-admin --clean --noconsole --name DynamicFPSLimiter --icon=DynamicFPSLimiter.ico DFL_v3.0.0.py
 
