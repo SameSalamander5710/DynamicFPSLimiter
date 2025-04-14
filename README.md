@@ -40,6 +40,9 @@ For more example images, check [here.](/Docs/Examples.md)
 
 ## Installation
 
+> [!CAUTION]
+> The executable in the release was packaged using PyInstaller and may be flagged by some antivirus software as a Trojan (e.g., ZkarletFlash). Until this issue is fixed, feel free to build the executable from source using the provided Python scripts.
+
 1. Download the `DynamicFPSLimiter_vX.X.X.zip` file from the latest release [here.](https://github.com/SameSalamander5710/DynamicFPSLimiter/releases)
 2. Extract the zip file to a desired location
 3. Run `DynamicFPSLimiter.exe` with admin privileges.
