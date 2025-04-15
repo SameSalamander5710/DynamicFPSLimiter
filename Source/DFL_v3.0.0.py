@@ -13,8 +13,6 @@ import os
 import sys
 import traceback
 
-#Testing using git and VScode
-
 if getattr(sys, 'frozen', False):
     # Running as an EXE
     Base_dir = os.path.dirname(sys.executable)  # Correct location of the EXE

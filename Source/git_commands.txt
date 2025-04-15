@@ -1,0 +1,6 @@
+# to make changes and add it to the github
+
+git add .
+git commit -m "Message"
+
+git push -u origin <branch-name>
