@@ -5,8 +5,9 @@
 pyinstaller Source\DFL_v3.py ^
     --onedir --uac-admin --clean --noconsole ^
     --name DynamicFPSLimiter ^
-    --icon=Source\Resources\DynamicFPSLimiter.ico ^
+    --icon=Source\DynamicFPSLimiter.ico ^
     --version-file=Source\version.txt ^
-    --add-data "Source\Resources:Resources" ^
+    --add-data "Source\DynamicFPSLimiter.ico:." ^
+    --add-data "Source\rtss-cli.exe:." ^
     --distpath Output\dist ^
     --workpath Output\build

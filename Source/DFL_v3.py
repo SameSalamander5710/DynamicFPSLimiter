@@ -15,19 +15,18 @@ import traceback
 import shutil
 import logging
 
-if getattr(sys, 'frozen', False):
-    # Running as an EXE
-    Base_dir = os.path.dirname(sys.executable)  # Correct location of the EXE
-else:
-    # Running as a script
-    Base_dir = os.path.dirname(os.path.abspath(__file__))
+# Always get absolute path to EXE or script location
+Base_dir = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
 
 # Path to settings.ini
 settings_path = os.path.join(Base_dir, "settings.ini")
 profiles_path = os.path.join(Base_dir, "profiles.ini")
-rtss_cli_path = os.path.join(Base_dir,'_internal', 'Resources', "rtss-cli.exe")
-error_log_file = os.path.join(Base_dir, "Error_log.txt")
-icon_path = os.path.join(Base_dir, '_internal','Resources', 'DynamicFPSLimiter.ico')
+rtss_cli_path = os.path.join(Base_dir, "rtss-cli.exe")
+error_log_file = os.path.join(Base_dir, "error_log.txt")
+icon_path = os.path.join(Base_dir, 'DynamicFPSLimiter.ico')
+
+print("Looking for rtss-cli at:", rtss_cli_path)
+print("File exists:", os.path.exists(rtss_cli_path))
 
 profiles_config = configparser.ConfigParser()
 settings_config = configparser.ConfigParser()
@@ -325,7 +324,7 @@ def run_rtss_cli(command):
         return result.stdout.strip()
     except Exception as e:
         # Only catch generic failure (e.g., file not found)
-        add_log(f"Subprocess failed: {e}")
+        add_log(f"Subprocess failed for rtss-cli.exe: {e}")
         return None
  
 user32 = WinDLL('user32', use_last_error=True)
