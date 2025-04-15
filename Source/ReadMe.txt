@@ -1,5 +1,12 @@
-#To make the executable, I use the following
+#Ensure you have pyinstaller installed by running: pip install pyinstaller
 
-pyinstaller --onedir --uac-admin --clean --noconsole --name DynamicFPSLimiter --icon=DynamicFPSLimiter.ico DFL_v3.0.0.py
+#To make the executable, I use the following in cmd from the main repo folder
 
-# And then copy the Resources folder, profiles.ini and settings.ini to the executable location
+pyinstaller Source\DFL_v3.py ^
+    --onedir --uac-admin --clean --noconsole ^
+    --name DynamicFPSLimiter ^
+    --icon=Source\Resources\DynamicFPSLimiter.ico ^
+    --version-file=Source\version.txt ^
+    --add-data "Source\Resources:Resources" ^
+    --distpath Output\dist ^
+    --workpath Output\build
