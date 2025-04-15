@@ -23,13 +23,23 @@ else:
 # Path to settings.ini
 settings_path = os.path.join(Base_dir, "settings.ini")
 profiles_path = os.path.join(Base_dir, "profiles.ini")
-rtss_cli_path = os.path.join(Base_dir, 'Resources', "rtss-cli.exe")
+rtss_cli_path = os.path.join(Base_dir,'_internal', 'Resources', "rtss-cli.exe")
 error_log_file = os.path.join(Base_dir, "Error_log.txt")
-icon_path = os.path.join(Base_dir, 'Resources', 'DynamicFPSLimiter.ico')
+icon_path = os.path.join(Base_dir, '_internal','Resources', 'DynamicFPSLimiter.ico')
 
 profiles_config = configparser.ConfigParser()
 settings_config = configparser.ConfigParser()
-settings_config.read(settings_path)
+
+# Check if the settings and profiles files exist, if not create them with default values
+if os.path.exists(settings_path):
+    settings_config.read(settings_path)
+else:
+    settings_config["Preferences"] = {
+        'ShowPlot': 'True',
+        'ShowTooltip': 'True'
+    }
+    with open(settings_path, 'w') as f:
+        settings_config.write(f)
 
 if os.path.exists(profiles_path):
     profiles_config.read(profiles_path)
