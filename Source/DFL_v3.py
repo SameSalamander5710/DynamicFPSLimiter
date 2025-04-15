@@ -25,9 +25,6 @@ rtss_cli_path = os.path.join(Base_dir, "rtss-cli.exe")
 error_log_file = os.path.join(Base_dir, "error_log.txt")
 icon_path = os.path.join(Base_dir, 'DynamicFPSLimiter.ico')
 
-print("Looking for rtss-cli at:", rtss_cli_path)
-print("File exists:", os.path.exists(rtss_cli_path))
-
 profiles_config = configparser.ConfigParser()
 settings_config = configparser.ConfigParser()
 
