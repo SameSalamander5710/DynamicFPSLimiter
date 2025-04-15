@@ -12,6 +12,7 @@ import subprocess
 import os
 import sys
 import traceback
+import shutil
 
 if getattr(sys, 'frozen', False):
     # Running as an EXE
@@ -196,9 +197,15 @@ def update_global_variables():
 
 update_global_variables()
 
+# Check for Windows PowerShell (powershell) or PowerShell Core (pwsh) in PATH
+# If not found, raise an error
+powershell_path = shutil.which("powershell") or shutil.which("pwsh")
+if not powershell_path:
+    raise RuntimeError("PowerShell not found on this system's PATH.")
+
 # Start PowerShell in a hidden window (persistent process)
 ps_process = subprocess.Popen(
-    ["powershell", "-NoLogo", "-NoProfile", "-Command", "-"],
+    [powershell_path, "-NoLogo", "-NoProfile", "-Command", "-"],
     stdin=subprocess.PIPE,
     stdout=subprocess.PIPE,
     stderr=subprocess.PIPE,
@@ -662,7 +669,7 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
     
     # Title and Start/Stop Button
     with dpg.group(horizontal=True):
-        dpg.add_text("Dynamic FPS Limiter v3.0.1")
+        dpg.add_text("Dynamic FPS Limiter v3.0.2")
         dpg.add_spacer(width=30)
         dpg.add_button(label="Detect Render GPU", callback=toggle_luid_selection, tag="luid_button", width=150)
         with dpg.tooltip("luid_button", show=ShowTooltip, delay=1):
