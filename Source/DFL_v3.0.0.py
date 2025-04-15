@@ -188,13 +188,21 @@ update_global_variables()
 
 # Start PowerShell in a hidden window (persistent process)
 ps_process = subprocess.Popen(
-    ["powershell", "-NoLogo", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", "-"],
+    ["powershell", "-NoLogo", "-NoProfile", "-Command", "-"],
     stdin=subprocess.PIPE,
     stdout=subprocess.PIPE,
     stderr=subprocess.PIPE,
     text=True,
     creationflags=subprocess.CREATE_NO_WINDOW  # Run hidden
 )
+
+# Send the echo command
+initialization_command = 'Write-Output "Persistent PowerShell process running successfully"\n'
+ps_process.stdin.write(initialization_command)
+ps_process.stdin.flush()
+
+# Read the output
+initialization_output = ps_process.stdout.readline().strip()
 
 # Function to send a command to PowerShell and capture output for the monitoring loop
 def run_powershell_command(command):
@@ -245,7 +253,7 @@ def get_top_luid_and_utilization():
     global luid
 
     ps_get_top_luid = '''
-$grouped = Get-CimInstance Win32_PerfFormattedData_GPUPerformanceCounters_GPUEngine |
+Get-CimInstance Win32_PerfFormattedData_GPUPerformanceCounters_GPUEngine |
     Where-Object { $_.Name -like '*_engtype_3D*' } |
     ForEach-Object {
         if ($_.Name -match "luid_0x[0-9A-Fa-f]+_(0x[0-9A-Fa-f]+)_phys") {
@@ -261,9 +269,7 @@ $grouped = Get-CimInstance Win32_PerfFormattedData_GPUPerformanceCounters_GPUEng
             LUID = $_.Name
             TotalUtilization = ($_.Group.Utilization | Measure-Object -Sum).Sum
         }
-    }
-
-$grouped | Sort-Object -Property TotalUtilization -Descending | Select-Object -First 1 |
+    } | Sort-Object -Property TotalUtilization -Descending | Select-Object -First 1 |
     ForEach-Object { "$($_.LUID),$($_.TotalUtilization)" }
 '''
     result = send_ps_command(ps_get_top_luid)
@@ -801,6 +807,7 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
 
 # Setup and Run GUI
 update_profile_dropdown(select_first=True)
+add_log(initialization_output)  # This would log: PowerShell process running successfully
 
 dpg.create_viewport(title="Dynamic FPS Limiter", width=Viewport_width, height=Viewport_height, resizable=False)
 dpg.set_viewport_resizable(False)
