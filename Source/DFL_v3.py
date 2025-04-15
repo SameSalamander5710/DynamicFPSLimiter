@@ -13,6 +13,7 @@ import os
 import sys
 import traceback
 import shutil
+import logging
 
 if getattr(sys, 'frozen', False):
     # Running as an EXE
@@ -61,8 +62,15 @@ else:
 
 # Error logging function
 def error_log_exception(exc_type, exc_value, exc_traceback):
-    with open(error_log_file, "a") as f:
-        f.write("".join(traceback.format_exception(exc_type, exc_value, exc_traceback)) + "\n")
+    logging.basicConfig(
+        filename='error_log.txt',  # Path to your log file
+        level=logging.ERROR,       # Only log errors or more severe messages
+        format='%(asctime)s - %(levelname)s - %(message)s'
+    )
+    logging.error(
+        "Uncaught exception",
+        exc_info=(exc_type, exc_value, exc_traceback)
+    )
 
 # Redirect uncaught exceptions to the log file
 sys.excepthook = error_log_exception
