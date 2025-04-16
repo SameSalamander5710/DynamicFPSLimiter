@@ -1,6 +1,6 @@
-#Ensure you have pyinstaller installed by running: pip install pyinstaller
-
-#To make the executable, I use the following in cmd from the main repo folder
+# Ensure you have pyinstaller installed
+# Ensure the required modules (found in requirements.txt) are installed in the environment
+# To make the executable, I use the following in cmd from the main repo folder
 
 pyinstaller Source\DFL_v3.py ^
     --onedir --uac-admin --clean --noconsole ^
