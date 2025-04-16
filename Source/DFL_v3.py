@@ -12,20 +12,18 @@ import subprocess
 import os
 import sys
 import traceback
+import shutil
+import logging
 
-if getattr(sys, 'frozen', False):
-    # Running as an EXE
-    Base_dir = os.path.dirname(sys.executable)  # Correct location of the EXE
-else:
-    # Running as a script
-    Base_dir = os.path.dirname(os.path.abspath(__file__))
+# Always get absolute path to EXE or script location
+Base_dir = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
 
 # Path to settings.ini
 settings_path = os.path.join(Base_dir, "settings.ini")
 profiles_path = os.path.join(Base_dir, "profiles.ini")
-rtss_cli_path = os.path.join(Base_dir,'_internal', 'Resources', "rtss-cli.exe")
-error_log_file = os.path.join(Base_dir, "Error_log.txt")
-icon_path = os.path.join(Base_dir, '_internal','Resources', 'DynamicFPSLimiter.ico')
+rtss_cli_path = os.path.join(Base_dir, "rtss-cli.exe")
+error_log_file = os.path.join(Base_dir, "error_log.txt")
+icon_path = os.path.join(Base_dir, 'DynamicFPSLimiter.ico')
 
 profiles_config = configparser.ConfigParser()
 settings_config = configparser.ConfigParser()
@@ -60,8 +58,15 @@ else:
 
 # Error logging function
 def error_log_exception(exc_type, exc_value, exc_traceback):
-    with open(error_log_file, "a") as f:
-        f.write("".join(traceback.format_exception(exc_type, exc_value, exc_traceback)) + "\n")
+    logging.basicConfig(
+        filename='error_log.txt',  # Path to your log file
+        level=logging.ERROR,       # Only log errors or more severe messages
+        format='%(asctime)s - %(levelname)s - %(message)s'
+    )
+    logging.error(
+        "Uncaught exception",
+        exc_info=(exc_type, exc_value, exc_traceback)
+    )
 
 # Redirect uncaught exceptions to the log file
 sys.excepthook = error_log_exception
@@ -122,7 +127,7 @@ def save_to_profile():
             profiles_config[selected_profile][key] = str(value)  # Store as string in ini file
         with open(profiles_path, "w") as configfile:
             profiles_config.write(configfile)
-        add_log(f"Settings saved to profile: {selected_profile}")
+        add_log(f"> Settings saved to profile: {selected_profile}")
 settings = Default_settings.copy()
 
 #Functions for profiles start --------------
@@ -165,14 +170,17 @@ def add_new_profile_callback():
     if new_name and new_name not in profiles_config:
         save_profile(new_name)
         dpg.set_value("new_profile_input", "")
-        add_log(f"New profile created: {new_name}")
+        add_log(f"> New profile created: {new_name}")
     else:
-        add_log("Profile name is empty or already exists.")
+        add_log("> Profile name is empty or already exists.")
 
 def delete_selected_profile_callback():
+    
+    global current_profile
+    
     profile_to_delete = dpg.get_value("profile_dropdown")
     if profile_to_delete == "Global":
-        add_log("Cannot delete the default 'Global' profile.")
+        add_log("> Cannot delete the default 'Global' profile.")
         return
     if profile_to_delete in profiles_config:
         profiles_config.remove_section(profile_to_delete)
@@ -182,7 +190,8 @@ def delete_selected_profile_callback():
         for key in profiles_config["Global"]:
             dpg.set_value(f"input_{key}", profiles_config["Global"][key])
         update_global_variables()
-        add_log(f"Deleted profile: {profile_to_delete}")
+        add_log(f"> Deleted profile: {profile_to_delete}")
+        current_profile = "Global"
 
 #Functions for profiles end ----------------
 
@@ -196,9 +205,15 @@ def update_global_variables():
 
 update_global_variables()
 
+# Check for Windows PowerShell (powershell) or PowerShell Core (pwsh) in PATH
+# If not found, raise an error
+powershell_path = shutil.which("powershell") or shutil.which("pwsh")
+if not powershell_path:
+    raise RuntimeError("PowerShell not found on this system's PATH. Please install PowerShell (e.g. v7.5.0) or manually add it to your PATH.")
+
 # Start PowerShell in a hidden window (persistent process)
 ps_process = subprocess.Popen(
-    ["powershell", "-NoLogo", "-NoProfile", "-Command", "-"],
+    [powershell_path, "-NoLogo", "-NoProfile", "-Command", "-"],
     stdin=subprocess.PIPE,
     stdout=subprocess.PIPE,
     stderr=subprocess.PIPE,
@@ -207,7 +222,7 @@ ps_process = subprocess.Popen(
 )
 
 # Send the echo command
-initialization_command = 'Write-Output "Persistent PowerShell process running successfully"\n'
+initialization_command = 'Write-Output "> Persistent PowerShell process running successfully"\n'
 ps_process.stdin.write(initialization_command)
 ps_process.stdin.flush()
 
@@ -288,7 +303,7 @@ Get-CimInstance Win32_PerfFormattedData_GPUPerformanceCounters_GPUEngine |
         #add_log(f"Tracking LUID: {luid} | Current Utilization: {util}%")
         return luid.strip(), util.strip()
     else:
-        add_log("Failed to detect LUID.")
+        add_log("> Failed to detect LUID.")
     
     return None, None
 
@@ -310,7 +325,8 @@ def run_rtss_cli(command):
         return result.stdout.strip()
     except Exception as e:
         # Only catch generic failure (e.g., file not found)
-        add_log(f"Subprocess failed: {e}")
+        add_log(f"> Looking for rtss-cli.exe in\n{os.path.dirname(rtss_cli_path)}")
+        add_log(f"> Subprocess failed for rtss-cli.exe:\n{e}")
         return None
  
 user32 = WinDLL('user32', use_last_error=True)
@@ -399,11 +415,11 @@ def start_stop_callback():
         gpu_usage_series.clear()
         fps_series.clear()
         cap_series.clear()
-        add_log("Monitoring started")
+        add_log("> Monitoring started")
     else:
         reset_stats()
         CurrentFPSOffset = 0
-        add_log("Monitoring stopped")
+        add_log("> Monitoring stopped")
     
     global maxcap, current_profile
     
@@ -414,13 +430,13 @@ def quick_save_settings():
     for key in ["maxcap", "mincap", "capstep", "usagecutofffordecrease", "delaybeforedecrease", "usagecutoffforincrease", "delaybeforeincrease", "minvalidgpu", "minvalidfps"]:
         settings[key] = dpg.get_value(f"input_{key}")
     update_global_variables()
-    add_log("Settings quick saved")
+    add_log("> Settings quick saved")
 
 def quick_load_settings():
     for key in ["maxcap", "mincap", "capstep", "usagecutofffordecrease", "delaybeforedecrease", "usagecutoffforincrease", "delaybeforeincrease", "minvalidgpu", "minvalidfps"]:
         dpg.set_value(f"input_{key}", settings[key])
     update_global_variables()
-    add_log("Settings quick loaded")
+    add_log("> Settings quick loaded")
 
 def enable_plot_callback(sender, app_data): #Currently not in use
     dpg.configure_item("plot_section", show=app_data)
@@ -445,7 +461,7 @@ def reset_to_program_default():
         dpg.set_value(f"input_{key}", Default_settings_original[key])
     for key in ["usagecutofffordecrease", "delaybeforedecrease", "usagecutoffforincrease", "delaybeforeincrease", "minvalidgpu", "minvalidfps"]:
         dpg.set_value(f"input_{key}", Default_settings_original[key])
-    add_log("Settings reset to program default")  
+    add_log("> Settings reset to program default")  
 
 time_series = []
 gpu_usage_series = []
@@ -499,15 +515,15 @@ def toggle_luid_selection():
         # First click: detect top LUID
         luid, util = get_top_luid_and_utilization()
         if luid:
-            add_log(f"Tracking LUID: {luid} | Current 3D engine Utilization: {util}%")
+            add_log(f"> Tracking LUID: {luid} | Current 3D engine Utilization: {util}%")
             dpg.configure_item("luid_button", label="Revert to all GPUs")
             luid_selected = True
         else:
-            add_log("Failed to detect active LUID.")
+            add_log("> Failed to detect active LUID.")
     else:
         # Second click: deselect
         luid = "All"
-        add_log("Tracking all GPU engines.")
+        add_log("> Tracking all GPU engines.")
         dpg.configure_item("luid_button", label="Detect Render GPU")
         luid_selected = False
 
@@ -538,11 +554,11 @@ def get_gpu_usage():
             gpu_usage = float(gpu_usage_str.strip().replace(',', '.'))
             return gpu_usage
         except ValueError:
-            add_log(f"ValueError in GPU usage readout: {gpu_usage_str.strip()}")
+            add_log(f"> ValueError in GPU usage readout: {gpu_usage_str.strip()}")
             return None  # or handle the error as appropriate
     else:
+        add_log("> GPU usage: No output from PowerShell")
         return None  # or handle the error as appropriate
-        add_log("GPU usage: No output from PowerShell")
 
 fps_values = []
 gpu_values = []
@@ -662,7 +678,7 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
     
     # Title and Start/Stop Button
     with dpg.group(horizontal=True):
-        dpg.add_text("Dynamic FPS Limiter v3.0.1")
+        dpg.add_text("Dynamic FPS Limiter v3.0.2")
         dpg.add_spacer(width=30)
         dpg.add_button(label="Detect Render GPU", callback=toggle_luid_selection, tag="luid_button", width=150)
         with dpg.tooltip("luid_button", show=ShowTooltip, delay=1):
@@ -818,6 +834,7 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
 # Setup and Run GUI
 update_profile_dropdown(select_first=True)
 add_log(initialization_output)  # This would log: PowerShell process running successfully
+run_rtss_cli([rtss_cli_path, "limiter:set", "1"])
 
 dpg.create_viewport(title="Dynamic FPS Limiter", width=Viewport_width, height=Viewport_height, resizable=False)
 dpg.set_viewport_resizable(False)

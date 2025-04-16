@@ -5,7 +5,7 @@ a = Analysis(
     ['Source\\DFL_v3.py'],
     pathex=[],
     binaries=[],
-    datas=[('Source\\Resources', 'Resources')],
+    datas=[('Source\\DynamicFPSLimiter.ico', '.'), ('Source\\rtss-cli.exe', '.')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
@@ -34,7 +34,7 @@ exe = EXE(
     entitlements_file=None,
     version='Source\\version.txt',
     uac_admin=True,
-    icon=['Source\\Resources\\DynamicFPSLimiter.ico'],
+    icon=['Source\\DynamicFPSLimiter.ico'],
 )
 coll = COLLECT(
     exe,
