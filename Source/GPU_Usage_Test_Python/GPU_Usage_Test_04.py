@@ -23,6 +23,7 @@ status = pdh.PdhOpenQueryW(None, 0, ctypes.byref(query_handle))
 if status != 0:
     print(f"Failed to open PDH query. Error: {status}")
 
+# Function to set up GPU instances and return a list of them
 def setup_gpu_instances():
 
     # Get buffer size
@@ -61,17 +62,16 @@ def setup_gpu_instances():
         print("No GPU engine instances found.")
         return None, []
 
-# print(setup_gpu_instances()) 
-# This seems to be working so far
-
-def setup_gpu_query_from_instances(instances):
+# Function to set up GPU query and counters from instances; filtered by engine type
+# Returns query_handle and a dictionary of counter handles grouped by LUID
+def setup_gpu_query_from_instances(instances, engine_type="engtype_"):
 
     counter_handles_by_luid = defaultdict(list)
 
     for inst in instances:
         #print(f"Processing instance: {inst}")
 
-        if "engtype_" not in inst:
+        if engine_type not in inst:
             #print(f"Skipping instance: {inst} (not a GPU engine type)")
             continue
 
@@ -104,7 +104,9 @@ def setup_gpu_query_from_instances(instances):
 
     return query_handle, dict(counter_handles_by_luid)
 
-def get_gpu_usage(query_handle, counter_handles_by_luid):
+# Function to get GPU usage from the query handle and counter handles, and selected LUID if provided
+# Returns the maximum utilization across all LUIDs and the corresponding LUID
+def get_gpu_usage(query_handle, counter_handles_by_luid, target_luid=None):
     if query_handle is None or not counter_handles_by_luid:
         print("Query handle or counter handles are not set up.")
         return 0.0
@@ -116,7 +118,13 @@ def get_gpu_usage(query_handle, counter_handles_by_luid):
 
     usage_by_luid = {}
 
-    for luid, handles in counter_handles_by_luid.items():
+    handles_to_use = (
+        {target_luid: counter_handles_by_luid[target_luid]}
+        if target_luid and target_luid in counter_handles_by_luid
+        else counter_handles_by_luid
+    )
+
+    for luid, handles in handles_to_use.items():
         total = 0.0
         for h in handles:
             val = PDH_FMT_COUNTERVALUE()
@@ -133,23 +141,22 @@ def get_gpu_usage(query_handle, counter_handles_by_luid):
     # Get the max utilization across all LUIDs
 
     max_luid, max_usage = max(usage_by_luid.items(), key=lambda item: item[1])
-    print(f"Max LUID: {max_luid}, Usage: {max_usage:.1f}%")
-    return int(max_usage)
+    #print(f"Max LUID: {max_luid}, Usage: {max_usage:.1f}%")
+    return int(max_usage), str(max_luid)
 
-
-query_handle, counter_handles_by_luid = setup_gpu_query_from_instances(setup_gpu_instances())
-
-#print("Setup 1")
-#print(query_handle)
-#print(counter_handles_by_luid)
+#First, to get top Luid based on 3D engine type
+query_handle, counter_handles_by_luid = setup_gpu_query_from_instances(setup_gpu_instances(), "engtype_3D")
+usage, target_luid = get_gpu_usage(query_handle, counter_handles_by_luid)
 
 for luid in counter_handles_by_luid:
     print(luid)
 
-#print("Setup 2")
+print(f"Top LUID: {target_luid}, 3D engine usage: {usage}%")
+
+query_handle, counter_handles_by_luid = setup_gpu_query_from_instances(setup_gpu_instances())
 
 # Periodic sampling (e.g., every second)
 while True:
-    usage = get_gpu_usage(query_handle, counter_handles_by_luid)
-    print(f"GPU Engine Utilization: {usage}%")
-    time.sleep(1)  # Update every second
+    usage, top_luid = get_gpu_usage(query_handle, counter_handles_by_luid, target_luid)
+    print(f" Total GPU Engine Utilization: {usage}%, LUID: {top_luid}")
+    time.sleep(0.9)  # Update every second
