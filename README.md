@@ -1,7 +1,7 @@
 [In progress]
 
 - Now replaces PowerShell with Python functions to extract GPU usage.
-- New python module to provide a fast and lightweight way to access GPU usage data on Windows by directly querying Performance Data Helper (PDH) counters for the "GPU Engine" object. It bypasses slower or more resource-intensive methods like WMI or PowerShell.
+- New python module to provide a fast and lightweight way to access GPU usage data on Windows by directly querying Performance Data Helper (PDH) counters for the "GPU Engine" object. It bypasses slower or more resource-intensive methods like WMI or PowerShell. See [https://github.com/SameSalamander5710/PyGPU](https://github.com/SameSalamander5710/PyGPU)
 
 # Dynamic FPS Limiter v4.0
 A GUI app to assess GPU usage and dynamically adjust frame rate limits via RTSS. 
