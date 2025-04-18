@@ -11,7 +11,7 @@ from ctypes import wintypes, WinDLL, byref
 import subprocess
 import os
 import sys
-import traceback
+#import traceback
 import shutil
 import logging
 
@@ -103,9 +103,9 @@ Default_settings_original = {
     "maxcap": 60,
     "mincap": 30,
     "capstep": 2,
-    "usagecutofffordecrease": 85,
+    "usagecutofffordecrease": 80,
     "delaybeforedecrease": 2,
-    "usagecutoffforincrease": 75,
+    "usagecutoffforincrease": 70,
     "delaybeforeincrease": 2,
     "minvalidgpu": 20,
     "minvalidfps": 20
