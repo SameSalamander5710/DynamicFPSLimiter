@@ -1,7 +1,13 @@
-# Modify to match DynamicFPSLimiter.py
+# Adapting code to DynamicFPSLimiter.py [in progress]
+# Split code into functions:
+# 1. To get all instances
+# 2. Grouping instances based on luid and setting counter handles
+# 3. To get counter values between the same timepoints used for monitoring loop, per luid maximum
 
 import ctypes
 import time
+from collections import defaultdict
+import re
 
 pdh = ctypes.windll.pdh
 
@@ -11,12 +17,13 @@ PDH_FMT_DOUBLE = 0x00000200
 class PDH_FMT_COUNTERVALUE(ctypes.Structure):
     _fields_ = [("CStatus", ctypes.c_ulong), ("doubleValue", ctypes.c_double)]
 
-def get_gpu_usage_engtype_3d():
-    query_handle = ctypes.c_void_p()
-    status = pdh.PdhOpenQueryW(None, 0, ctypes.byref(query_handle))
-    if status != 0:
-        print(f"Failed to open PDH query. Error: {status}")
-        return None
+query_handle = ctypes.c_void_p()
+status = pdh.PdhOpenQueryW(None, 0, ctypes.byref(query_handle))
+
+if status != 0:
+    print(f"Failed to open PDH query. Error: {status}")
+
+def setup_gpu_instances():
 
     # Get buffer size
     counter_buf_size = ctypes.c_ulong(0)
@@ -43,54 +50,106 @@ def get_gpu_usage_engtype_3d():
 
     if ret != 0:
         print(f"Failed to enumerate GPU Engine instances. Error: {ret}")
-        return None
+        return None, []
 
     instances = list(filter(None, instance_buf[:].split('\x00')))
-    #print(f"Found {len(instances)} GPU Engine instances.")
-    if not instances:
+    print(f"Found {len(instances)} GPU Engine instances.")
+   
+    if instances:
+        return instances
+    else:    
         print("No GPU engine instances found.")
-        return 0.0
+        return None, []
 
-    # Add relevant counters
-    counter_handles = []
+# print(setup_gpu_instances()) 
+# This seems to be working so far
+
+def setup_gpu_query_from_instances(instances):
+
+    counter_handles_by_luid = defaultdict(list)
+
     for inst in instances:
-        if "engtype_3D" in inst:
-            counter_path = f"\\GPU Engine({inst})\\Utilization Percentage"
-            #print(f"Adding counter: {counter_path}")
-            h = ctypes.c_void_p()
-            add_status = pdh.PdhAddEnglishCounterW(query_handle, counter_path, 0, ctypes.byref(h))
-            if add_status == 0:
-                counter_handles.append(h)
-            else:
-                print(f"Failed to add counter: {counter_path}, error: {add_status}")
+        #print(f"Processing instance: {inst}")
 
-    if not counter_handles:
-        print("No usable 3D GPU counters found.")
+        if "engtype_" not in inst:
+            #print(f"Skipping instance: {inst} (not a GPU engine type)")
+            continue
+
+        #print(f"Found GPU engine type: {inst}")
+
+        # Extract LUID (middle part before "_phys" or before "_engtype_")
+        match = re.search(r"luid_0x[0-9A-Fa-f]+_(0x[0-9A-Fa-f]+)", inst)
+
+        #print(f"Match: {match}")
+
+        if not match:
+            continue
+
+        #print(f"Found LUID: {match.group(1)}")
+
+        luid = match.group(1)
+
+        counter_path = f"\\GPU Engine({inst})\\Utilization Percentage"
+        #print(f"Adding counter: {counter_path}")
+
+        counter_handle = ctypes.c_void_p()
+        status = pdh.PdhAddEnglishCounterW(query_handle, counter_path, None, ctypes.byref(counter_handle))
+        if status == 0:
+            #print(f"Added counter: {counter_path}")
+            counter_handles_by_luid[luid].append(counter_handle)
+            #print(f"Added counter: {counter_path}, counter_handle={counter_handle}")
+            #print(f"query handle: {query_handle}, counter_handle={counter_handle}")
+        else:
+            print(f"Failed to add counter: {counter_path}, status={status}")
+
+    return query_handle, dict(counter_handles_by_luid)
+
+def get_gpu_usage(query_handle, counter_handles_by_luid):
+    if query_handle is None or not counter_handles_by_luid:
+        print("Query handle or counter handles are not set up.")
         return 0.0
 
-    # Sample twice
+    # Collect data twice for valid readings
     pdh.PdhCollectQueryData(query_handle)
     time.sleep(0.1)
     pdh.PdhCollectQueryData(query_handle)
 
-    total_usage = 0.0
-    for h in counter_handles:
-        val = PDH_FMT_COUNTERVALUE()
-        status = pdh.PdhGetFormattedCounterValue(h, PDH_FMT_DOUBLE, None, ctypes.byref(val))
-        if status == 0 and val.CStatus == 0:
-            total_usage += val.doubleValue
-        else:
-            print(f"Failed to read counter: status={status}, CStatus={val.CStatus}")
+    usage_by_luid = {}
 
-    pdh.PdhCloseQuery(query_handle)
+    for luid, handles in counter_handles_by_luid.items():
+        total = 0.0
+        for h in handles:
+            val = PDH_FMT_COUNTERVALUE()
+            status = pdh.PdhGetFormattedCounterValue(h, PDH_FMT_DOUBLE, None, ctypes.byref(val))
+            if status == 0 and val.CStatus == 0:
+                total += val.doubleValue
+            else:
+                print(f"Failed to read counter (LUID: {luid}): status={status}, CStatus={val.CStatus}")
+        usage_by_luid[luid] = total
 
-    return round(total_usage, 2)
+    if not usage_by_luid:
+        return 0.0
 
-# Example usage
-usage = get_gpu_usage_engtype_3d()
-print(f"GPU 3D Engine Utilization: {usage}%")
+    # Get the max utilization across all LUIDs
 
+    max_luid, max_usage = max(usage_by_luid.items(), key=lambda item: item[1])
+    print(f"Max LUID: {max_luid}, Usage: {max_usage:.1f}%")
+    return int(max_usage)
+
+
+query_handle, counter_handles_by_luid = setup_gpu_query_from_instances(setup_gpu_instances())
+
+#print("Setup 1")
+#print(query_handle)
+#print(counter_handles_by_luid)
+
+for luid in counter_handles_by_luid:
+    print(luid)
+
+#print("Setup 2")
+
+# Periodic sampling (e.g., every second)
 while True:
-    usage = get_gpu_usage_engtype_3d()
-    print(f"GPU 3D Engine Utilization: {usage}%")
-    time.sleep(1)  # Adjust the sleep time as needed
+    usage = get_gpu_usage(query_handle, counter_handles_by_luid)
+    print(f"GPU Engine Utilization: {usage}%")
+    time.sleep(1)  # Update every second
