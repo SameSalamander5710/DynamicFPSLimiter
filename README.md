@@ -1,5 +1,10 @@
-# Dynamic FPS Limiter v3.0
-A GUI app to assess GPU usage using PowerShell and dynamically adjust frame rate limits via RTSS. 
+[In progress]
+
+- Now replaces PowerShell with Python functions to extract GPU usage.
+- New python module to provide a fast and lightweight way to access GPU usage data on Windows by directly querying Performance Data Helper (PDH) counters for the "GPU Engine" object. It bypasses slower or more resource-intensive methods like WMI or PowerShell.
+
+# Dynamic FPS Limiter v4.0
+A GUI app to assess GPU usage and dynamically adjust frame rate limits via RTSS. 
 
 > [!NOTE]
 > - This app requires Rivatuner Statistics Server (RTSS) to function.
@@ -60,7 +65,7 @@ For more example images, check [here.](/Docs/Examples.md)
 
 ## What The App Does
 
-The DynamicFPSLimiter app uses a simple PowerShell command to monitor GPU usage in real-time and dynamically adjust the frame limit based on GPU load.
+The DynamicFPSLimiter app monitor GPU usage in real-time and dynamically adjust the frame limit based on GPU load.
 
 How It Works (with ~default~ random values, but this customizable):
 - **When GPU usage exceeds 80% for 2 consecutive seconds:**

@@ -11,9 +11,9 @@ from ctypes import wintypes, WinDLL, byref
 import subprocess
 import os
 import sys
-#import traceback
 import shutil
 import logging
+import PyGPU as gpu
 
 # Always get absolute path to EXE or script location
 Base_dir = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
@@ -102,7 +102,7 @@ else:
 Default_settings_original = {
     "maxcap": 60,
     "mincap": 30,
-    "capstep": 2,
+    "capstep": 5,
     "usagecutofffordecrease": 80,
     "delaybeforedecrease": 2,
     "usagecutoffforincrease": 70,
@@ -205,108 +205,6 @@ def update_global_variables():
 
 update_global_variables()
 
-# Check for Windows PowerShell (powershell) or PowerShell Core (pwsh) in PATH
-# If not found, raise an error
-powershell_path = shutil.which("powershell") or shutil.which("pwsh")
-if not powershell_path:
-    raise RuntimeError("PowerShell not found on this system's PATH. Please install PowerShell (e.g. v7.5.0) or manually add it to your PATH.")
-
-# Start PowerShell in a hidden window (persistent process)
-ps_process = subprocess.Popen(
-    [powershell_path, "-NoLogo", "-NoProfile", "-Command", "-"],
-    stdin=subprocess.PIPE,
-    stdout=subprocess.PIPE,
-    stderr=subprocess.PIPE,
-    text=True,
-    creationflags=subprocess.CREATE_NO_WINDOW  # Run hidden
-)
-
-# Send the echo command
-initialization_command = 'Write-Output "> Persistent PowerShell process running successfully"\n'
-ps_process.stdin.write(initialization_command)
-ps_process.stdin.flush()
-
-# Read the output
-initialization_output = ps_process.stdout.readline().strip()
-
-# Function to send a command to PowerShell and capture output for the monitoring loop
-def run_powershell_command(command):
-    #add_log(f"Running command 01: {command}")
-    ps_process.stdin.write(command + "\n")
-    #add_log(f"Running command 02: writing done")
-    ps_process.stdin.flush()
-    #add_log(f"Running command 03: flushing done")
-    return ps_process.stdout.readline().strip()  # Read one line of output
-
-# Function to send a command to PowerShell and capture output for selecting GPU
-def send_ps_command(command):
-    ps_process.stdin.write(command + '\n')
-    ps_process.stdin.flush()
-    ps_process.stdin.write("[Console]::Out.WriteLine('<END>')\n")  # Sentinel
-    ps_process.stdin.flush()
-
-    output_lines = []
-    while True:
-        line = ps_process.stdout.readline()
-        if line.strip() == "<END>":
-            break
-        output_lines.append(line.strip())
-
-    return output_lines
-
-# PowerShell command to get GPU usage within loop from all GPUs
-ps_command = '''
-[Console]::OutputEncoding = [System.Text.Encoding]::UTF8;
-(Get-CimInstance Win32_PerfFormattedData_GPUPerformanceCounters_GPUEngine |
- Where-Object { $_.Name -like '*_engtype_*' } |
- ForEach-Object {
-     if ($_.Name -match "luid_0x[0-9A-Fa-f]+_(0x[0-9A-Fa-f]+)_phys") {
-         [PSCustomObject]@{
-             LUID = $matches[1]
-             Utilization = $_.UtilizationPercentage
-         }
-     }
- } |
- Group-Object -Property LUID |
- ForEach-Object {
-     ($_.Group.Utilization | Measure-Object -Sum).Sum
- } |
- Measure-Object -Maximum).Maximum
-'''
-def get_top_luid_and_utilization():
-
-    global luid
-
-    ps_get_top_luid = '''
-Get-CimInstance Win32_PerfFormattedData_GPUPerformanceCounters_GPUEngine |
-    Where-Object { $_.Name -like '*_engtype_3D*' } |
-    ForEach-Object {
-        if ($_.Name -match "luid_0x[0-9A-Fa-f]+_(0x[0-9A-Fa-f]+)_phys") {
-            [PSCustomObject]@{
-                LUID = $matches[1]
-                Utilization = $_.UtilizationPercentage
-            }
-        }
-    } |
-    Group-Object -Property LUID |
-    ForEach-Object {
-        [PSCustomObject]@{
-            LUID = $_.Name
-            TotalUtilization = ($_.Group.Utilization | Measure-Object -Sum).Sum
-        }
-    } | Sort-Object -Property TotalUtilization -Descending | Select-Object -First 1 |
-    ForEach-Object { "$($_.LUID),$($_.TotalUtilization)" }
-'''
-    result = send_ps_command(ps_get_top_luid)
-    if result:
-        luid, util = result[0].split(',')
-        #add_log(f"Tracking LUID: {luid} | Current Utilization: {util}%")
-        return luid.strip(), util.strip()
-    else:
-        add_log("> Failed to detect LUID.")
-    
-    return None, None
-
 def run_rtss_cli(command):
     # Suppress console window on Windows
     startupinfo = subprocess.STARTUPINFO()
@@ -380,8 +278,6 @@ def get_fps_for_active_window():
 					process_name = process_name.split('\\')[-1]
 					return fps, process_name
 	return None, None
-
-dpg.create_context()
 
 # Read values from UI input fields without modifying `settings`
 def apply_current_input_values():
@@ -509,11 +405,12 @@ luid_selected = False  # default state
 luid = "All" # Placeholder for LUID
 
 def toggle_luid_selection():
-    global luid_selected, luid
+    global luid_selected, luid, query
 
     if not luid_selected:
         # First click: detect top LUID
-        luid, util = get_top_luid_and_utilization()
+        query, handles = gpu.setup_gpu_query_from_instances(query, gpu.setup_gpu_instances(), "engtype_3D")
+        util, luid = gpu.get_gpu_usage(query, handles)
         if luid:
             add_log(f"> Tracking LUID: {luid} | Current 3D engine Utilization: {util}%")
             dpg.configure_item("luid_button", label="Revert to all GPUs")
@@ -527,39 +424,6 @@ def toggle_luid_selection():
         dpg.configure_item("luid_button", label="Detect Render GPU")
         luid_selected = False
 
-
-def get_gpu_usage():
-    # Run the PowerShell command to get GPU usage
-    global luid
-
-    if luid and luid != "All":
-        ps_command_top_luid = f'''
-        [Console]::OutputEncoding = [System.Text.Encoding]::UTF8;
-        Write-Output (
-            (Get-CimInstance Win32_PerfFormattedData_GPUPerformanceCounters_GPUEngine |
-            Where-Object {{ $_.Name -like "*_{luid}_phys*" }} |
-            Measure-Object -Property UtilizationPercentage -Sum).Sum
-        )
-        '''
-        #add_log(f"Running command for LUID {luid}: {ps_command_top_luid}")
-        gpu_usage_str = run_powershell_command(ps_command_top_luid)
-        #add_log(f"GPU usage for LUID {luid}: {gpu_usage_str}")
-    else:
-        gpu_usage_str = run_powershell_command(ps_command)
-        #add_log(f"GPU usage general: {gpu_usage_str}")
-
-    # Check if the output is non-empty and a valid float
-    if gpu_usage_str.strip():  # Strip to remove any extra whitespace
-        try:
-            gpu_usage = float(gpu_usage_str.strip().replace(',', '.'))
-            return gpu_usage
-        except ValueError:
-            add_log(f"> ValueError in GPU usage readout: {gpu_usage_str.strip()}")
-            return None  # or handle the error as appropriate
-    else:
-        add_log("> GPU usage: No output from PowerShell")
-        return None  # or handle the error as appropriate
-
 fps_values = []
 gpu_values = []
 CurrentFPSOffset = 0
@@ -569,7 +433,7 @@ def monitoring_loop():
 
     global running, fps_values, CurrentFPSOffset, fps_mean, gpu_values, current_profile
     global mincap, maxcap, capstep, usagecutofffordecrease, delaybeforedecrease, usagecutoffforincrease, delaybeforeincrease, minvalidgpu, minvalidfps
-    global max_points, minvalidgpu, minvalidfps
+    global max_points, minvalidgpu, minvalidfps, query, luid_selected, luid
 
     start_time = time.time()
     
@@ -592,7 +456,15 @@ def monitoring_loop():
             fps_values.append(fps)# Add the new fps to the list
             fps_mean = sum(fps_values) / len(fps_values)
         
-        gpuUsage = get_gpu_usage()
+        query, handles = gpu.setup_gpu_query_from_instances(query, gpu.setup_gpu_instances(), "engtype_")
+        
+        # Get GPU usage for the selected LUID or all GPUs
+        if luid_selected:
+            gpuUsage, target_luid = gpu.get_gpu_usage(query, handles, luid)
+        else:
+            gpuUsage, target_luid = gpu.get_gpu_usage(query, handles)
+
+        #gpuUsage = get_gpu_usage()
         
         if len(gpu_values) > (max(delaybeforedecrease, delaybeforeincrease)+1):
             gpu_values.pop(0)
@@ -650,8 +522,6 @@ def exit_gui():
     global running
     running = False
     
-    ps_process.stdin.close()
-    ps_process.terminate() # Terminate all subprocesses
     dpg.destroy_context() # Close Dear PyGui
 
     #sys.exit(0)
@@ -673,12 +543,14 @@ tooltips = {
     "luid_button": "Detects the render GPU based on highest 3D engine utilization, and sets it as the target GPU for FPS limiting. Click again to deselect."
 }
 
+# GUI setup
+dpg.create_context()
 
 with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
     
     # Title and Start/Stop Button
     with dpg.group(horizontal=True):
-        dpg.add_text("Dynamic FPS Limiter v3.0.2")
+        dpg.add_text("Dynamic FPS Limiter v4.0.0")
         dpg.add_spacer(width=30)
         dpg.add_button(label="Detect Render GPU", callback=toggle_luid_selection, tag="luid_button", width=150)
         with dpg.tooltip("luid_button", show=ShowTooltip, delay=1):
@@ -829,11 +701,16 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
 
             dpg.bind_item_theme("LogText", "transparent_input_theme")
 
-
-
 # Setup and Run GUI
 update_profile_dropdown(select_first=True)
-add_log(initialization_output)  # This would log: PowerShell process running successfully
+
+add_log("Initializing...")
+query = gpu.init_gpu_state()
+query, handles = gpu.setup_gpu_query_from_instances(query, gpu.setup_gpu_instances(), "engtype_3D")
+temp_usage, target_luid = gpu.get_gpu_usage(query, handles)
+add_log(f"Current Top LUID: {target_luid}, 3D engine usage: {temp_usage}%")
+add_log("Initialized successfully.")
+
 run_rtss_cli([rtss_cli_path, "limiter:set", "1"])
 
 dpg.create_viewport(title="Dynamic FPS Limiter", width=Viewport_width, height=Viewport_height, resizable=False)
