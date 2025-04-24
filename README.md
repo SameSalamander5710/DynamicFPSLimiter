@@ -33,10 +33,10 @@ This app solves the issue by dynamically adjusting the base FPS limit in demandi
 
 
 <p float="left">
-  <img src="/Docs/Images/DFL_v3.0.0_01.png" style="width: 450px; max-width: 45%;" />
+  <img src="/docs/Images/DFL_v3.0.0_01.png" style="width: 450px; max-width: 45%;" />
 </p>
 
-For more example images, check [here.](/Docs/Examples.md)
+For more example images, check [here.](/docs/Examples.md)
 
 - **Global Dynamic FPS Cap:**
   - Outside its use with Lossless Scaling (LSFG), this app can be used to set a general, game-agnostic dynamic FPS cap for your global profile. Simply set the ‘Max FPS limit’ to your monitor’s refresh rate before launching a game, and the app will automatically adjust your FPS to keep GPU usage below your desired threshold.
@@ -77,10 +77,9 @@ How It Works (with ~default~ random values, but this customizable):
   - The app does not trigger any FPS cap change. This is to prevent loading screens or other low-performance states from unnecessarily affecting the FPS cap.
 - The app checks **GPU usage and FPS once every second**.
 
-
 ## Troubleshooting
 
-Check out the [Troubleshooting Guide](/Docs/Troubleshooting.md) for a list of known bugs, common problems, and their solutions.
+Check out the [Troubleshooting Guide](/docs/Troubleshooting.md) for a list of known bugs, common problems, and their solutions.
 
 ## Disclaimer
 
@@ -93,6 +92,10 @@ For the older interaction of the same idea, see:
 1. [DynamicFPSLimiter v1.0](https://github.com/SameSalamander5710/DynamicFPSLimiter/tree/DFL_v1.0)
 2. [DynamicFPSLimiter v2.0](https://github.com/SameSalamander5710/DynamicFPSLimiter/tree/DFL_v2.0)
 
+## License
+
+This project is currently licensed under the Apache License 2.0. See the [LICENSE](./LICENSE.txt) file for details.
+
+Previously licensed under the MIT License. The project was relicensed to Apache 2.0 on April 25, 2025 to provide clearer legal protections and attribution requirements.
+
 <!-- ## Miscellaneous -->
-
-

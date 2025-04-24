@@ -21,7 +21,7 @@
    ```
 4. Install required packages:
    ```cmd
-   pip install -r Source/requirements.txt
+   pip install -r src/requirements.txt
    ```
 
 ## Building the Executable
@@ -36,15 +36,15 @@
 Run the following command from the main repository folder:
 
 ```cmd
-pyinstaller Source\DFL_v4.py ^
+pyinstaller src\DFL_v4.py ^
     --onedir --uac-admin --clean --noconfirm --noconsole ^
     --name DynamicFPSLimiter ^
-    --icon=Source\DynamicFPSLimiter.ico ^
-    --version-file=Source\version.txt ^
-    --add-data "Source\DynamicFPSLimiter.ico:." ^
-    --add-data "Source\rtss-cli.exe:." ^
-    --distpath Output\dist ^
-    --workpath Output\build
+    --icon=src\DynamicFPSLimiter.ico ^
+    --version-file=src\version.txt ^
+    --add-data "src\DynamicFPSLimiter.ico:." ^
+    --add-data "src\rtss-cli.exe:." ^
+    --distpath output\dist ^
+    --workpath output\build
 ```
 
 
