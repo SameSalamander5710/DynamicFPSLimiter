@@ -93,6 +93,6 @@ For the older interaction of the same idea, see:
 1. [DynamicFPSLimiter v1.0](https://github.com/SameSalamander5710/DynamicFPSLimiter/tree/DFL_v1.0)
 2. [DynamicFPSLimiter v2.0](https://github.com/SameSalamander5710/DynamicFPSLimiter/tree/DFL_v2.0)
 
-## Miscellaneous
+<!-- ## Miscellaneous -->
 
 
