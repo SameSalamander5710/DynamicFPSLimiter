@@ -20,21 +20,21 @@ def relaunch_as_admin():
 
 def run_app():
     # Import and run DFL_v4 directly
-    import DFL_v4
+    import core.DFL_v4
 
 def build_executable():
     PyInstaller.__main__.run([
-        'src/DFL_v4.py',
+        'src/core/DFL_v4.py',
         '--onedir',
         '--uac-admin',
         '--clean',
         '--noconfirm',
         '--noconsole',
         '--name', 'DynamicFPSLimiter',
-        '--icon', 'src/DynamicFPSLimiter.ico',
-        '--version-file', 'src/version.txt',
-        '--add-data', 'src/DynamicFPSLimiter.ico:.',
-        '--add-data', 'src/rtss-cli.exe:.',
+        '--icon', 'src/assets/DynamicFPSLimiter.ico',
+        '--version-file', 'src/metadata/version.txt',
+        '--add-data', 'src/assets/DynamicFPSLimiter.ico:assets',
+        '--add-data', 'src/assets/rtss-cli.exe:assets',
         '--distpath', 'output/dist',
         '--workpath', 'output/build'
     ])
@@ -51,5 +51,5 @@ if __name__ == '__main__':
         if not is_admin():
             print("Administrator privileges are required. Relaunching as admin...")
             relaunch_as_admin()
-        print("Running application...")
+        print("Running application...finally")
         run_app()
