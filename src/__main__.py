@@ -1,6 +1,22 @@
 import sys
+import os
 import argparse
 import PyInstaller.__main__
+from ctypes import windll, byref, wintypes
+
+def is_admin():
+    """Check if the script is running with administrator privileges."""
+    try:
+        return windll.shell32.IsUserAnAdmin()
+    except:
+        return False
+
+def relaunch_as_admin():
+    """Relaunch the script with administrator privileges."""
+    params = " ".join([f'"{arg}"' for arg in sys.argv])
+    executable = sys.executable
+    windll.shell32.ShellExecuteW(None, "runas", executable, params, None, 1)
+    sys.exit()
 
 def run_app():
     # Import and run DFL_v4 directly
@@ -8,7 +24,7 @@ def run_app():
 
 def build_executable():
     PyInstaller.__main__.run([
-        'src/DFL_v4.py',  # Changed from __main__.py to DFL_v4.py
+        'src/DFL_v4.py',
         '--onedir',
         '--uac-admin',
         '--clean',
@@ -32,5 +48,8 @@ if __name__ == '__main__':
         print("Building executable...")
         build_executable()
     else:
+        if not is_admin():
+            print("Administrator privileges are required. Relaunching as admin...")
+            relaunch_as_admin()
         print("Running application...")
         run_app()

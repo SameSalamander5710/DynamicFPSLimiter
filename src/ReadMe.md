@@ -24,27 +24,35 @@
    pip install -r src/requirements.txt
    ```
 
-## Building the Executable
+## Usage
 
-### Prerequisites
-1. Install pyinstaller:
+### Running the Application
+To run the application directly without building an executable:
+1. Activate the virtual environment if not already activated:
    ```cmd
-   pip install pyinstaller
+   venv\Scripts\activate
    ```
+2. Run the application:
+   ```cmd
+   python src/__main__.py
+   ```
+   Note: The application will automatically request administrator privileges when needed.
 
-### Build Instructions
-Run the following command from the main repository folder:
+### Building an Executable
+To create a standalone executable:
+1. Activate the virtual environment if not already activated:
+   ```cmd
+   venv\Scripts\activate
+   ```
+2. Build the executable (no admin rights required):
+   ```cmd
+   python src/__main__.py --build
+   ```
+3. The executable will be created in the `output/dist` directory.
 
-```cmd
-pyinstaller src\DFL_v4.py ^
-    --onedir --uac-admin --clean --noconfirm --noconsole ^
-    --name DynamicFPSLimiter ^
-    --icon=src\DynamicFPSLimiter.ico ^
-    --version-file=src\version.txt ^
-    --add-data "src\DynamicFPSLimiter.ico:." ^
-    --add-data "src\rtss-cli.exe:." ^
-    --distpath output\dist ^
-    --workpath output\build
-```
+### Notes
+- **Administrator Privileges**: Only required when running the application, not when building.
+- **Executable Location**: After building, find the executable in `output/dist`. It includes all dependencies.
+- **First Run**: When running the built executable, Windows may show a UAC prompt for administrator privileges.
 
 
