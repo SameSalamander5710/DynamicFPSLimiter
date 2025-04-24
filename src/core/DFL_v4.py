@@ -11,23 +11,26 @@ from ctypes import wintypes, WinDLL, byref
 import subprocess
 import os
 import sys
-import shutil
 import logging
-import PyGPU as gpu
+
+try:
+    from . import PyGPU as gpu  # For package import
+except ImportError:
+    import PyGPU as gpu  # For direct script execution
 
 # Always get absolute path to EXE or script location
 Base_dir = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
 
 # Ensure the config folder exists in the parent directory of Base_dir
 config_dir = os.path.join(os.path.dirname(Base_dir), "config")
-error_dir = os.path.dirname(Base_dir)
+parent_dir = os.path.dirname(Base_dir)
 os.makedirs(config_dir, exist_ok=True)
 
 # Paths to configuration files
 settings_path = os.path.join(config_dir, "settings.ini")
 profiles_path = os.path.join(config_dir, "profiles.ini")
 rtss_cli_path = os.path.join(Base_dir, "assets/rtss-cli.exe")
-error_log_file = os.path.join(error_dir, "error_log.txt")
+error_log_file = os.path.join(parent_dir, "error_log.txt")
 icon_path = os.path.join(Base_dir, 'assets/DynamicFPSLimiter.ico')
 
 profiles_config = configparser.ConfigParser()

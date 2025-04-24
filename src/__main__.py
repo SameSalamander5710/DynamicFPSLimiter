@@ -13,9 +13,12 @@ def is_admin():
 
 def relaunch_as_admin():
     """Relaunch the script with administrator privileges."""
-    params = " ".join([f'"{arg}"' for arg in sys.argv])
     executable = sys.executable
-    windll.shell32.ShellExecuteW(None, "runas", executable, params, None, 1)
+    script = os.path.abspath(__file__)
+    params = " ".join([f'"{arg}"' for arg in [script] + sys.argv[1:]])
+    result = windll.shell32.ShellExecuteW(
+        None, "runas", executable, params, None, 1
+    )
     sys.exit()
 
 def run_app():
@@ -49,7 +52,5 @@ if __name__ == '__main__':
         build_executable()
     else:
         if not is_admin():
-            print("Administrator privileges are required. Relaunching as admin...")
             relaunch_as_admin()
-        print("Running application...finally")
         run_app()
