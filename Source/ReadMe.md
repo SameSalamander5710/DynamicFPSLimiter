@@ -37,7 +37,7 @@ Run the following command from the main repository folder:
 
 ```cmd
 pyinstaller Source\DFL_v4.py ^
-    --onedir --uac-admin --clean --noconsole ^
+    --onedir --uac-admin --clean --noconfirm --noconsole ^
     --name DynamicFPSLimiter ^
     --icon=Source\DynamicFPSLimiter.ico ^
     --version-file=Source\version.txt ^
