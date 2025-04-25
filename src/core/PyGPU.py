@@ -186,13 +186,13 @@ if __name__ == '__main__':
     try:
         monitor = GPUMonitor()
         
-        # List all GPU LUIDs
+        # List all GPU LUIDs, for all engines
         print("Available GPU LUIDs:")
         for luid in monitor.list_all_luids():
             usage, _ = monitor.get_gpu_usage(luid)
             print(f"LUID: {luid}, Usage: {usage}%")
             
-        # Get highest usage GPU
+        # Get highest usage GPU, for entype_3D
         usage, luid = monitor.get_gpu_usage(engine_type="engtype_3D")
         print(f"\nHighest GPU Usage - LUID: {luid}, 3D engine usage: {usage}%")
     except Exception as e:

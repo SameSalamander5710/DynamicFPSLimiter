@@ -495,7 +495,6 @@ def monitoring_loop():
             dpg.set_value("dynamic_Current_GPU_usage:", f"{gpuUsage}%")
             dpg.set_value("dynamic_Active_Window:", process_name if process_name else "--")
             dpg.set_value("dynamic_Last_Active_Window:", last_process_name if last_process_name else "--")
-            dpg.set_value("dynamic_RTSS_running:", "Yes" if is_rtss_running() else "No")
             #print(f"Current Cap {maxcap + CurrentFPSOffset}")
             #print(f"Offest {CurrentFPSOffset}")
             #print(f"maxcap {maxcap}")
@@ -512,12 +511,35 @@ def monitoring_loop():
         if process_name:
             last_process_name = process_name
 
-        time.sleep(1)
+        time.sleep(0.9)
+
+# Add these variables with other global variables
+rtss_monitor_running = True
+rtss_status = False
+
+def rtss_monitor_thread():
+    global rtss_status
+    while rtss_monitor_running:
+        current_status = is_rtss_running()
+        if current_status != rtss_status:
+            rtss_status = current_status
+            if rtss_status:
+                add_log("> RTSS detected")
+                
+            else:
+                add_log("> RTSS not running!")
+        dpg.set_value("dynamic_RTSS_running:", "Yes" if is_rtss_running() else "No")
+        time.sleep(0.1)
+
+# Start the RTSS monitoring thread (add this before GUI setup)
+rtss_thread = threading.Thread(target=rtss_monitor_thread, daemon=True)
+rtss_thread.start()
 
 # Function to close all active processes and exit the GUI
 def exit_gui():
-    global running
+    global running, rtss_monitor_running
     running = False
+    rtss_monitor_running = False  # Signal thread to stop
     monitor.cleanup()  # Clean up GPU monitor
     dpg.destroy_context() # Close Dear PyGui
 
