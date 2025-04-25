@@ -1,22 +1,20 @@
 import dearpygui.dearpygui as dpg
 import threading
 import configparser
-import mmap
-import struct
 import time
 import math
-import psutil
-from collections import defaultdict
-from ctypes import wintypes, WinDLL, byref
-import subprocess
 import os
 import sys
-import logging
 
-try:
-    from . import PyGPU as gpu  # For package import
-except ImportError:
-    import PyGPU as gpu  # For direct script execution
+# tweak path so "src/" (or wherever your modules live) is on sys.path
+_this_dir = os.path.abspath(os.path.dirname(__file__))
+_root    = os.path.join(_this_dir, "..")   # adjust to point at your module directory
+if _root not in sys.path:
+    sys.path.insert(0, _root)
+
+import PyGPU as gpu
+import logger
+from rtss_interface import RTSSInterface
 
 # Always get absolute path to EXE or script location
 Base_dir = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
@@ -32,6 +30,9 @@ profiles_path = os.path.join(config_dir, "profiles.ini")
 rtss_cli_path = os.path.join(Base_dir, "assets/rtss-cli.exe")
 error_log_file = os.path.join(parent_dir, "error_log.txt")
 icon_path = os.path.join(Base_dir, 'assets/DynamicFPSLimiter.ico')
+
+logger.init_logging(error_log_file)
+rtss_manager = None
 
 profiles_config = configparser.ConfigParser()
 settings_config = configparser.ConfigParser()
@@ -64,27 +65,7 @@ else:
     with open(profiles_path, 'w') as f:
         profiles_config.write(f)
 
-# Error logging function
-def error_log_exception(exc_type, exc_value, exc_traceback):
-    logging.basicConfig(
-        filename='error_log.txt',  # Path to your log file
-        level=logging.ERROR,       # Only log errors or more severe messages
-        format='%(asctime)s - %(levelname)s - %(message)s'
-    )
-    logging.error(
-        "Uncaught exception",
-        exc_info=(exc_type, exc_value, exc_traceback)
-    )
 
-# Redirect uncaught exceptions to the log file
-sys.excepthook = error_log_exception
-
-log_messages = []
-
-def add_log(message):
-    log_messages.insert(0, message)  # Add message at the top
-    log_messages[:] = log_messages[:50]  # Keep only the latest 50 messages
-    dpg.set_value("LogText", "\n".join(log_messages))
 
 # Function to get values with correct types
 def get_setting(key, value_type=int):
@@ -135,7 +116,7 @@ def save_to_profile():
             profiles_config[selected_profile][key] = str(value)  # Store as string in ini file
         with open(profiles_path, "w") as configfile:
             profiles_config.write(configfile)
-        add_log(f"> Settings saved to profile: {selected_profile}")
+        logger.add_log(f"> Settings saved to profile: {selected_profile}")
 settings = Default_settings.copy()
 
 #Functions for profiles start --------------
@@ -181,17 +162,17 @@ def add_new_profile_callback():
     if new_name and new_name not in profiles_config:
         save_profile(new_name)
         dpg.set_value("new_profile_input", "")
-        add_log(f"> New profile created: {new_name}")
+        logger.add_log(f"> New profile created: {new_name}")
     else:
-        add_log("> Profile name is empty or already exists.")
+        logger.add_log("> Profile name is empty or already exists.")
 
 def add_process_profile_callback():
     new_name = dpg.get_value("LastProcess")
     if new_name and new_name not in profiles_config:
         save_profile(new_name)
-        add_log(f"> New profile created: {new_name}")
+        logger.add_log(f"> New profile created: {new_name}")
     else:
-        add_log("> Profile name is empty or already exists.")
+        logger.add_log("> Profile name is empty or already exists.")
 
 def delete_selected_profile_callback():
     
@@ -199,7 +180,7 @@ def delete_selected_profile_callback():
     
     profile_to_delete = dpg.get_value("profile_dropdown")
     if profile_to_delete == "Global":
-        add_log("> Cannot delete the default 'Global' profile.")
+        logger.add_log("> Cannot delete the default 'Global' profile.")
         return
     if profile_to_delete in profiles_config:
         profiles_config.remove_section(profile_to_delete)
@@ -209,7 +190,7 @@ def delete_selected_profile_callback():
         for key in profiles_config["Global"]:
             dpg.set_value(f"input_{key}", profiles_config["Global"][key])
         update_global_variables()
-        add_log(f"> Deleted profile: {profile_to_delete}")
+        logger.add_log(f"> Deleted profile: {profile_to_delete}")
         current_profile = "Global"
 
 #Functions for profiles end ----------------
@@ -223,80 +204,6 @@ def update_global_variables():
             globals()[key] = int(value)
 
 update_global_variables()
-
-def run_rtss_cli(command):
-    # Suppress console window on Windows
-    startupinfo = subprocess.STARTUPINFO()
-    startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-
-    try:
-        result = subprocess.run(
-            command,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.DEVNULL,  # Don't capture or show stderr
-            text=True,
-            check=False,                # Faster, avoids raising exception
-            startupinfo=startupinfo,
-            creationflags=subprocess.CREATE_NO_WINDOW  # Prevent console window
-        )
-        return result.stdout.strip()
-    except Exception as e:
-        # Only catch generic failure (e.g., file not found)
-        add_log(f"> Looking for rtss-cli.exe in\n{os.path.dirname(rtss_cli_path)}")
-        add_log(f"> Subprocess failed for rtss-cli.exe:\n{e}")
-        return None
- 
-user32 = WinDLL('user32', use_last_error=True)
- 
-def is_rtss_running():
-	for process in psutil.process_iter(['name']):
-		if process.info['name'] == 'RTSS.exe':
-			return True
-	return False
- 
-def get_foreground_window_process_id():
-	hwnd = user32.GetForegroundWindow()
-	if hwnd == 0:
-		return None
-	pid = wintypes.DWORD()
-	user32.GetWindowThreadProcessId(hwnd, byref(pid))
-	return pid.value
-    
-last_dwTime0s = defaultdict(int)
-
-def get_fps_for_active_window():
-	if not is_rtss_running():
-		return None, None
- 
-	process_id = get_foreground_window_process_id()
-	if not process_id:
-		return None, None
- 
-	mmap_size = 4485160
-	mm = mmap.mmap(0, mmap_size, 'RTSSSharedMemoryV2')
-	dwSignature, dwVersion, dwAppEntrySize, dwAppArrOffset, dwAppArrSize, dwOSDEntrySize, dwOSDArrOffset, dwOSDArrSize, dwOSDFrame = struct.unpack(
-		'4sLLLLLLLL', mm[0:36])
-	calc_mmap_size = dwAppArrOffset + dwAppArrSize * dwAppEntrySize
-	if mmap_size < calc_mmap_size:
-		mm = mmap.mmap(0, calc_mmap_size, 'RTSSSharedMemoryV2')
-	if dwSignature[::-1] not in [b'RTSS', b'SSTR'] or dwVersion < 0x00020000:
-		return None, None
- 
-	for dwEntry in range(0, dwAppArrSize):
-		entry = dwAppArrOffset + dwEntry * dwAppEntrySize
-		stump = mm[entry:entry + 6 * 4 + 260]
-		if len(stump) == 0:
-			continue
-		dwProcessID, szName, dwFlags, dwTime0, dwTime1, dwFrames, dwFrameTime = struct.unpack('L260sLLLLL', stump)
-		if dwProcessID == process_id:
-			if dwTime0 > 0 and dwTime1 > 0 and dwFrames > 0:
-				if dwTime0 != last_dwTime0s.get(dwProcessID):
-					fps = 1000 * dwFrames / (dwTime1 - dwTime0)
-					last_dwTime0s[dwProcessID] = dwTime0
-					process_name = szName.decode(errors='ignore').rstrip('\x00')
-					process_name = process_name.split('\\')[-1]
-					return fps, process_name
-	return None, None
 
 # Read values from UI input fields without modifying `settings`
 def apply_current_input_values():
@@ -325,8 +232,8 @@ def start_stop_callback():
 
     if running:
         # Initialize RTSS
-        run_rtss_cli([rtss_cli_path, "limiter:set", "1"])
-        run_rtss_cli([rtss_cli_path, "property:set", current_profile, "FramerateLimit", str(maxcap)])
+        rtss_manager.run_rtss_cli(["limiter:set", "1"])
+        rtss_manager.run_rtss_cli(["property:set", current_profile, "FramerateLimit", str(maxcap)])
         
         # Apply current settings and start monitoring
         
@@ -337,11 +244,11 @@ def start_stop_callback():
         
         # Start monitoring thread
         threading.Thread(target=monitoring_loop, daemon=True).start()
-        add_log("> Monitoring started")
+        logger.add_log("> Monitoring started")
     else:
         reset_stats()
         CurrentFPSOffset = 0
-        add_log("> Monitoring stopped")
+        logger.add_log("> Monitoring stopped")
 
 def quick_save_settings():
     for key in ["maxcap", "mincap", "capstep", 
@@ -351,14 +258,14 @@ def quick_save_settings():
     for key, value in FIXED_SETTINGS.items():
         settings[key] = value
     update_global_variables()
-    add_log("> Settings quick saved")
+    logger.add_log("> Settings quick saved")
 
 def quick_load_settings():
     for key in ["maxcap", "mincap", "capstep", 
                 "usagecutofffordecrease", "usagecutoffforincrease"]:
         dpg.set_value(f"input_{key}", settings[key])
     update_global_variables()
-    add_log("> Settings quick loaded")
+    logger.add_log("> Settings quick loaded")
 
 def enable_plot_callback(sender, app_data): #Currently not in use
     dpg.configure_item("plot_section", show=app_data)
@@ -385,7 +292,7 @@ def reset_to_program_default():
         dpg.set_value(f"input_{key}", Default_settings_original[key])
     for key in ["usagecutofffordecrease", "delaybeforedecrease", "usagecutoffforincrease", "delaybeforeincrease", "minvalidgpu", "minvalidfps"]:
         dpg.set_value(f"input_{key}", Default_settings_original[key])
-    add_log("> Settings reset to program default")  
+    logger.add_log("> Settings reset to program default")  
 
 time_series = []
 gpu_usage_series = []
@@ -439,15 +346,15 @@ def toggle_luid_selection():
         # First click: detect top LUID
         usage, luid = monitor.get_gpu_usage(engine_type="engtype_3D")
         if luid:
-            add_log(f"> Tracking LUID: {luid} | Current 3D engine Utilization: {usage}%")
+            logger.add_log(f"> Tracking LUID: {luid} | Current 3D engine Utilization: {usage}%")
             dpg.configure_item("luid_button", label="Revert to all GPUs")
             luid_selected = True
         else:
-            add_log("> Failed to detect active LUID.")
+            logger.add_log("> Failed to detect active LUID.")
     else:
         # Second click: deselect
         luid = "All"
-        add_log("> Tracking all GPU engines.")
+        logger.add_log("> Tracking all GPU engines.")
         dpg.configure_item("luid_button", label="Detect Render GPU")
         luid_selected = False
 
@@ -467,7 +374,7 @@ def monitoring_loop():
     max_ft = maxcap + capstep
     
     while running:
-        fps, process_name = get_fps_for_active_window()
+        fps, process_name = rtss_manager.get_fps_for_active_window()
         
         if process_name != None:
             last_process_name = process_name #Make exception for DynamicFPSLimiter.exe and pythonw.exe
@@ -503,11 +410,11 @@ def monitoring_loop():
                             CurrentFPSOffset -= (capstep * X)
                         else:
                             CurrentFPSOffset -= capstep
-                        run_rtss_cli([rtss_cli_path, "property:set", current_profile, "FramerateLimit", str(maxcap+CurrentFPSOffset)])
+                        rtss_manager.run_rtss_cli(["property:set", current_profile, "FramerateLimit", str(maxcap+CurrentFPSOffset)])
                 if CurrentFPSOffset < 0:
                     if len(gpu_values) >= delaybeforeincrease and all(value <= usagecutoffforincrease for value in gpu_values[-delaybeforeincrease:]):
                         CurrentFPSOffset += capstep
-                        run_rtss_cli([rtss_cli_path, "property:set", current_profile, "FramerateLimit", str(maxcap+CurrentFPSOffset)])
+                        rtss_manager.run_rtss_cli(["property:set", current_profile, "FramerateLimit", str(maxcap+CurrentFPSOffset)])
 
         if running:
             # Update legend labels with current values
@@ -534,37 +441,16 @@ FIXED_SETTINGS = {
     "minvalidfps": 20
 }
 
-# Add these variables with other global variables
-rtss_monitor_running = True
-rtss_status = False
-
-def rtss_monitor_thread():
-    global rtss_status
-    while rtss_monitor_running:
-        try:
-            current_status = is_rtss_running()
-            if current_status != rtss_status:
-                rtss_status = current_status
-                if rtss_status:
-                    add_log("> RTSS detected")
-                    dpg.bind_item_theme("start_stop_button", "rtss_running_theme")
-                else:
-                    add_log("> RTSS not running!")
-                    dpg.bind_item_theme("start_stop_button", "rtss_not_running_theme")
-            dpg.set_value("dynamic_RTSS_running:", "Yes" if current_status else "No")
-        except Exception as e:
-            pass
-        time.sleep(0.1)
-
 # Function to close all active processes and exit the GUI
 def exit_gui():
-    global running, rtss_monitor_running
-    running = False
-    rtss_monitor_running = False  # Signal thread to stop
-    monitor.cleanup()  # Clean up GPU monitor
-    dpg.destroy_context() # Close Dear PyGui
-
-    #sys.exit(0)
+    global running, rtss_manager, monitor
+    running = False # Signal monitoring_loop to stop
+    if rtss_manager:
+        rtss_manager.stop_monitor_thread()  # Signal RTSS monitor thread to stop
+    if monitor:
+        monitor.cleanup()  # Clean up GPU monitor
+    if dpg.is_dearpygui_running():
+        dpg.destroy_context() # Close Dear PyGui
 
 # Main Window
 
@@ -721,17 +607,17 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
 # Setup and Run GUI
 update_profile_dropdown(select_first=True)
 
-add_log("Initializing...")
+logger.add_log("Initializing...")
 monitor = gpu.GPUMonitor()  # Create a single GPU monitor instance
 usage, luid = monitor.get_gpu_usage(engine_type="engtype_3D")
-add_log(f"Current Top LUID: {luid}, 3D engine usage: {usage}%")
-add_log("Initialized successfully.")
+logger.add_log(f"Current Top LUID: {luid}, 3D engine usage: {usage}%")
+logger.add_log("Initialized successfully.")
 
-# Start the RTSS monitoring thread (add this after GUI setup)
-rtss_thread = threading.Thread(target=rtss_monitor_thread, daemon=True)
-rtss_thread.start()
-
-run_rtss_cli([rtss_cli_path, "limiter:set", "1"])
+# Assuming logger and dpg are initialized, and rtss_cli_path is defined
+rtss_manager = RTSSInterface(rtss_cli_path, logger, dpg)
+if rtss_manager:
+    rtss_manager.start_monitor_thread()
+    rtss_manager.run_rtss_cli(["limiter:set", "1"]) # Ensure limiter is enabled
 
 dpg.create_viewport(title="Dynamic FPS Limiter", width=Viewport_width, height=Viewport_height, resizable=False)
 dpg.set_viewport_resizable(False)
