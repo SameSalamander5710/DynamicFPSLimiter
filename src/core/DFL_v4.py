@@ -413,14 +413,13 @@ luid_selected = False  # default state
 luid = "All" # Placeholder for LUID
 
 def toggle_luid_selection():
-    global luid_selected, luid, query
+    global luid_selected, luid
 
     if not luid_selected:
         # First click: detect top LUID
-        query, handles = gpu.setup_gpu_query_from_instances(query, gpu.setup_gpu_instances(), "engtype_3D")
-        util, luid = gpu.get_gpu_usage(query, handles)
+        usage, luid = monitor.get_gpu_usage(engine_type="engtype_3D")
         if luid:
-            add_log(f"> Tracking LUID: {luid} | Current 3D engine Utilization: {util}%")
+            add_log(f"> Tracking LUID: {luid} | Current 3D engine Utilization: {usage}%")
             dpg.configure_item("luid_button", label="Revert to all GPUs")
             luid_selected = True
         else:
@@ -438,15 +437,12 @@ CurrentFPSOffset = 0
 fps_mean = 0
 
 def monitoring_loop():
-
     global running, fps_values, CurrentFPSOffset, fps_mean, gpu_values, current_profile
     global mincap, maxcap, capstep, usagecutofffordecrease, delaybeforedecrease, usagecutoffforincrease, delaybeforeincrease, minvalidgpu, minvalidfps
-    global max_points, minvalidgpu, minvalidfps, query, luid_selected, luid
+    global max_points, minvalidgpu, minvalidfps, luid_selected, luid
 
     start_time = time.time()
-    
     last_process_name = None
-    
     min_ft = mincap - capstep
     max_ft = maxcap + capstep
     
@@ -457,23 +453,17 @@ def monitoring_loop():
             last_process_name = process_name
             
         if fps:
-            # Keep only the last 2 readings
             if len(fps_values) > 2:
                 fps_values.pop(0)
-            
-            fps_values.append(fps)# Add the new fps to the list
+            fps_values.append(fps)
             fps_mean = sum(fps_values) / len(fps_values)
         
-        query, handles = gpu.setup_gpu_query_from_instances(query, gpu.setup_gpu_instances(), "engtype_")
-        
-        # Get GPU usage for the selected LUID or all GPUs
+        # Get GPU usage using the new monitor
         if luid_selected:
-            gpuUsage, target_luid = gpu.get_gpu_usage(query, handles, luid)
+            gpuUsage, target_luid = monitor.get_gpu_usage(luid)
         else:
-            gpuUsage, target_luid = gpu.get_gpu_usage(query, handles)
+            gpuUsage, target_luid = monitor.get_gpu_usage()
 
-        #gpuUsage = get_gpu_usage()
-        
         if len(gpu_values) > (max(delaybeforedecrease, delaybeforeincrease)+1):
             gpu_values.pop(0)
         gpu_values.append(gpuUsage)
@@ -526,10 +516,9 @@ def monitoring_loop():
 
 # Function to close all active processes and exit the GUI
 def exit_gui():
-    
     global running
     running = False
-    
+    monitor.cleanup()  # Clean up GPU monitor
     dpg.destroy_context() # Close Dear PyGui
 
     #sys.exit(0)
@@ -713,10 +702,9 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
 update_profile_dropdown(select_first=True)
 
 add_log("Initializing...")
-query = gpu.init_gpu_state()
-query, handles = gpu.setup_gpu_query_from_instances(query, gpu.setup_gpu_instances(), "engtype_3D")
-temp_usage, target_luid = gpu.get_gpu_usage(query, handles)
-add_log(f"Current Top LUID: {target_luid}, 3D engine usage: {temp_usage}%")
+monitor = gpu.GPUMonitor()  # Create a single GPU monitor instance
+usage, luid = monitor.get_gpu_usage(engine_type="engtype_3D")
+add_log(f"Current Top LUID: {luid}, 3D engine usage: {usage}%")
 add_log("Initialized successfully.")
 
 run_rtss_cli([rtss_cli_path, "limiter:set", "1"])
