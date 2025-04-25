@@ -157,18 +157,21 @@ def load_profile_callback(sender, app_data, user_data):
     
     if profile_name not in profiles_config:
         return
-    for key in profiles_config[profile_name]:
+    for key in ["maxcap", "mincap", "capstep",
+                "usagecutofffordecrease", "usagecutoffforincrease"]:
         dpg.set_value(f"input_{key}", profiles_config[profile_name][key])
     update_global_variables()
     dpg.set_value("new_profile_input", "")
 
 def save_profile(profile_name):
     profiles_config[profile_name] = {}
+    # Save input fields
     for key in ["maxcap", "mincap", "capstep",
-                "usagecutofffordecrease", "delaybeforedecrease", 
-                "usagecutoffforincrease", "delaybeforeincrease", 
-                "minvalidgpu", "minvalidfps"]:
+                "usagecutofffordecrease", "usagecutoffforincrease"]:
         profiles_config[profile_name][key] = str(dpg.get_value(f"input_{key}"))
+    # Save fixed settings
+    for key, value in FIXED_SETTINGS.items():
+        profiles_config[profile_name][key] = str(value)
     with open(profiles_path, 'w') as f:
         profiles_config.write(f)
     update_profile_dropdown()
@@ -178,6 +181,14 @@ def add_new_profile_callback():
     if new_name and new_name not in profiles_config:
         save_profile(new_name)
         dpg.set_value("new_profile_input", "")
+        add_log(f"> New profile created: {new_name}")
+    else:
+        add_log("> Profile name is empty or already exists.")
+
+def add_process_profile_callback():
+    new_name = dpg.get_value("LastProcess")
+    if new_name and new_name not in profiles_config:
+        save_profile(new_name)
         add_log(f"> New profile created: {new_name}")
     else:
         add_log("> Profile name is empty or already exists.")
@@ -289,55 +300,62 @@ def get_fps_for_active_window():
 
 # Read values from UI input fields without modifying `settings`
 def apply_current_input_values():
-    for key in ["maxcap", "mincap", "capstep",
-                "usagecutofffordecrease", "delaybeforedecrease", "usagecutoffforincrease",
-                "delaybeforeincrease", "minvalidgpu", "minvalidfps"]:
+    for key in ["maxcap", "mincap", "capstep", 
+                "usagecutofffordecrease", "usagecutoffforincrease"]:
         globals()[key] = int(dpg.get_value(f"input_{key}"))  # Convert to int
 
 def start_stop_callback():
-    global running
+    global running, maxcap, current_profile
     running = not running
     dpg.configure_item("start_stop_button", label="Stop" if running else "Start")
+    apply_current_input_values()
     
-    run_rtss_cli([rtss_cli_path, "limiter:set", "1"])
-    
-    global fps_values, CurrentFPSOffset, fps_mean, gpu_values
-
     # Reset variables to zero or their default state
+    global fps_values, CurrentFPSOffset, fps_mean, gpu_values
     fps_values = []
     CurrentFPSOffset = 0
     fps_mean = 0
     gpu_values = []
-    
-    for key in settings.keys():
+
+    # Freeze input fields
+
+    for key in ["maxcap", "mincap", "capstep", 
+                "usagecutofffordecrease", "usagecutoffforincrease"]:
         dpg.configure_item(f"input_{key}", enabled=not running)
-    
+
     if running:
-        apply_current_input_values()  # Use current input values
-        threading.Thread(target=monitoring_loop, daemon=True).start()
+        # Initialize RTSS
+        run_rtss_cli([rtss_cli_path, "limiter:set", "1"])
+        run_rtss_cli([rtss_cli_path, "property:set", current_profile, "FramerateLimit", str(maxcap)])
+        
+        # Apply current settings and start monitoring
+        
         time_series.clear()
         gpu_usage_series.clear()
         fps_series.clear()
         cap_series.clear()
+        
+        # Start monitoring thread
+        threading.Thread(target=monitoring_loop, daemon=True).start()
         add_log("> Monitoring started")
     else:
         reset_stats()
         CurrentFPSOffset = 0
         add_log("> Monitoring stopped")
-    
-    global maxcap, current_profile
-    
-    if running:
-        run_rtss_cli([rtss_cli_path, "property:set", current_profile, "FramerateLimit", str(maxcap)])
 
 def quick_save_settings():
-    for key in ["maxcap", "mincap", "capstep", "usagecutofffordecrease", "delaybeforedecrease", "usagecutoffforincrease", "delaybeforeincrease", "minvalidgpu", "minvalidfps"]:
+    for key in ["maxcap", "mincap", "capstep", 
+                "usagecutofffordecrease", "usagecutoffforincrease"]:
         settings[key] = dpg.get_value(f"input_{key}")
+    # Add fixed settings
+    for key, value in FIXED_SETTINGS.items():
+        settings[key] = value
     update_global_variables()
     add_log("> Settings quick saved")
 
 def quick_load_settings():
-    for key in ["maxcap", "mincap", "capstep", "usagecutofffordecrease", "delaybeforedecrease", "usagecutoffforincrease", "delaybeforeincrease", "minvalidgpu", "minvalidfps"]:
+    for key in ["maxcap", "mincap", "capstep", 
+                "usagecutofffordecrease", "usagecutoffforincrease"]:
         dpg.set_value(f"input_{key}", settings[key])
     update_global_variables()
     add_log("> Settings quick loaded")
@@ -354,9 +372,11 @@ def enable_plot_callback(sender, app_data): #Currently not in use
     dpg.set_viewport_height(new_height)
     
 def reset_stats():
-    for label in ["RTSS_running:", "Current_Cap:", "Current_FPS:", "Current_GPU_usage:", "Active_Window:"]:
-        dpg.set_value(f"dynamic_{label}", "--")
-   
+    
+    dpg.configure_item("gpu_usage_series", label="GPU: --")
+    dpg.configure_item("fps_series", label="FPS: --")
+    dpg.configure_item("cap_series", label="FPS Cap: --")
+
 def reset_to_program_default():
     
     global Default_settings_original
@@ -450,7 +470,7 @@ def monitoring_loop():
         fps, process_name = get_fps_for_active_window()
         
         if process_name != None:
-            last_process_name = process_name
+            last_process_name = process_name #Make exception for DynamicFPSLimiter.exe and pythonw.exe
             
         if fps:
             if len(fps_values) > 2:
@@ -472,7 +492,7 @@ def monitoring_loop():
         elapsed_time = time.time() - start_time
 
         # To prevent loading screens from affecting the fps cap
-        if gpuUsage and process_name not in {"pythonw.exe", "DynamicFPSLimiter.exe"}:
+        if gpuUsage and process_name not in {"pythonw.exe", "DynamicFPSLimiter.exe", "python.exe"}:
             if gpuUsage > minvalidgpu and fps_mean > minvalidfps: 
                 # If GPU usage is greater than (= usagecutofffordecrease%) for at least (= delaybeforedecrease) consecutive seconds
                 if CurrentFPSOffset > (mincap - maxcap):
@@ -490,28 +510,29 @@ def monitoring_loop():
                         run_rtss_cli([rtss_cli_path, "property:set", current_profile, "FramerateLimit", str(maxcap+CurrentFPSOffset)])
 
         if running:
-            dpg.set_value("dynamic_Current_FPS:", f"{fps:.2f}" if fps else "--")
-            dpg.set_value("dynamic_Current_Cap:", f"{maxcap + CurrentFPSOffset}")
-            dpg.set_value("dynamic_Current_GPU_usage:", f"{gpuUsage}%")
-            dpg.set_value("dynamic_Active_Window:", process_name if process_name else "--")
-            dpg.set_value("dynamic_Last_Active_Window:", last_process_name if last_process_name else "--")
-            #print(f"Current Cap {maxcap + CurrentFPSOffset}")
-            #print(f"Offest {CurrentFPSOffset}")
-            #print(f"maxcap {maxcap}")
-            #print(f"gpu_values {gpu_values}")
-            #print(f"gpuUsage {gpuUsage}")
-            
+            # Update legend labels with current values
+            dpg.configure_item("gpu_usage_series", label=f"GPU: {gpuUsage}%")
+            dpg.configure_item("fps_series", label=f"FPS: {fps:.1f}" if fps else "FPS: --")
+            dpg.configure_item("cap_series", label=f"FPS Cap: {maxcap + CurrentFPSOffset}")
+
             # Update plot if fps is valid
-            if fps and process_name not in {"pythonw.exe", "DynamicFPSLimiter.exe"}:
+            if fps and process_name not in {"pythonw.exe", "DynamicFPSLimiter.exe", "python.exe"}:
                 # Scaling FPS value to fit 0-100 axis
                 scaled_fps = ((fps - min_ft)/(max_ft - min_ft))*100
                 scaled_cap = ((maxcap + CurrentFPSOffset - min_ft)/(max_ft - min_ft))*100
                 update_plot(elapsed_time, gpuUsage, scaled_fps, scaled_cap)
-                #print(f"scaled Cap {scaled_cap}")
         if process_name:
             last_process_name = process_name
 
         time.sleep(0.9)
+
+# Add these constants near the top of the file with other global variables
+FIXED_SETTINGS = {
+    "delaybeforedecrease": 2,
+    "delaybeforeincrease": 2,
+    "minvalidgpu": 20,
+    "minvalidfps": 20
+}
 
 # Add these variables with other global variables
 rtss_monitor_running = True
@@ -520,20 +541,20 @@ rtss_status = False
 def rtss_monitor_thread():
     global rtss_status
     while rtss_monitor_running:
-        current_status = is_rtss_running()
-        if current_status != rtss_status:
-            rtss_status = current_status
-            if rtss_status:
-                add_log("> RTSS detected")
-                
-            else:
-                add_log("> RTSS not running!")
-        dpg.set_value("dynamic_RTSS_running:", "Yes" if is_rtss_running() else "No")
+        try:
+            current_status = is_rtss_running()
+            if current_status != rtss_status:
+                rtss_status = current_status
+                if rtss_status:
+                    add_log("> RTSS detected")
+                    dpg.bind_item_theme("start_stop_button", "rtss_running_theme")
+                else:
+                    add_log("> RTSS not running!")
+                    dpg.bind_item_theme("start_stop_button", "rtss_not_running_theme")
+            dpg.set_value("dynamic_RTSS_running:", "Yes" if current_status else "No")
+        except Exception as e:
+            pass
         time.sleep(0.1)
-
-# Start the RTSS monitoring thread (add this before GUI setup)
-rtss_thread = threading.Thread(target=rtss_monitor_thread, daemon=True)
-rtss_thread.start()
 
 # Function to close all active processes and exit the GUI
 def exit_gui():
@@ -565,6 +586,19 @@ tooltips = {
 # GUI setup
 dpg.create_context()
 
+# Create themes for RTSS status
+with dpg.theme(tag="rtss_running_theme"):
+    with dpg.theme_component(dpg.mvButton):
+        dpg.add_theme_color(dpg.mvThemeCol_Button, (0, 100, 0))
+        dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, (0, 120, 0))
+        dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, (0, 140, 0))
+
+with dpg.theme(tag="rtss_not_running_theme"):
+    with dpg.theme_component(dpg.mvButton):
+        dpg.add_theme_color(dpg.mvThemeCol_Button, (100, 0, 0))
+        dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, (120, 0, 0))
+        dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, (140, 0, 0))
+
 with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
     
     # Title and Start/Stop Button
@@ -581,117 +615,81 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
         dpg.add_button(label="Exit", callback=exit_gui)  # Exit button
 
     # Profiles
-    with dpg.child_window(width=-1, height=95):
+    with dpg.child_window(width=-1, height=120):
         with dpg.table(header_row=False):
-            dpg.add_table_column(init_width_or_weight=38)
             dpg.add_table_column(init_width_or_weight=55)
+            dpg.add_table_column(init_width_or_weight=120)
             dpg.add_table_column(init_width_or_weight=60)
 
             # First row
             with dpg.table_row():
                 dpg.add_text("Select Profile:")
-                dpg.add_combo(tag="profile_dropdown", callback=load_profile_callback, width=170, default_value="Global")
-                dpg.add_button(label="Save Settings to Profile", callback=save_to_profile)
+                dpg.add_combo(tag="profile_dropdown", callback=load_profile_callback, width=240, default_value="Global")
+                dpg.add_button(label="Delete Profile", callback=delete_selected_profile_callback, width=120)
 
             # Second row
             with dpg.table_row():
                 dpg.add_text("New RTSS Profile:")
-                dpg.add_input_text(tag="new_profile_input", width=170)
-                dpg.add_button(label="Add Profile", callback=add_new_profile_callback)
+                dpg.add_input_text(tag="new_profile_input", width=240)
+                dpg.add_button(label="Add Profile", callback=add_new_profile_callback, width=120)
 
         dpg.add_spacer(height=3)        
         with dpg.group(horizontal=True):
-            dpg.add_button(label="Reset Settings to Default", callback=reset_to_program_default)
+            dpg.add_text("Last active process:")
             dpg.add_spacer(width=110)
-            dpg.add_button(label="Delete Selected Profile", callback=delete_selected_profile_callback)
+            dpg.add_button(label="Add process to Profiles", callback=add_process_profile_callback)
+        dpg.add_input_text(tag="LastProcess", multiline=False, readonly=True, width=-1)    
             
-    #Basic and Advanced Settings Side by Side
+    #Settings
     with dpg.group(horizontal=True):
-        with dpg.group(horizontal=False):
-            with dpg.child_window(width=250, height=185):
-                dpg.add_text("Basic Settings")
+        with dpg.child_window(width=250, height=165):
+            dpg.add_text("Settings")
+            dpg.add_spacer(height=3)
+            with dpg.table(header_row=False, resizable=False, policy=dpg.mvTable_SizingFixedFit):
+                dpg.add_table_column(width_fixed=True)  # Column for labels
+                dpg.add_table_column(width_fixed=True)  # Column for input boxes
+                
+                for label, key in [("Max FPS limit:", "maxcap"), 
+                                   ("Min FPS limit:", "mincap"),
+                                   ("Frame rate step:", "capstep"),
+                                   ("Upper GPU limit:", "usagecutofffordecrease"),
+                                   ("Lower GPU limit:", "usagecutoffforincrease")]:
+                    with dpg.table_row():
+                        dpg.add_text(label)
+                        dpg.add_input_text(tag=f"input_{key}", default_value=str(settings[key]), 
+                                         width=100)
+                        with dpg.tooltip(f"input_{key}", show=ShowTooltip, delay=1):
+                            dpg.add_text(tooltips[key], wrap = 200)
+
+        with dpg.child_window(width=260, height=165):
+            dpg.add_spacer(height=3)
+            with dpg.group(horizontal=False):
+                with dpg.tooltip(parent=dpg.last_item(), show=ShowTooltip, delay=1):
+                    dpg.add_text(tooltips["Quick"], wrap = 200)
+                dpg.add_button(label="Quick Save", callback=quick_save_settings, width=200)
+                dpg.add_button(label="Quick Load", callback=quick_load_settings, width=200)
+                dpg.add_button(label="Reset Settings to Default", callback=reset_to_program_default, width=200)
                 dpg.add_spacer(height=3)
-                with dpg.table(header_row=False, resizable=False, policy=dpg.mvTable_SizingFixedFit):
-                    dpg.add_table_column(width_fixed=True)  # Column for labels
-                    dpg.add_table_column(width_fixed=True)  # Column for input boxes
-                    
-                    for label, key in [("Max FPS limit:", "maxcap"), ("Min FPS limit:", "mincap"), 
-                                       ("Frame rate step:", "capstep")]:
-                         with dpg.table_row():
-                            dpg.add_text(label)
-                            dpg.add_input_text(tag=f"input_{key}", default_value=str(settings[key]), width=100)
-                            with dpg.tooltip(f"input_{key}", show=ShowTooltip, delay=1):
-                                dpg.add_text(tooltips[key], wrap = 200)
-                dpg.add_spacer(height=10)
-                with dpg.group(horizontal=False):
-                    with dpg.tooltip(parent=dpg.last_item(), show=ShowTooltip, delay=1):
-                        dpg.add_text(tooltips["Quick"], wrap = 200)
-                    dpg.add_button(label="Quick Save", callback=quick_save_settings)
-                    dpg.add_button(label="Quick Load", callback=quick_load_settings)
-        with dpg.group(horizontal=False):        
-            with dpg.child_window(width=260, height=185):
-                dpg.add_text("Advanced Settings")
-                dpg.add_spacer(height=3)
-                with dpg.table(header_row=False, resizable=False, policy=dpg.mvTable_SizingFixedFit):
-                    dpg.add_table_column(width_fixed=True)  # Column for labels
-                    dpg.add_table_column(width_fixed=True)  # Column for input boxes
-                    for label, key in [("Upper GPU usage limit:", "usagecutofffordecrease"), 
-                                       ("Instances before dec.:", "delaybeforedecrease"), 
-                                       ("Lower GPU usage limit:", "usagecutoffforincrease"), 
-                                       ("Instances before inc.:", "delaybeforeincrease"), 
-                                       ("Min. valid GPU usage:", "minvalidgpu"), ("Min. valid FPS:", "minvalidfps")]:
-                        with dpg.table_row():
-                            dpg.add_text(label)
-                            dpg.add_input_text(tag=f"input_{key}", default_value=str(settings[key]), width=70)
-                            with dpg.tooltip(f"input_{key}", show=ShowTooltip, delay=1):
-                                dpg.add_text(tooltips[key], wrap = 200)
- 
-    # Stats Section (Full Width)
-    with dpg.child_window(width=-1, height=85):
-        # Create a table for proper alignment
-        with dpg.table(header_row=False, resizable=False, policy=dpg.mvTable_SizingFixedFit):
-            dpg.add_table_column(init_width_or_weight=100)  # Column for labels (left)
-            dpg.add_table_column(init_width_or_weight=100)  # Column for dynamic values (left)
-            dpg.add_table_column(init_width_or_weight=150)  # Column for labels (right)
-            dpg.add_table_column(init_width_or_weight=150)  # Column for dynamic values (right)
+                dpg.add_button(label="Save Settings to Profile", callback=save_to_profile, width=200)
 
-            stats_left = ["RTSS running:", "Current Cap:", "Current FPS:"]
-            stats_right = ["Current GPU usage:", "Active Window:", "Last Active Window:"]
-
-            for label_left, label_right in zip(stats_left, stats_right):
-                with dpg.table_row():
-                    dpg.add_text(label_left)  # Left label
-                    dpg.add_text("--", tag=f"dynamic_{label_left.replace(' ', '_')}")  # Left dynamic value
-                    dpg.add_text(label_right)  # Right label
-                    dpg.add_text("--", tag=f"dynamic_{label_right.replace(' ', '_')}")  # Right dynamic value
-
-        # Checkbox below the table
-        #dpg.add_spacer(height=5)
-        #dpg.add_checkbox(label="Show plot", callback=enable_plot_callback, default_value=ShowPlotBoolean)
-
-    # Third Row: Plot Section (Initially shown)
-    with dpg.child_window(width=-1, height=Plot_height, show=ShowPlotBoolean, tag="plot_section"):
-        #dpg.add_text("FPS & GPU Usage Plot")
-        #create a theme for the plot
-        with dpg.theme(tag="plot_theme") as item_theme:
-            with dpg.theme_component(dpg.mvAll):
-                dpg.add_theme_color(dpg.mvPlotCol_Line, (128, 128, 128), category = dpg.mvThemeCat_Plots)
-        
+    # Third Row: Plot Section
+    with dpg.child_window(width=-1, height=Plot_height, show=ShowPlotBoolean):
         with dpg.plot(height=200, width=-1, tag="plot"):
             dpg.add_plot_axis(dpg.mvXAxis, label="Time (s)", tag="x_axis")
-            dpg.add_plot_legend(location=dpg.mvPlot_Location_North, horizontal = True, no_highlight_item = True, no_highlight_axis = True, outside = True)
+            dpg.add_plot_legend(location=dpg.mvPlot_Location_North, horizontal=True, 
+                              no_highlight_item=True, no_highlight_axis=True, outside=True)
 
             # Left Y-axis for GPU Usage
-            with dpg.plot_axis(dpg.mvYAxis, label="GPU Usage (%)", tag="y_axis_left", no_gridlines = False) as y_axis_left:
-                dpg.add_line_series([], [], label="GPU", parent=y_axis_left, tag="gpu_usage_series")
-                        # Add static horizontal dashed lines
+            with dpg.plot_axis(dpg.mvYAxis, label="GPU Usage (%)", tag="y_axis_left", no_gridlines=False) as y_axis_left:
+                dpg.add_line_series([], [], label="GPU: --", parent=y_axis_left, tag="gpu_usage_series")
+                # Add static horizontal dashed lines
                 dpg.add_line_series([], [usagecutofffordecrease, usagecutofffordecrease], parent=y_axis_left, tag="line1")
                 dpg.add_line_series([], [usagecutoffforincrease, usagecutoffforincrease], parent=y_axis_left, tag="line2")
             
             # Right Y-axis for FPS
-            with dpg.plot_axis(dpg.mvYAxis, label="FPS", tag="y_axis_right", no_gridlines = True) as y_axis_right:
-                dpg.add_line_series([], [], label="FPS", parent=y_axis_right, tag="fps_series")
-                dpg.add_line_series([], [], label="FPS Cap", parent=y_axis_right, tag="cap_series", segments=True)
+            with dpg.plot_axis(dpg.mvYAxis, label="FPS", tag="y_axis_right", no_gridlines=True) as y_axis_right:
+                dpg.add_line_series([], [], label="FPS: --", parent=y_axis_right, tag="fps_series")
+                dpg.add_line_series([], [], label="FPS Cap: --", parent=y_axis_right, tag="cap_series", segments=True)
                 
             # Set axis limits
             dpg.set_axis_limits("y_axis_left", 0, 100)  # GPU usage range
@@ -702,8 +700,8 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
             # apply theme to series
             dpg.bind_item_theme("line1", "plot_theme")
             dpg.bind_item_theme("line2", "plot_theme")
-    
-    # Dynamic log
+
+# Dynamic log
     with dpg.group(horizontal=True):
         dpg.add_text("Log:")
         # Scrollable child window for log output
@@ -728,6 +726,10 @@ monitor = gpu.GPUMonitor()  # Create a single GPU monitor instance
 usage, luid = monitor.get_gpu_usage(engine_type="engtype_3D")
 add_log(f"Current Top LUID: {luid}, 3D engine usage: {usage}%")
 add_log("Initialized successfully.")
+
+# Start the RTSS monitoring thread (add this after GUI setup)
+rtss_thread = threading.Thread(target=rtss_monitor_thread, daemon=True)
+rtss_thread.start()
 
 run_rtss_cli([rtss_cli_path, "limiter:set", "1"])
 
