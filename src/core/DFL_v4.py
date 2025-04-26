@@ -41,9 +41,17 @@ settings_config = configparser.ConfigParser()
 if os.path.exists(settings_path):
     settings_config.read(settings_path)
 else:
+    # Initialize Preferences section
     settings_config["Preferences"] = {
         'ShowPlot': 'True',
         'ShowTooltip': 'True'
+    }
+    # Add GlobalSettings section
+    settings_config["GlobalSettings"] = {
+        'delaybeforedecrease': '2',
+        'delaybeforeincrease': '2',
+        'minvalidgpu': '20',
+        'minvalidfps': '20'
     }
     with open(settings_path, 'w') as f:
         settings_config.write(f)
@@ -56,11 +64,7 @@ else:
         'mincap': '30',
         'capstep': '5',
         'usagecutofffordecrease': '80',
-        'delaybeforedecrease': '2',
-        'usagecutoffforincrease': '70',
-        'delaybeforeincrease': '2',
-        'minvalidgpu': '20',
-        'minvalidfps': '20'
+        'usagecutoffforincrease': '70'
     }
     with open(profiles_path, 'w') as f:
         profiles_config.write(f)
@@ -69,6 +73,9 @@ else:
 
 # Function to get values with correct types
 def get_setting(key, value_type=int):
+    """Get setting from appropriate config section based on key type."""
+    if key in ["delaybeforedecrease", "delaybeforeincrease", "minvalidgpu", "minvalidfps"]:
+        return value_type(settings_config["GlobalSettings"].get(key, Default_settings_original[key]))
     return value_type(profiles_config["Global"].get(key, Default_settings_original[key]))
 
 ShowPlot = str(settings_config["Preferences"].get("ShowPlot", "True")).strip().lower() == "true"
@@ -108,14 +115,23 @@ def save_to_profile():
     
     # Only proceed if a profile is selected
     if selected_profile:
-        # Update the config with values from input fields
+        # Update profile-specific settings
         for key in ["maxcap", "mincap", "capstep",
-                "usagecutofffordecrease", "delaybeforedecrease", "usagecutoffforincrease",
-                "delaybeforeincrease", "minvalidgpu", "minvalidfps"]:
+                "usagecutofffordecrease", "usagecutoffforincrease"]:
             value = dpg.get_value(f"input_{key}")  # Get value from input field
             profiles_config[selected_profile][key] = str(value)  # Store as string in ini file
+        
+        # Update global settings
+        for key in ["delaybeforedecrease", "delaybeforeincrease", 
+                   "minvalidgpu", "minvalidfps"]:
+            settings_config["GlobalSettings"][key] = str(get_setting(key))
+        
+        # Save both configs
         with open(profiles_path, "w") as configfile:
             profiles_config.write(configfile)
+        with open(settings_path, "w") as configfile:
+            settings_config.write(configfile)
+            
         logger.add_log(f"> Settings saved to profile: {selected_profile}")
 settings = Default_settings.copy()
 
@@ -150,9 +166,6 @@ def save_profile(profile_name):
     for key in ["maxcap", "mincap", "capstep",
                 "usagecutofffordecrease", "usagecutoffforincrease"]:
         profiles_config[profile_name][key] = str(dpg.get_value(f"input_{key}"))
-    # Save fixed settings
-    for key, value in FIXED_SETTINGS.items():
-        profiles_config[profile_name][key] = str(value)
     with open(profiles_path, 'w') as f:
         profiles_config.write(f)
     update_profile_dropdown()
@@ -254,9 +267,6 @@ def quick_save_settings():
     for key in ["maxcap", "mincap", "capstep", 
                 "usagecutofffordecrease", "usagecutoffforincrease"]:
         settings[key] = dpg.get_value(f"input_{key}")
-    # Add fixed settings
-    for key, value in FIXED_SETTINGS.items():
-        settings[key] = value
     update_global_variables()
     logger.add_log("> Settings quick saved")
 
@@ -432,14 +442,6 @@ def monitoring_loop():
             last_process_name = process_name
 
         time.sleep(0.9)
-
-# Add these constants near the top of the file with other global variables
-FIXED_SETTINGS = {
-    "delaybeforedecrease": 2,
-    "delaybeforeincrease": 2,
-    "minvalidgpu": 20,
-    "minvalidfps": 20
-}
 
 # Function to close all active processes and exit the GUI
 def exit_gui():

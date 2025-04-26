@@ -173,7 +173,7 @@ class RTSSInterface:
         """Stops the RTSS status monitoring thread."""
         self.rtss_monitor_running = False
         if self._monitor_thread and self._monitor_thread.is_alive():
-            self._monitor_thread.join(timeout=0.5) # Wait briefly for thread to exit
+            self._monitor_thread.join(timeout=0.2) # Wait briefly for thread to exit
         self._monitor_thread = None
         self.logger.add_log("> RTSS monitor thread stopped.")
 
