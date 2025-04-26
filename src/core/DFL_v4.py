@@ -85,7 +85,7 @@ ShowTooltip = str(settings_config["Preferences"].get("ShowTooltip", "True")).str
 
 # Default viewport size
 Viewport_width = 550
-Viewport_full_height = 760
+Viewport_full_height = 700
 Plot_height = 220  # Height of the plot when shown
 
 if ShowPlot:
@@ -453,7 +453,8 @@ def exit_gui():
         rtss_manager.stop_monitor_thread()  # Signal RTSS monitor thread to stop
     if monitor:
         monitor.cleanup()  # Clean up GPU monitor
-    cpu_monitor.stop()  # Stop CPU monitor
+    if cpu_monitor:
+        cpu_monitor.stop()  # Stop CPU monitor
     if dpg.is_dearpygui_running():
         dpg.destroy_context() # Close Dear PyGui
 
@@ -515,7 +516,7 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
         dpg.add_button(label="Exit", callback=exit_gui, width=50)  # Exit button
 
     # Profiles
-    with dpg.child_window(width=-1, height=130):
+    with dpg.child_window(width=-1, height=135):
         with dpg.table(header_row=False):
             dpg.add_table_column(init_width_or_weight=55)
             dpg.add_table_column(init_width_or_weight=120)
@@ -536,8 +537,9 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
         dpg.add_spacer(height=3)        
         with dpg.group(horizontal=True):
             dpg.add_text("Last active process:")
-            dpg.add_spacer(width=110)
+            dpg.add_spacer(width=250)
             dpg.add_button(label="Add process to Profiles", callback=add_process_profile_callback)
+        dpg.add_spacer(height=1)
         dpg.add_input_text(tag="LastProcess", multiline=False, readonly=True, width=-1)    
             
     #Settings
@@ -546,7 +548,7 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
         with dpg.group(horizontal=False):
             dpg.add_spacer(height=3)
             dpg.add_text("Settings:")
-        dpg.add_spacer(height=3)
+        dpg.add_spacer(width=65)
         with dpg.child_window(width=160, height=140, border=False):
             dpg.add_spacer(height=3)
             with dpg.table(header_row=False, resizable=False, policy=dpg.mvTable_SizingFixedFit):
@@ -565,7 +567,7 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                             dpg.add_text(tooltips[key], wrap = 200)
 
         with dpg.child_window(width=240, height=140, border=False):
-            dpg.add_spacer(height=3)
+            dpg.add_spacer(height=6)
             with dpg.group(horizontal=False):
                 with dpg.tooltip(parent=dpg.last_item(), show=ShowTooltip, delay=1):
                     dpg.add_text(tooltips["Quick"], wrap = 200)
@@ -608,10 +610,10 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
     with dpg.group(horizontal=True):
         dpg.add_text("Log:")
         # Scrollable child window for log output
-        with dpg.child_window(tag="LogWindow", autosize_x=True, height=80, border=False):
+        with dpg.child_window(tag="LogWindow", autosize_x=True, height=105, border=False):
             #dpg.add_text("", tag="LogText", tracked = True, track_offset = 1.0)
             dpg.add_spacer(height=2)
-            dpg.add_input_text(tag="LogText", multiline=True, readonly=True, width=-1, height=65)
+            dpg.add_input_text(tag="LogText", multiline=True, readonly=True, width=-1, height=85)
 
             with dpg.theme(tag="transparent_input_theme"):
                 with dpg.theme_component(dpg.mvInputText):
