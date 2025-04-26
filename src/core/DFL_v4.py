@@ -30,6 +30,7 @@ profiles_path = os.path.join(config_dir, "profiles.ini")
 rtss_cli_path = os.path.join(Base_dir, "assets/rtss-cli.exe")
 error_log_file = os.path.join(parent_dir, "error_log.txt")
 icon_path = os.path.join(Base_dir, 'assets/DynamicFPSLimiter.ico')
+font_path = os.path.join(os.environ["WINDIR"], "Fonts", "segoeui.ttf") #segoeui, Verdana, Tahoma, Calibri, micross
 
 logger.init_logging(error_log_file)
 rtss_manager = None
@@ -474,6 +475,15 @@ tooltips = {
 # GUI setup
 dpg.create_context()
 
+with dpg.font_registry():
+    try:
+        default_font = dpg.add_font(font_path, 16)
+        if default_font:
+            dpg.bind_font(default_font)
+    except Exception as e:
+        logger.add_log(f"> Failed to load system font: {e}")
+        # Will use DearPyGui's default font as fallback
+
 # Create themes for RTSS status
 with dpg.theme(tag="rtss_running_theme"):
     with dpg.theme_component(dpg.mvButton):
@@ -497,13 +507,13 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
         with dpg.tooltip("luid_button", show=ShowTooltip, delay=1):
             dpg.add_text(tooltips["luid_button"], wrap = 200)
         dpg.add_spacer(width=30)
-        dpg.add_button(label="Start", tag="start_stop_button", callback=start_stop_callback)
+        dpg.add_button(label="Start", tag="start_stop_button", callback=start_stop_callback, width=50)
         with dpg.tooltip("start_stop_button", show=ShowTooltip, delay=1):
             dpg.add_text(tooltips["Start"], wrap = 200)
-        dpg.add_button(label="Exit", callback=exit_gui)  # Exit button
+        dpg.add_button(label="Exit", callback=exit_gui, width=50)  # Exit button
 
     # Profiles
-    with dpg.child_window(width=-1, height=120):
+    with dpg.child_window(width=-1, height=130):
         with dpg.table(header_row=False):
             dpg.add_table_column(init_width_or_weight=55)
             dpg.add_table_column(init_width_or_weight=120)
@@ -530,8 +540,12 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
             
     #Settings
     with dpg.group(horizontal=True):
-        with dpg.child_window(width=250, height=165):
-            dpg.add_text("Settings")
+        dpg.add_spacer(height=3)
+        with dpg.group(horizontal=False):
+            dpg.add_spacer(height=3)
+            dpg.add_text("Settings:")
+        dpg.add_spacer(height=3)
+        with dpg.child_window(width=160, height=140, border=False):
             dpg.add_spacer(height=3)
             with dpg.table(header_row=False, resizable=False, policy=dpg.mvTable_SizingFixedFit):
                 dpg.add_table_column(width_fixed=True)  # Column for labels
@@ -544,12 +558,11 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                                    ("Lower GPU limit:", "usagecutoffforincrease")]:
                     with dpg.table_row():
                         dpg.add_text(label)
-                        dpg.add_input_text(tag=f"input_{key}", default_value=str(settings[key]), 
-                                         width=100)
+                        dpg.add_input_text(tag=f"input_{key}", default_value=str(settings[key]), width=50)
                         with dpg.tooltip(f"input_{key}", show=ShowTooltip, delay=1):
                             dpg.add_text(tooltips[key], wrap = 200)
 
-        with dpg.child_window(width=260, height=165):
+        with dpg.child_window(width=240, height=140, border=False):
             dpg.add_spacer(height=3)
             with dpg.group(horizontal=False):
                 with dpg.tooltip(parent=dpg.last_item(), show=ShowTooltip, delay=1):
