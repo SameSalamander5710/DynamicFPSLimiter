@@ -15,6 +15,7 @@ if _root not in sys.path:
 from core import PyGPU as gpu
 from core import logger
 from core.rtss_interface import RTSSInterface
+from core.cpu_monitor import CPUUsageMonitor
 
 # Always get absolute path to EXE or script location
 Base_dir = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
@@ -452,6 +453,7 @@ def exit_gui():
         rtss_manager.stop_monitor_thread()  # Signal RTSS monitor thread to stop
     if monitor:
         monitor.cleanup()  # Clean up GPU monitor
+    cpu_monitor.stop()  # Stop CPU monitor
     if dpg.is_dearpygui_running():
         dpg.destroy_context() # Close Dear PyGui
 
@@ -626,6 +628,10 @@ logger.add_log("Initializing...")
 monitor = gpu.GPUMonitor()  # Create a single GPU monitor instance
 usage, luid = monitor.get_gpu_usage(engine_type="engtype_3D")
 logger.add_log(f"Current Top LUID: {luid}, 3D engine usage: {usage}%")
+
+cpu_monitor = CPUUsageMonitor(interval=0.1, max_samples=20, percentile=70)
+logger.add_log(f"Current highed CPU core load: {cpu_monitor.cpu_percentile}%")
+
 logger.add_log("Initialized successfully.")
 
 # Assuming logger and dpg are initialized, and rtss_cli_path is defined
