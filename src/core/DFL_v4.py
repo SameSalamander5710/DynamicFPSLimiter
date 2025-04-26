@@ -8,13 +8,13 @@ import sys
 
 # tweak path so "src/" (or wherever your modules live) is on sys.path
 _this_dir = os.path.abspath(os.path.dirname(__file__))
-_root    = os.path.join(_this_dir, "..")   # adjust to point at your module directory
+_root = os.path.dirname(_this_dir)  # Gets src directory
 if _root not in sys.path:
     sys.path.insert(0, _root)
 
-import PyGPU as gpu
-import logger
-from rtss_interface import RTSSInterface
+from core import PyGPU as gpu
+from core import logger
+from core.rtss_interface import RTSSInterface
 
 # Always get absolute path to EXE or script location
 Base_dir = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))

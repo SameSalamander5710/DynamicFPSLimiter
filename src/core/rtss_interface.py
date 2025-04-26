@@ -125,40 +125,41 @@ class RTSSInterface:
 
     def _rtss_monitor_thread_func(self):
         """Internal thread function to monitor RTSS status."""
-        # Always update initial UI state, regardless of DPG status
+        # Always update initial UI state
         current_status = self.is_rtss_running()
         self.rtss_status = current_status
-        self._update_rtss_status_ui(current_status)
+        self._update_rtss_status_ui(current_status, force_log=True)  # Initial status with forced log
 
         while self.rtss_monitor_running:
             try:
                 current_status = self.is_rtss_running()
-                if current_status != self.rtss_status:
-                    self.rtss_status = current_status
-                    self._update_rtss_status_ui(current_status)
+                status_changed = current_status != self.rtss_status
+                self.rtss_status = current_status
+                self._update_rtss_status_ui(current_status, force_log=status_changed)
             except Exception as e:
                 self.logger.add_log(f"> Error in RTSS monitor thread: {e}")
-                # Avoid spamming logs in case of rapid errors
                 time.sleep(5)
-            time.sleep(0.2)  # Check less frequently
+            time.sleep(0.2)
 
-    def _update_rtss_status_ui(self, status):
-        """Updates UI elements based on RTSS status."""
-        # Use logger instance
-        self.logger.add_log("> RTSS detected" if status else "> RTSS not running!")
+    def _update_rtss_status_ui(self, status, force_log=False):
+        """
+        Updates UI elements based on RTSS status.
         
-        # Update UI elements if DPG is running
+        Args:
+            status (bool): Current RTSS running status
+            force_log (bool): Whether to force logging regardless of status change
+        """
+        # Only log when forced (status change or initial)
+        if force_log:
+            self.logger.add_log("> RTSS detected" if status else "> RTSS not running!")
+        
+        # Always update UI elements if DPG is running
         if self.dpg.is_dearpygui_running():
             # Update button theme
             if self.dpg.does_item_exist("start_stop_button"):
                 theme_tag = "rtss_running_theme" if status else "rtss_not_running_theme"
-                # Check if theme exists before binding
                 if self.dpg.does_item_exist(theme_tag):
                     self.dpg.bind_item_theme("start_stop_button", theme_tag)
-            
-            # Update status text if it exists
-            if self.dpg.does_item_exist("dynamic_RTSS_running:"):
-                self.dpg.set_value("dynamic_RTSS_running:", "Yes" if status else "No")
 
     def start_monitor_thread(self):
         """Starts the RTSS status monitoring thread."""
@@ -172,7 +173,7 @@ class RTSSInterface:
         """Stops the RTSS status monitoring thread."""
         self.rtss_monitor_running = False
         if self._monitor_thread and self._monitor_thread.is_alive():
-            self._monitor_thread.join(timeout=1) # Wait briefly for thread to exit
+            self._monitor_thread.join(timeout=0.5) # Wait briefly for thread to exit
         self._monitor_thread = None
         self.logger.add_log("> RTSS monitor thread stopped.")
 

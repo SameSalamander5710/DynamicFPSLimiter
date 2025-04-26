@@ -30,7 +30,7 @@ Okay, here is a step-by-step strategy to modularize DFL_v4.py, starting with the
     *   Update calls like `run_rtss_cli(...)` to `rtss_interface.run_rtss_cli(...)` (adjusting arguments as needed).
     *   Update how the `rtss_monitor_thread` is started, passing necessary arguments.
 
-**Phase 3: Extract Configuration Management**
+**Phase 3: Extract Configuration Management** Time consuming to make it work, will be done later
 
 1.  **Create `config_manager.py`:**
     *   Create a new file named `config_manager.py` in core.
@@ -50,7 +50,7 @@ Okay, here is a step-by-step strategy to modularize DFL_v4.py, starting with the
     *   Update UI callbacks (`load_profile_callback`, `save_to_profile`, etc.) to call the corresponding methods in the `config_manager`.
     *   Remove global variables for settings (`maxcap`, `mincap`, etc.) and get these values from the config manager when needed (e.g., inside `monitoring_loop` or `start_stop_callback`).
 
-**Phase 4: Extract GPU Monitoring Wrapper**
+**Phase 4: Extract GPU Monitoring Wrapper** Modify PyGPU to handle this
 
 1.  **Create `gpu_monitor_wrapper.py`:**
     *   Create `gpu_monitor_wrapper.py` in core.
