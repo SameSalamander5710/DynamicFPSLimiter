@@ -636,6 +636,15 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
 
             dpg.bind_item_theme("LogText", "transparent_input_theme")
 
+dpg.create_viewport(title="Dynamic FPS Limiter", width=Viewport_width, height=Viewport_height, resizable=False)
+dpg.set_viewport_resizable(False)
+dpg.set_viewport_max_width(Viewport_width)
+dpg.set_viewport_max_height(Viewport_height)
+dpg.set_viewport_small_icon(icon_path)
+dpg.setup_dearpygui()
+dpg.show_viewport()
+dpg.set_primary_window("Primary Window", True)
+
 # Setup and Run GUI
 update_profile_dropdown(select_first=True)
 
@@ -644,13 +653,11 @@ logger.add_log("Initializing...")
 gpu_monitor = GPUUsageMonitor(logger, dpg, interval=0.1, max_samples=20, percentile=70)
 logger.add_log(f"Current highed GPU core load: {gpu_monitor.gpu_percentile}%")
 
-#usage, luid = gpu_monitor.get_gpu_usage(engine_type="engtype_3D")
-#logger.add_log(f"Current Top LUID: {luid}, 3D engine usage: {usage}%")
+usage, luid = gpu_monitor.get_gpu_usage(engine_type="engtype_3D")
+logger.add_log(f"Current Top LUID: {luid}, 3D engine usage: {usage}%")
 
 cpu_monitor = CPUUsageMonitor(logger, dpg, interval=0.1, max_samples=20, percentile=70)
 logger.add_log(f"Current highed CPU core load: {cpu_monitor.cpu_percentile}%")
-
-
 
 logger.add_log("Initialized successfully.")
 
@@ -662,13 +669,5 @@ if rtss_manager:
 
 #Always make sure the corresponding GUI element exists before trying to get/set its value
 
-dpg.create_viewport(title="Dynamic FPS Limiter", width=Viewport_width, height=Viewport_height, resizable=False)
-dpg.set_viewport_resizable(False)
-dpg.set_viewport_max_width(Viewport_width)
-dpg.set_viewport_max_height(Viewport_height)
-dpg.set_viewport_small_icon(icon_path)
-dpg.setup_dearpygui()
-dpg.show_viewport()
-dpg.set_primary_window("Primary Window", True)
 dpg.start_dearpygui()
 
