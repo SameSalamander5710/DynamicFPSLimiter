@@ -1,6 +1,3 @@
-# PyGPU.py
-# This Python module provides a fast and lightweight way to access GPU usage data on Windows by directly querying Performance Data Helper (PDH) counters for the "GPU Engine" object. 
-# It bypasses slower or more resource-intensive methods like WMI or PowerShell.
 # To-do: Change prints to runtime errors
 
 import ctypes
@@ -8,6 +5,8 @@ import time
 from collections import defaultdict
 import re
 from typing import Optional, Dict, List, Tuple
+import threading
+import numpy as np
 
 pdh = ctypes.windll.pdh
 
@@ -17,15 +16,24 @@ PDH_FMT_DOUBLE = 0x00000200
 class PDH_FMT_COUNTERVALUE(ctypes.Structure):
     _fields_ = [("CStatus", ctypes.c_ulong), ("doubleValue", ctypes.c_double)]
 
-class GPUMonitor:
-    """Class to monitor GPU usage through Windows PDH counters."""
-    
-    def __init__(self):
-        """Initialize the GPU monitor."""
+class GPUUsageMonitor:
+    def __init__(self, logger_instance, dpg_instance, interval=0.1, max_samples=20, percentile=70):
+        self.interval = interval
+        self.max_samples = max_samples
+        self.samples = []
+        self.gpu_percentile = 0
+        self.percentile = percentile
+        self.logger = logger_instance
+        self.dpg = dpg_instance
         self.query_handle = None
         self.counter_handles = {}
         self.instances = []  # Add this line
         self.initialize()
+        # Start background thread
+        self._running = True
+        self._lock = threading.Lock()
+        self._thread = threading.Thread(target=self.gpu_run, daemon=True)
+        self._thread.start()
 
     def initialize(self) -> None:
         """Initialize PDH query."""
@@ -175,22 +183,60 @@ class GPUMonitor:
         if self.query_handle:
             pdh.PdhCloseQuery(self.query_handle)
             self.query_handle = None
+        self._running = False
+        if self._thread.is_alive():
+            self._thread.join()
 
-if __name__ == '__main__':
-    # Example usage
-    try:
-        monitor = GPUMonitor()
+    def gpu_run(self, target_luid: Optional[str] = None, engine_type: str = "engtype_"):
+
+        if self.query_handle is None or not self.counter_handles:
+            raise RuntimeError("Query handle or counter handles are not set up.")
+
+        # Setup counters for the specified engine type
+        _, self.counter_handles = self._setup_gpu_query_from_instances(
+            self.query_handle, self.instances, engine_type  # Use stored instances
+        )
+
+        pdh.PdhCollectQueryData(self.query_handle)
         
-        # List all GPU LUIDs, for all engines
-        print("Available GPU LUIDs:")
-        for luid in monitor.list_all_luids():
-            usage, _ = monitor.get_gpu_usage(luid)
-            print(f"LUID: {luid}, Usage: {usage}%")
-            
-        # Get highest usage GPU, for entype_3D
-        usage, luid = monitor.get_gpu_usage(engine_type="engtype_3D")
-        print(f"\nHighest GPU Usage - LUID: {luid}, 3D engine usage: {usage}%")
-    except Exception as e:
-        print(f"Error: {e}")
-    finally:
-        monitor.cleanup()
+        while self._running:
+            try:
+                if self.dpg.is_dearpygui_running() and self.dpg.does_item_exist("start_stop_button"):
+                    if self.dpg.get_item_label("start_stop_button") == "Stop":
+
+                        time.sleep(self.interval)
+                        pdh.PdhCollectQueryData(self.query_handle)
+
+                        usage_by_luid = {}
+                        handles_to_use = (
+                            {target_luid: self.counter_handles[target_luid]}
+                            if target_luid and target_luid in self.counter_handles
+                            else self.counter_handles
+                        )
+
+                        for luid, handles in handles_to_use.items():
+                            total = 0.0
+                            for h in handles:
+                                val = PDH_FMT_COUNTERVALUE()
+                                status = pdh.PdhGetFormattedCounterValue(h, PDH_FMT_DOUBLE, None, ctypes.byref(val))
+                                if status == 0 and val.CStatus == 0:
+                                    total += val.doubleValue
+                                else:
+                                    raise RuntimeError(f"Failed to read counter (LUID: {luid}): status={status}")
+                            usage_by_luid[luid] = total
+
+                        if not usage_by_luid:
+                            return 0, ""
+
+                        max_luid, max_usage = max(usage_by_luid.items(), key=lambda item: item[1])
+                        highest_usage = max_usage
+
+                        with self._lock:
+                            self.samples.append(highest_usage)
+                            if len(self.samples) > self.max_samples:
+                                self.samples.pop(0)
+                            self.gpu_percentile = round(np.percentile(self.samples, self.percentile))
+
+                            self.logger.add_log(f"> GPU usage percentile: {self.gpu_percentile}%")
+            except Exception as e:
+                self.logger.add_log(f"> GPU monitor error: {e}")

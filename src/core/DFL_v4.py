@@ -12,10 +12,10 @@ _root = os.path.dirname(_this_dir)  # Gets src directory
 if _root not in sys.path:
     sys.path.insert(0, _root)
 
-from core import PyGPU as gpu
 from core import logger
 from core.rtss_interface import RTSSInterface
 from core.cpu_monitor import CPUUsageMonitor
+from core.gpu_monitor import GPUUsageMonitor
 
 # Always get absolute path to EXE or script location
 Base_dir = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
@@ -258,7 +258,8 @@ def start_stop_callback():
         cap_series.clear()
         
         # Start monitoring thread
-        threading.Thread(target=monitoring_loop, daemon=True).start()
+        monitoring_thread = threading.Thread(target=monitoring_loop, daemon=True)
+        monitoring_thread.start()
         logger.add_log("> Monitoring started")
     else:
         reset_stats()
@@ -356,7 +357,7 @@ def toggle_luid_selection():
 
     if not luid_selected:
         # First click: detect top LUID
-        usage, luid = monitor.get_gpu_usage(engine_type="engtype_3D")
+        usage, luid = gpu_monitor.get_gpu_usage(engine_type="engtype_3D")
         if luid:
             logger.add_log(f"> Tracking LUID: {luid} | Current 3D engine Utilization: {usage}%")
             dpg.configure_item("luid_button", label="Revert to all GPUs")
@@ -400,9 +401,10 @@ def monitoring_loop():
         
         # Get GPU usage using the new monitor
         if luid_selected:
-            gpuUsage, target_luid = monitor.get_gpu_usage(luid)
+            gpuUsage, target_luid = gpu_monitor.get_gpu_usage(luid)
+            logger.add_log(f"Current LUID: {target_luid}, 3D engine usage: {gpuUsage}%")
         else:
-            gpuUsage, target_luid = monitor.get_gpu_usage()
+            gpuUsage, target_luid = gpu_monitor.get_gpu_usage()
 
         if len(gpu_values) > (max(delaybeforedecrease, delaybeforeincrease)+1):
             gpu_values.pop(0)
@@ -448,16 +450,26 @@ def monitoring_loop():
 
 # Function to close all active processes and exit the GUI
 def exit_gui():
-    global running, rtss_manager, monitor
+    global running, rtss_manager, monitoring_thread
     running = False # Signal monitoring_loop to stop
     if rtss_manager:
         rtss_manager.stop_monitor_thread()  # Signal RTSS monitor thread to stop
-    if monitor:
-        monitor.cleanup()  # Clean up GPU monitor
+    if gpu_monitor:
+        gpu_monitor.cleanup()  # Clean up GPU monitor
     if cpu_monitor:
         cpu_monitor.stop()  # Stop CPU monitor
     if dpg.is_dearpygui_running():
         dpg.destroy_context() # Close Dear PyGui
+    
+        # Wait for the monitoring thread to finish
+    if monitoring_thread and monitoring_thread.is_alive():
+        logger.add_log("> Waiting for monitoring thread to stop...")
+        monitoring_thread.join(timeout=0.50) # Wait up to 2 seconds
+        if monitoring_thread.is_alive():
+            logger.add_log("> Warning: Monitoring thread did not stop gracefully.")
+        else:
+            logger.add_log("> Monitoring thread stopped.")
+
 
 # Main Window
 
@@ -628,13 +640,17 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
 update_profile_dropdown(select_first=True)
 
 logger.add_log("Initializing...")
-monitor = gpu.GPUMonitor()  # Create a single GPU monitor instance
-usage, luid = monitor.get_gpu_usage(engine_type="engtype_3D")
-logger.add_log(f"Current Top LUID: {luid}, 3D engine usage: {usage}%")
+
+gpu_monitor = GPUUsageMonitor(logger, dpg, interval=0.1, max_samples=20, percentile=70)
+logger.add_log(f"Current highed GPU core load: {gpu_monitor.gpu_percentile}%")
+
+#usage, luid = gpu_monitor.get_gpu_usage(engine_type="engtype_3D")
+#logger.add_log(f"Current Top LUID: {luid}, 3D engine usage: {usage}%")
 
 cpu_monitor = CPUUsageMonitor(logger, dpg, interval=0.1, max_samples=20, percentile=70)
-
 logger.add_log(f"Current highed CPU core load: {cpu_monitor.cpu_percentile}%")
+
+
 
 logger.add_log("Initialized successfully.")
 
@@ -643,6 +659,8 @@ rtss_manager = RTSSInterface(rtss_cli_path, logger, dpg)
 if rtss_manager:
     rtss_manager.start_monitor_thread()
     rtss_manager.run_rtss_cli(["limiter:set", "1"]) # Ensure limiter is enabled
+
+#Always make sure the corresponding GUI element exists before trying to get/set its value
 
 dpg.create_viewport(title="Dynamic FPS Limiter", width=Viewport_width, height=Viewport_height, resizable=False)
 dpg.set_viewport_resizable(False)

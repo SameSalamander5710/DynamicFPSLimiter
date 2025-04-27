@@ -18,25 +18,26 @@ class CPUUsageMonitor:
         self.dpg = dpg_instance
         self._running = True
         # Start background thread
-        self._thread = threading.Thread(target=self._run, daemon=True)
+        self._thread = threading.Thread(target=self.cpu_run, daemon=True)
         self._thread.start()
 
-    def _run(self):
+    def cpu_run(self):
         
         while self._running:  # Changed to always run
             try:
-                if self.dpg.get_item_label("start_stop_button") == "Stop":  # Check if monitoring is active
-                    self.core_usages = psutil.cpu_percent(percpu=True)
-                    highest_usage = max(self.core_usages)
-                    
+                if self.dpg.is_dearpygui_running() and self.dpg.does_item_exist("start_stop_button"):
+                    if self.dpg.get_item_label("start_stop_button") == "Stop":  # Check if monitoring is active
+                        self.core_usages = psutil.cpu_percent(percpu=True)
+                        highest_usage = max(self.core_usages)
+                        
 
-                    with self._lock:
-                        self.samples.append(highest_usage)
-                        if len(self.samples) > self.max_samples:
-                            self.samples.pop(0)
-                        self.cpu_percentile = round(np.percentile(self.samples, self.percentile))
+                        with self._lock:
+                            self.samples.append(highest_usage)
+                            if len(self.samples) > self.max_samples:
+                                self.samples.pop(0)
+                            self.cpu_percentile = round(np.percentile(self.samples, self.percentile))
 
-                    #self.logger.add_log(f"> CPU usage: {highest_usage}% (highest core)")
+                        self.logger.add_log(f"> CPU usage percentile: {self.cpu_percentile}%")
             except Exception as e:
                 self.logger.add_log(f"> CPU monitor error: {e}")
             
