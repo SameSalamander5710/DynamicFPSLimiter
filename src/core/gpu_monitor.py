@@ -200,11 +200,10 @@ class GPUUsageMonitor:
         pdh.PdhCollectQueryData(self.query_handle)
         
         while self._running:
+            time.sleep(self.interval)
             try:
                 if self.dpg.is_dearpygui_running() and self.dpg.does_item_exist("start_stop_button"):
                     if self.dpg.get_item_label("start_stop_button") == "Stop":
-
-                        time.sleep(self.interval)
                         pdh.PdhCollectQueryData(self.query_handle)
 
                         usage_by_luid = {}
