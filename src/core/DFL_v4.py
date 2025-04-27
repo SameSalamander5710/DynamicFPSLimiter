@@ -631,7 +631,8 @@ monitor = gpu.GPUMonitor()  # Create a single GPU monitor instance
 usage, luid = monitor.get_gpu_usage(engine_type="engtype_3D")
 logger.add_log(f"Current Top LUID: {luid}, 3D engine usage: {usage}%")
 
-cpu_monitor = CPUUsageMonitor(interval=0.1, max_samples=20, percentile=70)
+cpu_monitor = CPUUsageMonitor(logger, dpg, interval=0.1, max_samples=20, percentile=70)
+
 logger.add_log(f"Current highed CPU core load: {cpu_monitor.cpu_percentile}%")
 
 logger.add_log("Initialized successfully.")
