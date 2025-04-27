@@ -46,14 +46,16 @@ else:
     # Initialize Preferences section
     settings_config["Preferences"] = {
         'ShowPlot': 'True',
-        'ShowTooltip': 'True'
+        'ShowTooltip': 'True',
+        'GlobalLimitOnExit': 'True',
     }
     # Add GlobalSettings section
     settings_config["GlobalSettings"] = {
         'delaybeforedecrease': '2',
         'delaybeforeincrease': '2',
         'minvalidgpu': '20',
-        'minvalidfps': '20'
+        'minvalidfps': '20',
+        'globallimitonexit_fps': '98',
     }
     with open(settings_path, 'w') as f:
         settings_config.write(f)
@@ -71,17 +73,38 @@ else:
     with open(profiles_path, 'w') as f:
         profiles_config.write(f)
 
-
+# Default values
+Default_settings_original = {
+    "maxcap": 60,
+    "mincap": 30,
+    "capstep": 5,
+    "usagecutofffordecrease": 80,
+    "delaybeforedecrease": 2,
+    "usagecutoffforincrease": 70,
+    "delaybeforeincrease": 2,
+    "minvalidgpu": 20,
+    "minvalidfps": 20,
+    "globallimitonexit_fps": 98,
+}
 
 # Function to get values with correct types
 def get_setting(key, value_type=int):
     """Get setting from appropriate config section based on key type."""
-    if key in ["delaybeforedecrease", "delaybeforeincrease", "minvalidgpu", "minvalidfps"]:
+    if key in ["delaybeforedecrease", "delaybeforeincrease", "minvalidgpu", "minvalidfps", "globallimitonexit_fps"]:
         return value_type(settings_config["GlobalSettings"].get(key, Default_settings_original[key]))
     return value_type(profiles_config["Global"].get(key, Default_settings_original[key]))
 
+Default_settings = {key: get_setting(key, str if isinstance(Default_settings_original[key], str) else int) for key in Default_settings_original}
+
 ShowPlot = str(settings_config["Preferences"].get("ShowPlot", "True")).strip().lower() == "true"
 ShowTooltip = str(settings_config["Preferences"].get("ShowTooltip", "True")).strip().lower() == "true"
+GlobalLimitonExit = str(settings_config["Preferences"].get("GlobalLimitOnExit", "True")).strip().lower() == "true"
+
+for key in settings_config["GlobalSettings"]:
+    # Assuming these are integers
+    value = get_setting(key, int)
+    if value is not None:
+        globals()[key] = value
 
 # Default viewport size
 Viewport_width = 550
@@ -95,21 +118,6 @@ if ShowPlot:
 else:
     ShowPlotBoolean = False
     Viewport_height = Viewport_full_height - Plot_height
-
-# Default values
-Default_settings_original = {
-    "maxcap": 60,
-    "mincap": 30,
-    "capstep": 5,
-    "usagecutofffordecrease": 80,
-    "delaybeforedecrease": 2,
-    "usagecutoffforincrease": 70,
-    "delaybeforeincrease": 2,
-    "minvalidgpu": 20,
-    "minvalidfps": 20
-}
-
-Default_settings = {key: get_setting(key, str if isinstance(Default_settings_original[key], str) else int) for key in Default_settings_original}
 
 def save_to_profile():
     # Get current selected profile from the dropdown
@@ -481,7 +489,11 @@ def plotting_loop():
 
 # Function to close all active processes and exit the GUI
 def exit_gui():
-    global running, rtss_manager, monitoring_thread, plotting_thread
+    global running, rtss_manager, monitoring_thread, plotting_thread, globallimitonexit_fps, GlobalLimitonExit
+
+    if GlobalLimitonExit:
+        rtss_manager.run_rtss_cli(["property:set", "Global", "FramerateLimit", str(globallimitonexit_fps)])
+
     running = False # Signal monitoring_loop to stop
     if rtss_manager:
         rtss_manager.stop_monitor_thread()  # Signal RTSS monitor thread to stop
