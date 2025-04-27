@@ -387,6 +387,7 @@ def monitoring_loop():
     
     while running:
         fps, process_name = rtss_manager.get_fps_for_active_window()
+        logger.add_log(f"Current highed CPU core load: {cpu_monitor.cpu_percentile}%")
         
         if process_name != None:
             last_process_name = process_name #Make exception for DynamicFPSLimiter.exe and pythonw.exe
