@@ -17,7 +17,7 @@ class PDH_FMT_COUNTERVALUE(ctypes.Structure):
     _fields_ = [("CStatus", ctypes.c_ulong), ("doubleValue", ctypes.c_double)]
 
 class GPUUsageMonitor:
-    def __init__(self, logger_instance, dpg_instance, interval=0.1, max_samples=20, percentile=70):
+    def __init__(self, get_luid, logger_instance, dpg_instance, interval=0.1, max_samples=20, percentile=70):
         self.interval = interval
         self.max_samples = max_samples
         self.samples = []
@@ -29,6 +29,7 @@ class GPUUsageMonitor:
         self.counter_handles = {}
         self.instances = []  # Add this line
         self.initialize()
+        self.get_luid = get_luid
         # Start background thread
         self._running = True
         self._lock = threading.Lock()
@@ -120,21 +121,13 @@ class GPUUsageMonitor:
         return query_handle, dict(counter_handles_by_luid)
 
     def get_gpu_usage(self, target_luid: Optional[str] = None, engine_type: str = "engtype_") -> Tuple[int, str]:
-        """
-        Get GPU usage from the query handle and counter handles.
         
-        Args:
-            target_luid: Optional specific LUID to monitor
-            engine_type: Type of GPU engine to monitor (e.g. "engtype_", "engtype_3D", "engtype_Copy")
-            
-        Returns:
-            Tuple of (usage percentage, LUID)
-        """
-        if self.query_handle is None or not self.counter_handles:
-            raise RuntimeError("Query handle or counter handles are not set up.")
-
+        if self.query_handle is None:
+            raise RuntimeError("Query handle not set up.")
+        
+        temp_counter_handles = {}
         # Setup counters for the specified engine type
-        _, self.counter_handles = self._setup_gpu_query_from_instances(
+        _, temp_counter_handles = self._setup_gpu_query_from_instances(
             self.query_handle, self.instances, engine_type  # Use stored instances
         )
 
@@ -144,9 +137,9 @@ class GPUUsageMonitor:
 
         usage_by_luid = {}
         handles_to_use = (
-            {target_luid: self.counter_handles[target_luid]}
-            if target_luid and target_luid in self.counter_handles
-            else self.counter_handles
+            {target_luid: temp_counter_handles[target_luid]}
+            if target_luid and target_luid in temp_counter_handles
+            else temp_counter_handles
         )
 
         for luid, handles in handles_to_use.items():
@@ -187,7 +180,7 @@ class GPUUsageMonitor:
         if self._thread.is_alive():
             self._thread.join()
 
-    def gpu_run(self, target_luid: Optional[str] = None, engine_type: str = "engtype_"):
+    def gpu_run(self, engine_type: str = "engtype_"):
 
         if self.query_handle is None or not self.counter_handles:
             raise RuntimeError("Query handle or counter handles are not set up.")
@@ -207,6 +200,7 @@ class GPUUsageMonitor:
                         pdh.PdhCollectQueryData(self.query_handle)
 
                         usage_by_luid = {}
+                        target_luid = self.get_luid()
                         handles_to_use = (
                             {target_luid: self.counter_handles[target_luid]}
                             if target_luid and target_luid in self.counter_handles

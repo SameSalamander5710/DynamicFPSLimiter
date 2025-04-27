@@ -391,21 +391,16 @@ def monitoring_loop():
         fps, process_name = rtss_manager.get_fps_for_active_window()
         logger.add_log(f"Current highed CPU core load: {cpu_monitor.cpu_percentile}%")
         
-        if process_name != None:
+        if process_name is not None and process_name != "DynamicFPSLimiter.exe":
             last_process_name = process_name #Make exception for DynamicFPSLimiter.exe and pythonw.exe
-            
+            dpg.set_value("LastProcess", last_process_name)
         if fps:
             if len(fps_values) > 2:
                 fps_values.pop(0)
             fps_values.append(fps)
             fps_mean = sum(fps_values) / len(fps_values)
         
-        # Get GPU usage using the new monitor
-        if luid_selected:
-            gpuUsage, target_luid = gpu_monitor.get_gpu_usage(luid)
-            logger.add_log(f"Current LUID: {target_luid}, 3D engine usage: {gpuUsage}%")
-        else:
-            gpuUsage, target_luid = gpu_monitor.get_gpu_usage()
+        gpuUsage = gpu_monitor.gpu_percentile
 
         if len(gpu_values) > (max(delaybeforedecrease, delaybeforeincrease)+1):
             gpu_values.pop(0)
@@ -444,10 +439,12 @@ def monitoring_loop():
                 scaled_fps = ((fps - min_ft)/(max_ft - min_ft))*100
                 scaled_cap = ((maxcap + CurrentFPSOffset - min_ft)/(max_ft - min_ft))*100
                 update_plot(elapsed_time, gpuUsage, scaled_fps, scaled_cap)
+            else:
+                update_plot(elapsed_time, gpuUsage, 0, 0)
         if process_name:
             last_process_name = process_name
 
-        time.sleep(0.9)
+        time.sleep(1)
 
 # Function to close all active processes and exit the GUI
 def exit_gui():
@@ -593,6 +590,10 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
 
     # Third Row: Plot Section
     with dpg.child_window(width=-1, height=Plot_height, show=ShowPlotBoolean):
+        with dpg.theme(tag="plot_theme") as item_theme:
+            with dpg.theme_component(dpg.mvAll):
+                dpg.add_theme_color(dpg.mvPlotCol_Line, (128, 128, 128), category = dpg.mvThemeCat_Plots)
+                
         with dpg.plot(height=200, width=-1, tag="plot"):
             dpg.add_plot_axis(dpg.mvXAxis, label="Time (s)", tag="x_axis")
             dpg.add_plot_legend(location=dpg.mvPlot_Location_North, horizontal=True, 
@@ -651,7 +652,7 @@ update_profile_dropdown(select_first=True)
 
 logger.add_log("Initializing...")
 
-gpu_monitor = GPUUsageMonitor(logger, dpg, interval=0.1, max_samples=20, percentile=70)
+gpu_monitor = GPUUsageMonitor(lambda: luid, logger, dpg, interval=0.1, max_samples=20, percentile=70)
 logger.add_log(f"Current highed GPU core load: {gpu_monitor.gpu_percentile}%")
 
 usage, luid = gpu_monitor.get_gpu_usage(engine_type="engtype_3D")
