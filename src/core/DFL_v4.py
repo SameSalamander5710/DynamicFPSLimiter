@@ -233,11 +233,12 @@ def start_stop_callback():
     apply_current_input_values()
     
     # Reset variables to zero or their default state
-    global fps_values, CurrentFPSOffset, fps_mean, gpu_values
+    global fps_values, CurrentFPSOffset, fps_mean, gpu_values, cpu_values
     fps_values = []
     CurrentFPSOffset = 0
     fps_mean = 0
     gpu_values = []
+    cpu_values = []
 
     # Freeze input fields
 
@@ -254,6 +255,7 @@ def start_stop_callback():
         
         time_series.clear()
         gpu_usage_series.clear()
+        cpu_usage_series.clear()
         fps_series.clear()
         cap_series.clear()
         
@@ -261,6 +263,9 @@ def start_stop_callback():
         monitoring_thread = threading.Thread(target=monitoring_loop, daemon=True)
         monitoring_thread.start()
         logger.add_log("> Monitoring started")
+        plotting_thread = threading.Thread(target=plotting_loop, daemon=True)
+        plotting_thread.start()
+        logger.add_log("> Plotting started")
     else:
         reset_stats()
         CurrentFPSOffset = 0
@@ -295,6 +300,7 @@ def enable_plot_callback(sender, app_data): #Currently not in use
 def reset_stats():
     
     dpg.configure_item("gpu_usage_series", label="GPU: --")
+    dpg.configure_item("cpu_usage_series", label="CPU: --")
     dpg.configure_item("fps_series", label="FPS: --")
     dpg.configure_item("cap_series", label="FPS Cap: --")
 
@@ -310,33 +316,50 @@ def reset_to_program_default():
 
 time_series = []
 gpu_usage_series = []
+cpu_usage_series = []
 fps_series = []
 cap_series = []  # New series for CurrentFPSOffset
-max_points = 60  # Keep last 60 seconds of data
+max_points = 300  # Keep last 60 seconds of data
 
-def update_plot(time_val, gpu_val, fps_val, cap_val):
+def update_plot_FPS(fps_val, cap_val):
     
-    global time_series, gpu_usage_series, fps_series, cap_series
+    global fps_series, cap_series, elapsed_time
+    global max_points, mincap, maxcap, capstep, usagecutofffordecrease, usagecutoffforincrease
+    
+    if len(time_series) > max_points:
+        time_series.pop(0)
+        fps_series.pop(0)
+        cap_series.pop(0)
+
+    time_series.append(elapsed_time)
+    fps_series.append(fps_val)
+    cap_series.append(cap_val)
+
+    dpg.set_value("fps_series", [time_series, fps_series])
+    dpg.set_value("cap_series", [time_series, cap_series])  
+
+    dpg.set_axis_limits("y_axis_right", mincap - capstep, maxcap + capstep) 
+
+def update_plot_usage(time_val, gpu_val, cpu_val):
+    
+    global time_series, gpu_usage_series, cpu_usage_series
     global max_points, mincap, maxcap, capstep, usagecutofffordecrease, usagecutoffforincrease
     
     if len(time_series) > max_points:
         time_series.pop(0)
         gpu_usage_series.pop(0)
-        fps_series.pop(0)
-        cap_series.pop(0)
+        cpu_usage_series.pop(0)
     
-    if gpu_val is None:
-        gpu_val = 0
-    
+    gpu_val = gpu_val or 0
+    cpu_val = cpu_val or 0
+
     time_series.append(time_val)
     gpu_usage_series.append(gpu_val)
-    fps_series.append(fps_val)
-    cap_series.append(cap_val)
+    cpu_usage_series.append(cpu_val)
 
     dpg.set_value("gpu_usage_series", [time_series, gpu_usage_series])
-    dpg.set_value("fps_series", [time_series, fps_series])
-    dpg.set_value("cap_series", [time_series, cap_series])  
-    
+    dpg.set_value("cpu_usage_series", [time_series, cpu_usage_series])
+
     dpg.set_axis_limits_auto("x_axis")  # Keep X-axis dynamic
     dpg.set_axis_limits("x_axis", time_series[0], time_series[-1] + 1) if time_series else None
     if time_series:
@@ -347,8 +370,6 @@ def update_plot(time_val, gpu_val, fps_val, cap_val):
         dpg.set_value("line2", [[time_series[0], time_series[-1] + 1], [usagecutoffforincrease, usagecutoffforincrease]])
     else:
         None
-
-    dpg.set_axis_limits("y_axis_right", mincap - capstep, maxcap + capstep) 
 
 luid_selected = False  # default state
 luid = "All" # Placeholder for LUID
@@ -374,15 +395,15 @@ def toggle_luid_selection():
 
 fps_values = []
 gpu_values = []
+cpu_values = []
 CurrentFPSOffset = 0
 fps_mean = 0
 
 def monitoring_loop():
-    global running, fps_values, CurrentFPSOffset, fps_mean, gpu_values, current_profile
+    global running, fps_values, CurrentFPSOffset, fps_mean, gpu_values, current_profile, cpu_values
     global mincap, maxcap, capstep, usagecutofffordecrease, delaybeforedecrease, usagecutoffforincrease, delaybeforeincrease, minvalidgpu, minvalidfps
     global max_points, minvalidgpu, minvalidfps, luid_selected, luid
 
-    start_time = time.time()
     last_process_name = None
     min_ft = mincap - capstep
     max_ft = maxcap + capstep
@@ -401,13 +422,14 @@ def monitoring_loop():
             fps_mean = sum(fps_values) / len(fps_values)
         
         gpuUsage = gpu_monitor.gpu_percentile
-
         if len(gpu_values) > (max(delaybeforedecrease, delaybeforeincrease)+1):
             gpu_values.pop(0)
         gpu_values.append(gpuUsage)
 
-        # Get elapsed time in seconds
-        elapsed_time = time.time() - start_time
+        cpuUsage = cpu_monitor.cpu_percentile
+        if len(cpu_values) > (max(delaybeforedecrease, delaybeforeincrease)+1):
+            cpu_values.pop(0)
+        cpu_values.append(cpuUsage)
 
         # To prevent loading screens from affecting the fps cap
         if gpuUsage and process_name not in {"pythonw.exe", "DynamicFPSLimiter.exe", "python.exe"}:
@@ -432,23 +454,34 @@ def monitoring_loop():
             dpg.configure_item("gpu_usage_series", label=f"GPU: {gpuUsage}%")
             dpg.configure_item("fps_series", label=f"FPS: {fps:.1f}" if fps else "FPS: --")
             dpg.configure_item("cap_series", label=f"FPS Cap: {maxcap + CurrentFPSOffset}")
+            dpg.configure_item("cpu_usage_series", label=f"CPU: {cpuUsage}%")
 
             # Update plot if fps is valid
             if fps and process_name not in {"pythonw.exe", "DynamicFPSLimiter.exe", "python.exe"}:
                 # Scaling FPS value to fit 0-100 axis
                 scaled_fps = ((fps - min_ft)/(max_ft - min_ft))*100
                 scaled_cap = ((maxcap + CurrentFPSOffset - min_ft)/(max_ft - min_ft))*100
-                update_plot(elapsed_time, gpuUsage, scaled_fps, scaled_cap)
-            else:
-                update_plot(elapsed_time, gpuUsage, 0, 0)
+                update_plot_FPS(scaled_fps, scaled_cap)
         if process_name:
             last_process_name = process_name
 
         time.sleep(1)
 
+def plotting_loop():
+
+    global running, elapsed_time
+
+    start_time = time.time()
+    while running:
+        elapsed_time = time.time() - start_time
+        gpuUsage = gpu_monitor.gpu_percentile
+        cpuUsage = cpu_monitor.cpu_percentile
+        update_plot_usage(elapsed_time, gpuUsage, cpuUsage)
+        time.sleep(0.2)
+
 # Function to close all active processes and exit the GUI
 def exit_gui():
-    global running, rtss_manager, monitoring_thread
+    global running, rtss_manager, monitoring_thread, plotting_thread
     running = False # Signal monitoring_loop to stop
     if rtss_manager:
         rtss_manager.stop_monitor_thread()  # Signal RTSS monitor thread to stop
@@ -462,11 +495,18 @@ def exit_gui():
         # Wait for the monitoring thread to finish
     if monitoring_thread and monitoring_thread.is_alive():
         logger.add_log("> Waiting for monitoring thread to stop...")
-        monitoring_thread.join(timeout=0.50) # Wait up to 2 seconds
+        monitoring_thread.join(timeout=0.1) # Wait up to 2 seconds
         if monitoring_thread.is_alive():
             logger.add_log("> Warning: Monitoring thread did not stop gracefully.")
         else:
             logger.add_log("> Monitoring thread stopped.")
+    if plotting_thread and plotting_thread.is_alive():
+        logger.add_log("> Waiting for monitoring thread to stop...")
+        plotting_thread.join(timeout=0.1) # Wait up to 2 seconds
+        if plotting_thread.is_alive():
+            logger.add_log("> Warning: Plotting thread did not stop gracefully.")
+        else:
+            logger.add_log("> Plotting thread stopped.")
 
 
 # Main Window
@@ -593,15 +633,16 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
         with dpg.theme(tag="plot_theme") as item_theme:
             with dpg.theme_component(dpg.mvAll):
                 dpg.add_theme_color(dpg.mvPlotCol_Line, (128, 128, 128), category = dpg.mvThemeCat_Plots)
-                
+
         with dpg.plot(height=200, width=-1, tag="plot"):
             dpg.add_plot_axis(dpg.mvXAxis, label="Time (s)", tag="x_axis")
             dpg.add_plot_legend(location=dpg.mvPlot_Location_North, horizontal=True, 
                               no_highlight_item=True, no_highlight_axis=True, outside=True)
 
             # Left Y-axis for GPU Usage
-            with dpg.plot_axis(dpg.mvYAxis, label="GPU Usage (%)", tag="y_axis_left", no_gridlines=False) as y_axis_left:
+            with dpg.plot_axis(dpg.mvYAxis, label="GPU/CPU Usage (%)", tag="y_axis_left", no_gridlines=False) as y_axis_left:
                 dpg.add_line_series([], [], label="GPU: --", parent=y_axis_left, tag="gpu_usage_series")
+                dpg.add_line_series([], [], label="CPU: --", parent=y_axis_left, tag="cpu_usage_series")
                 # Add static horizontal dashed lines
                 dpg.add_line_series([], [usagecutofffordecrease, usagecutofffordecrease], parent=y_axis_left, tag="line1")
                 dpg.add_line_series([], [usagecutoffforincrease, usagecutoffforincrease], parent=y_axis_left, tag="line2")
@@ -652,13 +693,13 @@ update_profile_dropdown(select_first=True)
 
 logger.add_log("Initializing...")
 
-gpu_monitor = GPUUsageMonitor(lambda: luid, logger, dpg, interval=0.1, max_samples=20, percentile=70)
+gpu_monitor = GPUUsageMonitor(lambda: luid, lambda: running, logger, dpg, interval=0.1, max_samples=20, percentile=70)
 logger.add_log(f"Current highed GPU core load: {gpu_monitor.gpu_percentile}%")
 
 usage, luid = gpu_monitor.get_gpu_usage(engine_type="engtype_3D")
 logger.add_log(f"Current Top LUID: {luid}, 3D engine usage: {usage}%")
 
-cpu_monitor = CPUUsageMonitor(logger, dpg, interval=0.1, max_samples=20, percentile=70)
+cpu_monitor = CPUUsageMonitor(lambda: running, logger, dpg, interval=0.1, max_samples=20, percentile=70)
 logger.add_log(f"Current highed CPU core load: {cpu_monitor.cpu_percentile}%")
 
 logger.add_log("Initialized successfully.")

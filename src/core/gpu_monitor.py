@@ -17,7 +17,7 @@ class PDH_FMT_COUNTERVALUE(ctypes.Structure):
     _fields_ = [("CStatus", ctypes.c_ulong), ("doubleValue", ctypes.c_double)]
 
 class GPUUsageMonitor:
-    def __init__(self, get_luid, logger_instance, dpg_instance, interval=0.1, max_samples=20, percentile=70):
+    def __init__(self, get_luid, get_running, logger_instance, dpg_instance, interval=0.1, max_samples=20, percentile=70):
         self.interval = interval
         self.max_samples = max_samples
         self.samples = []
@@ -31,7 +31,8 @@ class GPUUsageMonitor:
         self.initialize()
         self.get_luid = get_luid
         # Start background thread
-        self._running = True
+        self._running = get_running
+        self.looping = True
         self._lock = threading.Lock()
         self._thread = threading.Thread(target=self.gpu_run, daemon=True)
         self._thread.start()
@@ -43,6 +44,8 @@ class GPUUsageMonitor:
         self.query_handle, self.counter_handles = self._setup_gpu_query_from_instances(
             self.query_handle, self.instances, "engtype_" 
         )
+        if self.query_handle is None:
+            raise RuntimeError("Query handle not set up.")
 
     def _init_gpu_state(self) -> ctypes.c_void_p:
         """Initialize PDH query and return the handle."""
@@ -122,9 +125,6 @@ class GPUUsageMonitor:
 
     def get_gpu_usage(self, target_luid: Optional[str] = None, engine_type: str = "engtype_") -> Tuple[int, str]:
         
-        if self.query_handle is None:
-            raise RuntimeError("Query handle not set up.")
-        
         temp_counter_handles = {}
         # Setup counters for the specified engine type
         _, temp_counter_handles = self._setup_gpu_query_from_instances(
@@ -150,7 +150,7 @@ class GPUUsageMonitor:
                 if status == 0 and val.CStatus == 0:
                     total += val.doubleValue
                 else:
-                    raise RuntimeError(f"Failed to read counter (LUID: {luid}): status={status}")
+                    raise RuntimeError(f"01_Failed to read counter (LUID: {luid}): status={status}")
             usage_by_luid[luid] = total
 
         if not usage_by_luid:
@@ -173,17 +173,14 @@ class GPUUsageMonitor:
 
     def cleanup(self) -> None:
         """Clean up PDH query handle."""
+        self.looping = False
+        if self._thread.is_alive():
+            self._thread.join()
         if self.query_handle:
             pdh.PdhCloseQuery(self.query_handle)
             self.query_handle = None
-        self._running = False
-        if self._thread.is_alive():
-            self._thread.join()
 
     def gpu_run(self, engine_type: str = "engtype_"):
-
-        if self.query_handle is None or not self.counter_handles:
-            raise RuntimeError("Query handle or counter handles are not set up.")
 
         # Setup counters for the specified engine type
         _, self.counter_handles = self._setup_gpu_query_from_instances(
@@ -192,44 +189,43 @@ class GPUUsageMonitor:
 
         pdh.PdhCollectQueryData(self.query_handle)
         
-        while self._running:
+        while self.looping:
             time.sleep(self.interval)
-            try:
-                if self.dpg.is_dearpygui_running() and self.dpg.does_item_exist("start_stop_button"):
-                    if self.dpg.get_item_label("start_stop_button") == "Stop":
-                        pdh.PdhCollectQueryData(self.query_handle)
+            if self._running():
+                try:
+                    pdh.PdhCollectQueryData(self.query_handle)
 
-                        usage_by_luid = {}
-                        target_luid = self.get_luid()
-                        handles_to_use = (
-                            {target_luid: self.counter_handles[target_luid]}
-                            if target_luid and target_luid in self.counter_handles
-                            else self.counter_handles
-                        )
+                    usage_by_luid = {}
+                    target_luid = self.get_luid()
+                    handles_to_use = (
+                        {target_luid: self.counter_handles[target_luid]}
+                        if target_luid and target_luid in self.counter_handles
+                        else self.counter_handles
+                    )
 
-                        for luid, handles in handles_to_use.items():
-                            total = 0.0
-                            for h in handles:
-                                val = PDH_FMT_COUNTERVALUE()
-                                status = pdh.PdhGetFormattedCounterValue(h, PDH_FMT_DOUBLE, None, ctypes.byref(val))
-                                if status == 0 and val.CStatus == 0:
-                                    total += val.doubleValue
-                                else:
-                                    raise RuntimeError(f"Failed to read counter (LUID: {luid}): status={status}")
-                            usage_by_luid[luid] = total
+                    for luid, handles in handles_to_use.items():
+                        total = 0.0
+                        for h in handles:
+                            val = PDH_FMT_COUNTERVALUE()
+                            status = pdh.PdhGetFormattedCounterValue(h, PDH_FMT_DOUBLE, None, ctypes.byref(val))
+                            if status == 0 and val.CStatus == 0:
+                                total += val.doubleValue
+                            else:
+                                self.logger.add_log(f"02_Failed to read counter (LUID: {luid}): status={status}")
+                        usage_by_luid[luid] = total
 
-                        if not usage_by_luid:
-                            return 0, ""
+                    if not usage_by_luid:
+                        return 0, ""
 
-                        max_luid, max_usage = max(usage_by_luid.items(), key=lambda item: item[1])
-                        highest_usage = max_usage
+                    max_luid, max_usage = max(usage_by_luid.items(), key=lambda item: item[1])
+                    highest_usage = max_usage
 
-                        with self._lock:
-                            self.samples.append(highest_usage)
-                            if len(self.samples) > self.max_samples:
-                                self.samples.pop(0)
-                            self.gpu_percentile = round(np.percentile(self.samples, self.percentile))
+                    with self._lock:
+                        self.samples.append(highest_usage)
+                        if len(self.samples) > self.max_samples:
+                            self.samples.pop(0)
+                        self.gpu_percentile = round(np.percentile(self.samples, self.percentile))
 
-                            self.logger.add_log(f"> GPU usage percentile: {self.gpu_percentile}%")
-            except Exception as e:
-                self.logger.add_log(f"> GPU monitor error: {e}")
+                        #self.logger.add_log(f"> GPU usage percentile: {self.gpu_percentile}%")
+                except Exception as e:
+                    self.logger.add_log(f"> GPU monitor error: {e}")
