@@ -264,6 +264,7 @@ def start_stop_callback():
     else:
         reset_stats()
         CurrentFPSOffset = 0
+        rtss_manager.run_rtss_cli(["property:set", current_profile, "FramerateLimit", str(maxcap)])
         logger.add_log("> Monitoring stopped")
 
 def quick_save_settings():
