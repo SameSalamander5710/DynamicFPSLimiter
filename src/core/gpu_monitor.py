@@ -125,6 +125,7 @@ class GPUUsageMonitor:
 
     def get_gpu_usage(self, target_luid: Optional[str] = None, engine_type: str = "engtype_") -> Tuple[int, str]:
         
+        self.initialize()
         temp_counter_handles = {}
         # Setup counters for the specified engine type
         _, temp_counter_handles = self._setup_gpu_query_from_instances(
