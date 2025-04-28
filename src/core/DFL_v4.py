@@ -108,7 +108,7 @@ for key in settings_config["GlobalSettings"]:
 
 # Default viewport size
 Viewport_width = 550
-Viewport_full_height = 700
+Viewport_full_height = 610
 Plot_height = 220  # Height of the plot when shown
 
 if ShowPlot:
@@ -604,41 +604,67 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
             dpg.add_button(label="Add process to Profiles", callback=add_process_profile_callback)
         dpg.add_spacer(height=1)
         dpg.add_input_text(tag="LastProcess", multiline=False, readonly=True, width=-1)    
-            
-    #Settings
-    with dpg.group(horizontal=True):
-        dpg.add_spacer(height=3)
-        with dpg.group(horizontal=False):
-            dpg.add_spacer(height=3)
-            dpg.add_text("Settings:")
-        dpg.add_spacer(width=65)
-        with dpg.child_window(width=160, height=140, border=False):
-            dpg.add_spacer(height=3)
-            with dpg.table(header_row=False, resizable=False, policy=dpg.mvTable_SizingFixedFit):
-                dpg.add_table_column(width_fixed=True)  # Column for labels
-                dpg.add_table_column(width_fixed=True)  # Column for input boxes
-                
-                for label, key in [("Max FPS limit:", "maxcap"), 
-                                   ("Min FPS limit:", "mincap"),
-                                   ("Frame rate step:", "capstep"),
-                                   ("Upper GPU limit:", "usagecutofffordecrease"),
-                                   ("Lower GPU limit:", "usagecutoffforincrease")]:
-                    with dpg.table_row():
-                        dpg.add_text(label)
-                        dpg.add_input_text(tag=f"input_{key}", default_value=str(settings[key]), width=50)
-                        with dpg.tooltip(f"input_{key}", show=ShowTooltip, delay=1):
-                            dpg.add_text(tooltips[key], wrap = 200)
+    
+    #Tabs
+    with dpg.tab_bar():
+        with dpg.tab(label="Profile Settings", tag="tab1"):
+            with dpg.child_window(height=140):
+                with dpg.group(horizontal=True):
+                    with dpg.group(width=160):
+                        with dpg.table(header_row=False, resizable=False, policy=dpg.mvTable_SizingFixedFit):
+                            dpg.add_table_column(width_fixed=True)  # Column for labels
+                            dpg.add_table_column(width_fixed=True)  # Column for input boxes
+                            for label, key in [("Max FPS limit:", "maxcap"), 
+                                            ("Min FPS limit:", "mincap"),
+                                            ("Frame rate step:", "capstep")]:
+                                with dpg.table_row():
+                                    dpg.add_text(label)
+                                    dpg.add_input_text(tag=f"input_{key}", default_value=str(settings[key]), width=40)
+                                    with dpg.tooltip(f"input_{key}", show=ShowTooltip, delay=1):
+                                        dpg.add_text(tooltips[key], wrap = 200)
+                    with dpg.group(width=160):
+                        with dpg.table(header_row=False, resizable=False, policy=dpg.mvTable_SizingFixedFit):
+                            dpg.add_table_column(width_fixed=True)
+                            dpg.add_table_column(width_fixed=True)
+                            for label, key in [("Upper GPU limit:", "usagecutofffordecrease"),
+                                            ("Lower GPU limit:", "usagecutoffforincrease")]:
+                                with dpg.table_row():
+                                    dpg.add_text(label)
+                                    dpg.add_input_text(tag=f"input_{key}", default_value=str(settings[key]), width=40)
+                                    with dpg.tooltip(f"input_{key}", show=ShowTooltip, delay=1):
+                                        dpg.add_text(tooltips[key], wrap = 200)
 
-        with dpg.child_window(width=240, height=140, border=False):
-            dpg.add_spacer(height=6)
-            with dpg.group(horizontal=False):
-                with dpg.tooltip(parent=dpg.last_item(), show=ShowTooltip, delay=1):
-                    dpg.add_text(tooltips["Quick"], wrap = 200)
-                dpg.add_button(label="Quick Save", callback=quick_save_settings, width=200)
-                dpg.add_button(label="Quick Load", callback=quick_load_settings, width=200)
-                dpg.add_button(label="Reset Settings to Default", callback=reset_to_program_default, width=200)
-                dpg.add_spacer(height=3)
-                dpg.add_button(label="Save Settings to Profile", callback=save_to_profile, width=200)
+                    with dpg.group(width=150):
+                        #dpg.add_spacer(height=3)
+                        with dpg.group(horizontal=False):
+                            with dpg.tooltip(parent=dpg.last_item(), show=ShowTooltip, delay=1):
+                                dpg.add_text(tooltips["Quick"], wrap = 200)
+                            dpg.add_button(label="Quick Save", callback=quick_save_settings)
+                            dpg.add_button(label="Quick Load", callback=quick_load_settings)
+                            dpg.add_button(label="Reset Settings to Default", callback=reset_to_program_default)
+                            dpg.add_spacer(height=3)
+                            dpg.add_button(label="Save Settings to Profile", callback=save_to_profile)
+
+
+
+
+        with dpg.tab(label="Preferences", tag="tab2"):
+            with dpg.child_window(height=140):
+                dpg.add_text("This is Tab 2 content!")
+                dpg.add_button(label="Button 2")
+        with dpg.tab(label="Log", tag="tab3"):
+            with dpg.child_window(tag="LogWindow", autosize_x=True, height=140, border=True):
+                #dpg.add_text("", tag="LogText", tracked = True, track_offset = 1.0)
+                dpg.add_spacer(height=2)
+                dpg.add_input_text(tag="LogText", multiline=True, readonly=True, width=-1, height=110)
+
+                with dpg.theme(tag="transparent_input_theme"):
+                    with dpg.theme_component(dpg.mvInputText):
+                        dpg.add_theme_style(dpg.mvStyleVar_FrameBorderSize, 0)
+                        dpg.add_theme_style(dpg.mvStyleVar_FramePadding, 0, category=dpg.mvThemeCat_Core)
+                        dpg.add_theme_color(dpg.mvThemeCol_FrameBg, (0, 0, 0, 0), category=dpg.mvThemeCat_Core)
+
+                dpg.bind_item_theme("LogText", "transparent_input_theme")
 
     # Third Row: Plot Section
     with dpg.child_window(width=-1, height=Plot_height, show=ShowPlotBoolean):
@@ -673,23 +699,6 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
             # apply theme to series
             dpg.bind_item_theme("line1", "plot_theme")
             dpg.bind_item_theme("line2", "plot_theme")
-
-# Dynamic log
-    with dpg.group(horizontal=True):
-        dpg.add_text("Log:")
-        # Scrollable child window for log output
-        with dpg.child_window(tag="LogWindow", autosize_x=True, height=105, border=False):
-            #dpg.add_text("", tag="LogText", tracked = True, track_offset = 1.0)
-            dpg.add_spacer(height=2)
-            dpg.add_input_text(tag="LogText", multiline=True, readonly=True, width=-1, height=85)
-
-            with dpg.theme(tag="transparent_input_theme"):
-                with dpg.theme_component(dpg.mvInputText):
-                    dpg.add_theme_style(dpg.mvStyleVar_FrameBorderSize, 0)
-                    dpg.add_theme_style(dpg.mvStyleVar_FramePadding, 0, category=dpg.mvThemeCat_Core)
-                    dpg.add_theme_color(dpg.mvThemeCol_FrameBg, (0, 0, 0, 0), category=dpg.mvThemeCat_Core)
-
-            dpg.bind_item_theme("LogText", "transparent_input_theme")
 
 dpg.create_viewport(title="Dynamic FPS Limiter", width=Viewport_width, height=Viewport_height, resizable=False)
 dpg.set_viewport_resizable(False)
