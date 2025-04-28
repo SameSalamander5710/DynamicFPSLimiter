@@ -66,8 +66,10 @@ else:
         'maxcap': '60',
         'mincap': '30',
         'capstep': '5',
-        'usagecutofffordecrease': '80',
-        'usagecutoffforincrease': '70'
+        'gpucutofffordecrease': '80',
+        'gpucutoffforincrease': '70',
+        'cpucutofffordecrease': '100',
+        'cpucutoffforincrease': '95'
     }
     with open(profiles_path, 'w') as f:
         profiles_config.write(f)
@@ -77,9 +79,11 @@ Default_settings_original = {
     "maxcap": 60,
     "mincap": 30,
     "capstep": 5,
-    "usagecutofffordecrease": 80,
+    "gpucutofffordecrease": 80,
     "delaybeforedecrease": 2,
-    "usagecutoffforincrease": 70,
+    "gpucutoffforincrease": 70,
+    'cpucutofffordecrease': 100,
+    'cpucutoffforincrease': 95,
     "delaybeforeincrease": 2,
     "minvalidgpu": 20,
     "minvalidfps": 20,
@@ -117,7 +121,7 @@ def save_to_profile():
     if selected_profile:
         # Update profile-specific settings
         for key in ["maxcap", "mincap", "capstep",
-                "usagecutofffordecrease", "usagecutoffforincrease"]:
+                "gpucutofffordecrease", "gpucutoffforincrease", "cpucutofffordecrease", "cpucutoffforincrease"]:
             value = dpg.get_value(f"input_{key}")  # Get value from input field
             profiles_config[selected_profile][key] = str(value)  # Store as string in ini file
         
@@ -155,7 +159,7 @@ def load_profile_callback(sender, app_data, user_data):
     if profile_name not in profiles_config:
         return
     for key in ["maxcap", "mincap", "capstep",
-                "usagecutofffordecrease", "usagecutoffforincrease"]:
+                "gpucutofffordecrease", "gpucutoffforincrease", "cpucutofffordecrease", "cpucutoffforincrease"]:
         dpg.set_value(f"input_{key}", profiles_config[profile_name][key])
     update_global_variables()
     dpg.set_value("new_profile_input", "")
@@ -164,7 +168,7 @@ def save_profile(profile_name):
     profiles_config[profile_name] = {}
     # Save input fields
     for key in ["maxcap", "mincap", "capstep",
-                "usagecutofffordecrease", "usagecutoffforincrease"]:
+                "gpucutofffordecrease", "gpucutoffforincrease", "cpucutofffordecrease", "cpucutoffforincrease"]:
         profiles_config[profile_name][key] = str(dpg.get_value(f"input_{key}"))
     with open(profiles_path, 'w') as f:
         profiles_config.write(f)
@@ -221,7 +225,7 @@ update_global_variables()
 # Read values from UI input fields without modifying `settings`
 def apply_current_input_values():
     for key in ["maxcap", "mincap", "capstep", 
-                "usagecutofffordecrease", "usagecutoffforincrease"]:
+                "gpucutofffordecrease", "gpucutoffforincrease", "cpucutofffordecrease", "cpucutoffforincrease"]:
         globals()[key] = int(dpg.get_value(f"input_{key}"))  # Convert to int
 
 def start_stop_callback():
@@ -241,7 +245,7 @@ def start_stop_callback():
     # Freeze input fields
 
     for key in ["maxcap", "mincap", "capstep", 
-                "usagecutofffordecrease", "usagecutoffforincrease"]:
+                "gpucutofffordecrease", "gpucutoffforincrease", "cpucutofffordecrease", "cpucutoffforincrease"]:
         dpg.configure_item(f"input_{key}", enabled=not running)
 
     if running:
@@ -252,12 +256,15 @@ def start_stop_callback():
         # Apply current settings and start monitoring
         
         time_series.clear()
+        fps_time_series.clear() # Clear the new list too
         gpu_usage_series.clear()
         cpu_usage_series.clear()
         fps_series.clear()
         cap_series.clear()
+        global elapsed_time
+        elapsed_time = 0 # Reset elapsed time
         
-        # Start monitoring thread
+        # Start threads
         monitoring_thread = threading.Thread(target=monitoring_loop, daemon=True)
         monitoring_thread.start()
         logger.add_log("> Monitoring started")
@@ -272,14 +279,14 @@ def start_stop_callback():
 
 def quick_save_settings():
     for key in ["maxcap", "mincap", "capstep", 
-                "usagecutofffordecrease", "usagecutoffforincrease"]:
+                "gpucutofffordecrease", "gpucutoffforincrease", "cpucutofffordecrease", "cpucutoffforincrease"]:
         settings[key] = dpg.get_value(f"input_{key}")
     update_global_variables()
     logger.add_log("> Settings quick saved")
 
 def quick_load_settings():
     for key in ["maxcap", "mincap", "capstep", 
-                "usagecutofffordecrease", "usagecutoffforincrease"]:
+                "gpucutofffordecrease", "gpucutoffforincrease", "cpucutofffordecrease", "cpucutoffforincrease"]:
         dpg.set_value(f"input_{key}", settings[key])
     update_global_variables()
     logger.add_log("> Settings quick loaded")
@@ -301,6 +308,14 @@ def reset_stats():
     dpg.configure_item("cpu_usage_series", label="CPU: --")
     dpg.configure_item("fps_series", label="FPS: --")
     dpg.configure_item("cap_series", label="FPS Cap: --")
+    time_series.clear()
+    fps_time_series.clear()
+    gpu_usage_series.clear()
+    cpu_usage_series.clear()
+    fps_series.clear()
+    cap_series.clear()
+    global elapsed_time
+    elapsed_time = 0
 
 def reset_to_program_default():
     
@@ -308,42 +323,53 @@ def reset_to_program_default():
     
     for key in ["maxcap", "mincap", "capstep"]:
         dpg.set_value(f"input_{key}", Default_settings_original[key])
-    for key in ["usagecutofffordecrease", "usagecutoffforincrease"]:
+    for key in ["gpucutofffordecrease", "gpucutoffforincrease", "cpucutofffordecrease", "cpucutoffforincrease"]:
         dpg.set_value(f"input_{key}", Default_settings_original[key])
     logger.add_log("> Settings reset to program default")  
 
-time_series = []
+time_series = []        # For GPU/CPU usage (updated every 0.2s)
+fps_time_series = []    # For FPS/Cap (updated every 1s)
 gpu_usage_series = []
 cpu_usage_series = []
 fps_series = []
-cap_series = []  # New series for CurrentFPSOffset
-max_points = 300  # Keep last 60 seconds of data
+cap_series = []
+max_points = 300
+elapsed_time = 0 # Global time updated by plotting_loop
 
 def update_plot_FPS(fps_val, cap_val):
-    
-    global fps_series, cap_series, elapsed_time
-    global max_points, mincap, maxcap, capstep, usagecutofffordecrease, usagecutoffforincrease
-    
-    if len(time_series) > max_points:
-        time_series.pop(0)
+# Uses fps_time_series    
+    global fps_time_series, fps_series, cap_series, elapsed_time
+    global max_points, mincap, maxcap, capstep
+
+    # Apply max_points limit to FPS-specific lists
+    while len(fps_time_series) >= max_points: # Use while for safety
+        fps_time_series.pop(0)
         fps_series.pop(0)
         cap_series.pop(0)
 
-    time_series.append(elapsed_time)
+# Append current global time and new values
+    current_time = elapsed_time # Capture the time when this function is called
+    fps_time_series.append(current_time)
     fps_series.append(fps_val)
     cap_series.append(cap_val)
 
-    dpg.set_value("fps_series", [time_series, fps_series])
-    dpg.set_value("cap_series", [time_series, cap_series])  
+# Update DPG series using the FPS-specific time series
+    dpg.set_value("fps_series", [fps_time_series, fps_series])
+    dpg.set_value("cap_series", [fps_time_series, cap_series])  
 
-    dpg.set_axis_limits("y_axis_right", mincap - capstep, maxcap + capstep) 
+# Set Y-axis limits for FPS/Cap (Right Axis)
+    # Ensure mincap, maxcap, capstep are up-to-date globals if they can change
+    min_ft = mincap - capstep
+    max_ft = maxcap + capstep
+    dpg.set_axis_limits("y_axis_right", min_ft, max_ft) 
 
 def update_plot_usage(time_val, gpu_val, cpu_val):
-    
+# Uses the main time_series    
     global time_series, gpu_usage_series, cpu_usage_series
-    global max_points, mincap, maxcap, capstep, usagecutofffordecrease, usagecutoffforincrease
+    global max_points, gpucutofffordecrease, gpucutoffforincrease # Add needed globals
     
-    if len(time_series) > max_points:
+    # Apply max_points limit to Usage-specific lists
+    while len(time_series) >= max_points: # Use while for safety
         time_series.pop(0)
         gpu_usage_series.pop(0)
         cpu_usage_series.pop(0)
@@ -351,23 +377,28 @@ def update_plot_usage(time_val, gpu_val, cpu_val):
     gpu_val = gpu_val or 0
     cpu_val = cpu_val or 0
 
+# Append passed-in time and new values
     time_series.append(time_val)
     gpu_usage_series.append(gpu_val)
     cpu_usage_series.append(cpu_val)
 
+# Update DPG series using the main time series
     dpg.set_value("gpu_usage_series", [time_series, gpu_usage_series])
     dpg.set_value("cpu_usage_series", [time_series, cpu_usage_series])
 
-    dpg.set_axis_limits_auto("x_axis")  # Keep X-axis dynamic
-    dpg.set_axis_limits("x_axis", time_series[0], time_series[-1] + 1) if time_series else None
+    # Update X-axis limits based on the main time_series
     if time_series:
-        dpg.set_axis_limits("x_axis", time_series[0], time_series[-1] + 1)
+        start_x = time_series[0]
+        end_x = time_series[-1]
+        # Add a small buffer to the end time for better visibility
+        dpg.set_axis_limits("x_axis", start_x, end_x + 1)
         
-        # Update static lines to extend across the entire X range
-        dpg.set_value("line1", [[time_series[0], time_series[-1] + 1], [usagecutofffordecrease, usagecutofffordecrease]])
-        dpg.set_value("line2", [[time_series[0], time_series[-1] + 1], [usagecutoffforincrease, usagecutoffforincrease]])
+        # Update static lines to extend across the current X range of the main time_series
+        # Ensure gpucutoff... variables are up-to-date globals
+        dpg.set_value("line1", [[start_x, end_x + 1], [gpucutofffordecrease, gpucutofffordecrease]])
+        dpg.set_value("line2", [[start_x, end_x + 1], [gpucutoffforincrease, gpucutoffforincrease]])
     else:
-        None
+        dpg.set_axis_limits_auto("x_axis")
 
 luid_selected = False  # default state
 luid = "All" # Placeholder for LUID
@@ -399,7 +430,7 @@ fps_mean = 0
 
 def monitoring_loop():
     global running, fps_values, CurrentFPSOffset, fps_mean, gpu_values, current_profile, cpu_values
-    global mincap, maxcap, capstep, usagecutofffordecrease, delaybeforedecrease, usagecutoffforincrease, delaybeforeincrease, minvalidgpu, minvalidfps
+    global mincap, maxcap, capstep, gpucutofffordecrease, delaybeforedecrease, gpucutoffforincrease, delaybeforeincrease, minvalidgpu, minvalidfps, cpucutofffordecrease, cpucutoffforincrease
     global max_points, minvalidgpu, minvalidfps, luid_selected, luid
 
     last_process_name = None
@@ -430,22 +461,34 @@ def monitoring_loop():
         cpu_values.append(cpuUsage)
 
         # To prevent loading screens from affecting the fps cap
-        if gpuUsage and process_name not in {"pythonw.exe", "DynamicFPSLimiter.exe", "python.exe"}:
+        if gpuUsage and process_name not in {"pythonw.exe"}:#, "DynamicFPSLimiter.exe", "python.exe"}:
             if gpuUsage > minvalidgpu and fps_mean > minvalidfps: 
-                # If GPU usage is greater than (= usagecutofffordecrease%) for at least (= delaybeforedecrease) consecutive seconds
-                if CurrentFPSOffset > (mincap - maxcap):
-                    if len(gpu_values) >= delaybeforedecrease and all(value >= usagecutofffordecrease for value in gpu_values[-delaybeforedecrease:]):
-                        X = math.ceil(((maxcap + CurrentFPSOffset) - (fps_mean)) / capstep)
-                        print(f"X {X}")
-                        if X > 0:
-                            CurrentFPSOffset -= (capstep * X)
-                        else:
-                            CurrentFPSOffset -= capstep
-                        rtss_manager.run_rtss_cli(["property:set", current_profile, "FramerateLimit", str(maxcap+CurrentFPSOffset)])
-                if CurrentFPSOffset < 0:
-                    if len(gpu_values) >= delaybeforeincrease and all(value <= usagecutoffforincrease for value in gpu_values[-delaybeforeincrease:]):
-                        CurrentFPSOffset += capstep
-                        rtss_manager.run_rtss_cli(["property:set", current_profile, "FramerateLimit", str(maxcap+CurrentFPSOffset)])
+
+                should_decrease = False
+                gpu_decrease_condition = (len(gpu_values) >= delaybeforedecrease and
+                                          all(value >= gpucutofffordecrease for value in gpu_values[-delaybeforedecrease:]))
+                cpu_decrease_condition = (len(cpu_values) >= delaybeforedecrease and
+                                          all(value >= cpucutofffordecrease for value in cpu_values[-delaybeforedecrease:]))
+                if gpu_decrease_condition or cpu_decrease_condition:
+                    should_decrease = True
+                if CurrentFPSOffset > (mincap - maxcap) and should_decrease:
+                    X = math.ceil(((maxcap + CurrentFPSOffset) - (fps_mean)) / capstep)
+                    X = max(1, X)
+                    CurrentFPSOffset -= (capstep * X)
+                    CurrentFPSOffset = max(CurrentFPSOffset, mincap - maxcap)
+                    rtss_manager.run_rtss_cli(["property:set", current_profile, "FramerateLimit", str(maxcap+CurrentFPSOffset)])
+
+                should_increase = False
+                gpu_increase_condition = (len(gpu_values) >= delaybeforeincrease and
+                                          all(value <= gpucutoffforincrease for value in gpu_values[-delaybeforeincrease:]))
+                cpu_increase_condition = (len(cpu_values) >= delaybeforeincrease and
+                                          all(value <= cpucutoffforincrease for value in cpu_values[-delaybeforeincrease:]))
+                if gpu_increase_condition and cpu_increase_condition:
+                     should_increase = True
+                if CurrentFPSOffset < 0 and should_increase:
+                    CurrentFPSOffset += capstep
+                    CurrentFPSOffset = min(CurrentFPSOffset, 0)
+                    rtss_manager.run_rtss_cli(["property:set", current_profile, "FramerateLimit", str(maxcap+CurrentFPSOffset)])
 
         if running:
             # Update legend labels with current values
@@ -455,27 +498,35 @@ def monitoring_loop():
             dpg.configure_item("cpu_usage_series", label=f"CPU: {cpuUsage}%")
 
             # Update plot if fps is valid
-            if fps and process_name not in {"pythonw.exe", "DynamicFPSLimiter.exe", "python.exe"}:
+            if fps and process_name not in {"pythonw.exe"}:#, "DynamicFPSLimiter.exe", "python.exe"}:
                 # Scaling FPS value to fit 0-100 axis
                 scaled_fps = ((fps - min_ft)/(max_ft - min_ft))*100
                 scaled_cap = ((maxcap + CurrentFPSOffset - min_ft)/(max_ft - min_ft))*100
+                actual_cap = maxcap + CurrentFPSOffset
+                # Pass actual values, update_plot_FPS handles timing and lists
                 update_plot_FPS(scaled_fps, scaled_cap)
+
+        # Update last_process_name
         if process_name:
             last_process_name = process_name
 
-        time.sleep(1)
+        time.sleep(1) # This loop runs every 1 second
 
 def plotting_loop():
-
-    global running, elapsed_time
+    global running, elapsed_time # Make sure elapsed_time is global
 
     start_time = time.time()
     while running:
+# Calculate elapsed time SINCE start_time
         elapsed_time = time.time() - start_time
+
         gpuUsage = gpu_monitor.gpu_percentile
         cpuUsage = cpu_monitor.cpu_percentile
+
+        # CALL update_plot_usage with the current time and usage values
         update_plot_usage(elapsed_time, gpuUsage, cpuUsage)
-        time.sleep(0.2)
+
+        time.sleep(0.2) # This loop runs every 0.2 seconds
 
 def update_tooltip_setting(sender, app_data, user_data):
     global ShowTooltip, input_field_keys, tooltips
@@ -567,16 +618,18 @@ def exit_gui():
 # Main Window
 
 # Define keys used for input fields (used to construct tooltip tags)
-input_field_keys = ["maxcap", "mincap", "capstep", "usagecutofffordecrease", "usagecutoffforincrease"]
+input_field_keys = ["maxcap", "mincap", "capstep", "gpucutofffordecrease", "gpucutoffforincrease", "cpucutofffordecrease", "cpucutoffforincrease"]
 
 tooltips = {
     "maxcap": "Defines the maximum FPS limit for the game.",
     "mincap": "Specifies the minimum FPS limit that may be reached. For optimal performance, set this to the lowest value you're comfortable with.",
     "capstep": "Indicates the increment size for adjusting the FPS cap. Smaller step sizes provide finer control",
-    "usagecutofffordecrease": "Sets the upper threshold for GPU usage. If GPU usage exceeds this value, the FPS cap will be lowered to maintain system performance.",
+    "gpucutofffordecrease": "Sets the upper threshold for GPU usage. If GPU usage exceeds this value, the FPS cap will be lowered to maintain system performance.",
     "delaybeforedecrease": "Specifies how many times in a row GPU usage must exceed the upper threshold before the FPS cap begins to drop.",
-    "usagecutoffforincrease": "Defines the lower threshold for GPU usage. If GPU usage falls below this value, the FPS cap will increase to improve performance.",
+    "gpucutoffforincrease": "Defines the lower threshold for GPU usage. If GPU usage falls below this value, the FPS cap will increase to improve performance.",
     "delaybeforeincrease": "Specifies how many times in a row GPU usage must fall below the lower threshold before the FPS cap begins to rise.",
+    "cpucutofffordecrease": "Sets the upper threshold for CPU usage. If CPU usage exceeds this value, the FPS cap will be lowered to maintain system performance.",
+    "cpucutoffforincrease": "Defines the lower threshold for CPU usage. If CPU usage falls below this value, the FPS cap will increase to improve performance.",
     "minvalidgpu": "Sets the minimum valid GPU usage percentage required for adjusting the FPS. If the GPU usage is below this threshold, the FPS cap will not change. This helps prevent FPS fluctuations during loading screens.",
     "minvalidfps": "Defines the minimum valid FPS required for adjusting the FPS. If the FPS falls below this value, the FPS cap will not change. This helps prevent FPS fluctuations during loading screens.",
     "quick_save_load": "Saves and loads input values from memory. This is temporary storage, useful for testing and fine-tuning configurations.",
@@ -678,8 +731,10 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                         with dpg.table(header_row=False, resizable=False, policy=dpg.mvTable_SizingFixedFit):
                             dpg.add_table_column(width_fixed=True)
                             dpg.add_table_column(width_fixed=True)
-                            for label, key in [("Upper GPU limit:", "usagecutofffordecrease"),
-                                            ("Lower GPU limit:", "usagecutoffforincrease")]:
+                            for label, key in [("Upper GPU limit:", "gpucutofffordecrease"),
+                                            ("Lower GPU limit:", "gpucutoffforincrease"),
+                                            ("Upper CPU limit:", "cpucutofffordecrease"),
+                                            ("Lower CPU limit:", "cpucutoffforincrease")]:
                                 with dpg.table_row():
                                     dpg.add_text(label)
                                     dpg.add_input_text(tag=f"input_{key}", default_value=str(settings[key]), width=40)
@@ -750,8 +805,8 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                 dpg.add_line_series([], [], label="GPU: --", parent=y_axis_left, tag="gpu_usage_series")
                 dpg.add_line_series([], [], label="CPU: --", parent=y_axis_left, tag="cpu_usage_series")
                 # Add static horizontal dashed lines
-                dpg.add_line_series([], [usagecutofffordecrease, usagecutofffordecrease], parent=y_axis_left, tag="line1")
-                dpg.add_line_series([], [usagecutoffforincrease, usagecutoffforincrease], parent=y_axis_left, tag="line2")
+                dpg.add_line_series([], [gpucutofffordecrease, gpucutofffordecrease], parent=y_axis_left, tag="line1")
+                dpg.add_line_series([], [gpucutoffforincrease, gpucutoffforincrease], parent=y_axis_left, tag="line2")
             
             # Right Y-axis for FPS
             with dpg.plot_axis(dpg.mvYAxis, label="FPS", tag="y_axis_right", no_gridlines=True) as y_axis_right:
