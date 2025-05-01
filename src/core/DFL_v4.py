@@ -843,7 +843,7 @@ logger.add_log(f"Current highed GPU core load: {gpu_monitor.gpu_percentile}%")
 usage, luid = gpu_monitor.get_gpu_usage(engine_type="engtype_3D")
 logger.add_log(f"Current Top LUID: {luid}, 3D engine usage: {usage}%")
 
-cpu_monitor = CPUUsageMonitor(lambda: running, logger, dpg, interval=0.1, max_samples=20, percentile=70)
+cpu_monitor = CPUUsageMonitor(lambda: running, logger, dpg, interval=0.1, max_samples=20, percentile=50)
 logger.add_log(f"Current highed CPU core load: {cpu_monitor.cpu_percentile}%")
 
 logger.add_log("Initialized successfully.")
