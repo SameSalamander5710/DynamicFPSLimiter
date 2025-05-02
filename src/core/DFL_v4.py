@@ -14,6 +14,7 @@ if _root not in sys.path:
 
 from core import logger
 from core.rtss_interface import RTSSInterface
+from core.rtss_cli import RTSSCLI
 from core.cpu_monitor import CPUUsageMonitor
 from core.gpu_monitor import GPUUsageMonitor
 
@@ -28,7 +29,7 @@ os.makedirs(config_dir, exist_ok=True)
 # Paths to configuration files
 settings_path = os.path.join(config_dir, "settings.ini")
 profiles_path = os.path.join(config_dir, "profiles.ini")
-rtss_cli_path = os.path.join(Base_dir, "assets/rtss-cli.exe")
+rtss_dll_path = os.path.join(Base_dir, "assets/rtss.dll")
 error_log_file = os.path.join(parent_dir, "error_log.txt")
 icon_path = os.path.join(Base_dir, 'assets/DynamicFPSLimiter.ico')
 font_path = os.path.join(os.environ["WINDIR"], "Fonts", "segoeui.ttf") #segoeui, Verdana, Tahoma, Calibri, micross
@@ -250,8 +251,8 @@ def start_stop_callback():
 
     if running:
         # Initialize RTSS
-        rtss_manager.run_rtss_cli(["limiter:set", "1"])
-        rtss_manager.run_rtss_cli(["property:set", current_profile, "FramerateLimit", str(maxcap)])
+        rtss_cli.enable_limiter()
+        rtss_cli.set_property(current_profile, "FramerateLimit", int(maxcap))
         
         # Apply current settings and start monitoring
         
@@ -274,7 +275,7 @@ def start_stop_callback():
     else:
         reset_stats()
         CurrentFPSOffset = 0
-        rtss_manager.run_rtss_cli(["property:set", current_profile, "FramerateLimit", str(maxcap)])
+        rtss_cli.set_property(current_profile, "FramerateLimit", int(maxcap))
         logger.add_log("> Monitoring stopped")
 
 def quick_save_settings():
@@ -476,7 +477,7 @@ def monitoring_loop():
                     X = max(1, X)
                     CurrentFPSOffset -= (capstep * X)
                     CurrentFPSOffset = max(CurrentFPSOffset, mincap - maxcap)
-                    rtss_manager.run_rtss_cli(["property:set", current_profile, "FramerateLimit", str(maxcap+CurrentFPSOffset)])
+                    rtss_cli.set_property(current_profile, "FramerateLimit", int(maxcap+CurrentFPSOffset))
 
                 should_increase = False
                 gpu_increase_condition = (len(gpu_values) >= delaybeforeincrease and
@@ -488,7 +489,7 @@ def monitoring_loop():
                 if CurrentFPSOffset < 0 and should_increase:
                     CurrentFPSOffset += capstep
                     CurrentFPSOffset = min(CurrentFPSOffset, 0)
-                    rtss_manager.run_rtss_cli(["property:set", current_profile, "FramerateLimit", str(maxcap+CurrentFPSOffset)])
+                    rtss_cli.set_property(current_profile, "FramerateLimit", int(maxcap+CurrentFPSOffset))
 
         if running:
             # Update legend labels with current values
@@ -586,7 +587,7 @@ def exit_gui():
     global running, rtss_manager, monitoring_thread, plotting_thread, globallimitonexit_fps, GlobalLimitonExit
 
     if GlobalLimitonExit:
-        rtss_manager.run_rtss_cli(["property:set", "Global", "FramerateLimit", str(globallimitonexit_fps)])
+        rtss_cli.set_property("Global", "FramerateLimit", int(globallimitonexit_fps))
 
     running = False # Signal monitoring_loop to stop
     if rtss_manager:
@@ -848,11 +849,13 @@ logger.add_log(f"Current highed CPU core load: {cpu_monitor.cpu_percentile}%")
 
 logger.add_log("Initialized successfully.")
 
-# Assuming logger and dpg are initialized, and rtss_cli_path is defined
-rtss_manager = RTSSInterface(rtss_cli_path, logger, dpg)
+# Assuming logger and dpg are initialized, and rtss_dll_path is defined
+rtss_cli = RTSSCLI(logger, rtss_dll_path)
+rtss_cli.enable_limiter()
+
+rtss_manager = RTSSInterface(logger, dpg)
 if rtss_manager:
     rtss_manager.start_monitor_thread()
-    rtss_manager.run_rtss_cli(["limiter:set", "1"]) # Ensure limiter is enabled
 
 #Always make sure the corresponding GUI element exists before trying to get/set its value
 

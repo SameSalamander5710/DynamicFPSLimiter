@@ -37,7 +37,7 @@ def build_executable():
         '--icon', 'src/assets/DynamicFPSLimiter.ico',
         '--version-file', 'src/metadata/version.txt',
         '--add-data', 'src/assets/DynamicFPSLimiter.ico:assets',
-        '--add-data', 'src/assets/rtss-cli.exe:assets',
+        '--add-data', 'src/assets/rtss.dll:assets',
         '--distpath', 'output/dist',
         '--workpath', 'output/build'
     ])

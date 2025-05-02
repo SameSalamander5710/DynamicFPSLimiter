@@ -15,49 +15,20 @@ import os # Added for os.path.dirname
 user32 = WinDLL('user32', use_last_error=True)
 
 class RTSSInterface:
-    def __init__(self, rtss_cli_path, logger_instance, dpg_instance):
+    def __init__(self, logger_instance, dpg_instance):
         """
         Initializes the RTSS Interface.
 
         Args:
-            rtss_cli_path (str): The absolute path to rtss-cli.exe.
             logger_instance: An instance of the logger module/class.
             dpg_instance: The dearpygui instance (dpg).
         """
-        self.rtss_cli_path = rtss_cli_path
         self.logger = logger_instance
         self.dpg = dpg_instance
         self.last_dwTime0s = defaultdict(int)
         self.rtss_monitor_running = True
         self.rtss_status = False
         self._monitor_thread = None
-
-    def run_rtss_cli(self, command_args):
-        """Executes the rtss-cli.exe with given arguments."""
-        # Prepend the executable path to the command arguments
-        full_command = [self.rtss_cli_path] + command_args
-
-        # Suppress console window on Windows
-        startupinfo = subprocess.STARTUPINFO()
-        startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-
-        try:
-            result = subprocess.run(
-                full_command, # Use the full command list
-                stdout=subprocess.PIPE,
-                stderr=subprocess.DEVNULL,
-                text=True,
-                check=False,
-                startupinfo=startupinfo,
-                creationflags=subprocess.CREATE_NO_WINDOW
-            )
-            return result.stdout.strip()
-        except FileNotFoundError:
-            self.logger.add_log(f"> Error: rtss-cli.exe not found at\n{self.rtss_cli_path}")
-            return None
-        except Exception as e:
-            self.logger.add_log(f"> Subprocess failed for rtss-cli.exe:\n{e}")
-            return None
 
     def is_rtss_running(self):
         """Checks if RTSS.exe process is running."""
