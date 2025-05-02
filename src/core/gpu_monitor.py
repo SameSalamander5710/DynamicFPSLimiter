@@ -213,6 +213,7 @@ class GPUUsageMonitor:
                                 total += val.doubleValue
                             else:
                                 self.logger.add_log(f"02_Failed to read counter (LUID: {luid}): status={status}")
+                                
                         usage_by_luid[luid] = total
 
                     if not usage_by_luid:
