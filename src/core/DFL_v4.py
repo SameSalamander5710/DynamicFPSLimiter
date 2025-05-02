@@ -715,7 +715,7 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
         with dpg.tab(label="Profile Settings", tag="tab1"):
             with dpg.child_window(height=140):
                 with dpg.group(horizontal=True):
-                    with dpg.group(width=160):
+                    with dpg.group(width=180):
                         with dpg.table(header_row=False, resizable=False, policy=dpg.mvTable_SizingFixedFit):
                             dpg.add_table_column(width_fixed=True)  # Column for labels
                             dpg.add_table_column(width_fixed=True)  # Column for input boxes
@@ -724,11 +724,12 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                                             ("Frame rate step:", "capstep")]:
                                 with dpg.table_row():
                                     dpg.add_text(label)
-                                    dpg.add_input_text(tag=f"input_{key}", default_value=str(settings[key]), width=40)
+                                    dpg.add_input_int(tag=f"input_{key}", default_value=int(settings[key]), width=80, step=1, step_fast=10)
 # Give the tooltip its own tag
                                     with dpg.tooltip(parent=f"input_{key}", tag=f"input_{key}_tooltip", show=ShowTooltip, delay=1):
                                         dpg.add_text(tooltips[key], wrap = 200)
-                    with dpg.group(width=160):
+                    dpg.add_spacer(width=5)
+                    with dpg.group(width=150):
                         with dpg.table(header_row=False, resizable=False, policy=dpg.mvTable_SizingFixedFit):
                             dpg.add_table_column(width_fixed=True)
                             dpg.add_table_column(width_fixed=True)
@@ -742,8 +743,8 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
 # Give the tooltip its own tag
                                     with dpg.tooltip(parent=f"input_{key}", tag=f"input_{key}_tooltip", show=ShowTooltip, delay=1):
                                         dpg.add_text(tooltips[key], wrap=200)
-
-                    with dpg.group(width=150):
+                    
+                    with dpg.group(width=145):
                         #dpg.add_spacer(height=3)
                         with dpg.group(horizontal=False):
                             with dpg.group(tag="quick_save_load"):
