@@ -1,3 +1,6 @@
+# DFL_v4.py
+# Dynamic FPS Limiter v4.0.0
+
 import dearpygui.dearpygui as dpg
 import threading
 import configparser
@@ -124,7 +127,7 @@ def save_to_profile():
         for key in ["maxcap", "mincap", "capstep",
                 "gpucutofffordecrease", "gpucutoffforincrease", "cpucutofffordecrease", "cpucutoffforincrease"]:
             value = dpg.get_value(f"input_{key}")  # Get value from input field
-            profiles_config[selected_profile][key] = str(value)  # Store as string in ini file
+            profiles_config[selected_profile][key] = str(value) 
         
         # Update global settings
         for key in ["delaybeforedecrease", "delaybeforeincrease", 
@@ -161,7 +164,8 @@ def load_profile_callback(sender, app_data, user_data):
         return
     for key in ["maxcap", "mincap", "capstep",
                 "gpucutofffordecrease", "gpucutoffforincrease", "cpucutofffordecrease", "cpucutoffforincrease"]:
-        dpg.set_value(f"input_{key}", profiles_config[profile_name][key])
+        value = profiles_config[profile_name].get(key, Default_settings_original[key])
+        dpg.set_value(f"input_{key}", int(value))
     update_global_variables()
     dpg.set_value("new_profile_input", "")
 
