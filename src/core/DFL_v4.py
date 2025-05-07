@@ -449,7 +449,7 @@ def monitoring_loop():
     
     while running:
         fps, process_name = rtss_manager.get_fps_for_active_window()
-        logger.add_log(f"Current highed CPU core load: {cpu_monitor.cpu_percentile}%")
+        #logger.add_log(f"Current highed CPU core load: {cpu_monitor.cpu_percentile}%")
         
         if process_name is not None and process_name != "DynamicFPSLimiter.exe":
             last_process_name = process_name #Make exception for DynamicFPSLimiter.exe and pythonw.exe
@@ -692,7 +692,7 @@ with dpg.theme(tag="rounded_widget_theme"):
 # Bind the rounded button theme globally
 dpg.bind_theme("rounded_widget_theme")
 
-# Create themes for RTSS status
+# Create themes for specific buttons
 with dpg.theme(tag="rtss_running_theme"):
     with dpg.theme_component(dpg.mvButton):
         dpg.add_theme_color(dpg.mvThemeCol_Button, (0, 100, 0))
@@ -707,7 +707,7 @@ with dpg.theme(tag="rtss_not_running_theme"):
 
 with dpg.theme(tag="detect_gpu_theme"):
     with dpg.theme_component(dpg.mvButton):
-        dpg.add_theme_color(dpg.mvThemeCol_Button, (51, 51, 55))  # Defualt grey background
+        dpg.add_theme_color(dpg.mvThemeCol_Button, (51, 51, 55))  # Defualt grey button background
         dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, (70, 170, 255))  # Hover color
         dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, (90, 190, 255))  # Active color
 
@@ -717,6 +717,16 @@ with dpg.theme(tag="revert_gpu_theme"):
         dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, (170, 70, 70))  # Hover color
         dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, (190, 90, 90))  # Active color
 
+background_colour = (37, 37, 38)  # Default grey background
+
+with dpg.theme(tag="button_right"):
+    with dpg.theme_component(dpg.mvButton):
+        dpg.add_theme_style(dpg.mvStyleVar_ButtonTextAlign, 1.00, category=dpg.mvThemeCat_Core)
+        dpg.add_theme_color(dpg.mvThemeCol_Button, background_colour, category=dpg.mvThemeCat_Core)
+        dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, background_colour, category=dpg.mvThemeCat_Core)
+        dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, background_colour, category=dpg.mvThemeCat_Core)
+
+#The actual GUI starts here
 with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
     
     # Title and Start/Stop Button
@@ -780,24 +790,25 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
 # Give the tooltip its own tag
                                     with dpg.tooltip(parent=f"input_{key}", tag=f"input_{key}_tooltip", show=ShowTooltip, delay=1):
                                         dpg.add_text(tooltips[key], wrap = 200)
-                    dpg.add_spacer(width=1)
-                    with dpg.group(width=150):
+                    dpg.add_spacer(width=0.5)
+                    with dpg.group(width=160):
                         with dpg.table(header_row=False, resizable=False, policy=dpg.mvTable_SizingFixedFit):
                             dpg.add_table_column(width_fixed=True)
                             dpg.add_table_column(width_fixed=True)
-                            for label, key in [("Upper GPU limit:", "gpucutofffordecrease"),
-                                            ("Lower GPU limit:", "gpucutoffforincrease"),
-                                            ("Upper CPU limit:", "cpucutofffordecrease"),
-                                            ("Lower CPU limit:", "cpucutoffforincrease")]:
+                            for label, key in [("GPU: Upper limit", "gpucutofffordecrease"),
+                                            ("Lower limit", "gpucutoffforincrease"),
+                                            ("CPU: Upper limit", "cpucutofffordecrease"),
+                                            ("Lower limit", "cpucutoffforincrease")]:
                                 with dpg.table_row():
-                                    dpg.add_text(label)
+                                    dpg.add_button(label=label, tag=f"button_{key}", width=110)
+                                    dpg.bind_item_theme(f"button_{key}", "button_right")
                                     dpg.add_input_text(tag=f"input_{key}", default_value=str(settings[key]), width=40)
 # Give the tooltip its own tag
                                     with dpg.tooltip(parent=f"input_{key}", tag=f"input_{key}_tooltip", show=ShowTooltip, delay=1):
                                         dpg.add_text(tooltips[key], wrap=200)
                     
-                    dpg.add_spacer(width=3)
-                    with dpg.group(width=165):
+                    dpg.add_spacer(width=0.5)
+                    with dpg.group(width=160):
                         #dpg.add_spacer(height=3)
                         with dpg.group(horizontal=False):
                             with dpg.group(tag="quick_save_load"):
