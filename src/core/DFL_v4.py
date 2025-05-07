@@ -666,6 +666,7 @@ with dpg.font_registry():
 with dpg.theme(tag="rounded_widget_theme"):
     with dpg.theme_component(dpg.mvAll):
         dpg.add_theme_style(dpg.mvStyleVar_FrameRounding, 3.0)  # Set corner rounding to 10.0
+        dpg.add_theme_color(dpg.mvThemeCol_Button, (51, 51, 55)) 
         #dpg.add_theme_style(dpg.mvStyleVar_FramePadding, 0.0, 1.0, category=dpg.mvThemeCat_Core)
         #dpg.add_theme_color(dpg.mvThemeCol_Button, (50, 150, 250))  # Button color
         #dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, (70, 170, 255))  # Hover color
@@ -706,7 +707,7 @@ with dpg.theme(tag="rtss_not_running_theme"):
 
 with dpg.theme(tag="detect_gpu_theme"):
     with dpg.theme_component(dpg.mvButton):
-        dpg.add_theme_color(dpg.mvThemeCol_Button, (50, 150, 250))  # Blue background
+        dpg.add_theme_color(dpg.mvThemeCol_Button, (51, 51, 55))  # Defualt grey background
         dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, (70, 170, 255))  # Hover color
         dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, (90, 190, 255))  # Active color
 
