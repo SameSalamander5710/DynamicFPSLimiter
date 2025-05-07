@@ -417,6 +417,7 @@ def toggle_luid_selection():
         if luid:
             logger.add_log(f"> Tracking LUID: {luid} | Current 3D engine Utilization: {usage}%")
             dpg.configure_item("luid_button", label="Revert to all GPUs")
+            dpg.bind_item_theme("luid_button", "revert_gpu_theme")  # Apply red theme
             luid_selected = True
         else:
             logger.add_log("> Failed to detect active LUID.")
@@ -425,6 +426,7 @@ def toggle_luid_selection():
         luid = "All"
         logger.add_log("> Tracking all GPU engines.")
         dpg.configure_item("luid_button", label="Detect Render GPU")
+        dpg.bind_item_theme("luid_button", "detect_gpu_theme")  # Apply blue theme
         luid_selected = False
 
 fps_values = []
@@ -657,6 +659,35 @@ with dpg.font_registry():
         logger.add_log(f"> Failed to load system font: {e}")
         # Will use DearPyGui's default font as fallback
 
+# Create a theme for rounded buttons
+with dpg.theme(tag="rounded_widget_theme"):
+    with dpg.theme_component(dpg.mvAll):
+        dpg.add_theme_style(dpg.mvStyleVar_FrameRounding, 3.0)  # Set corner rounding to 10.0
+        #dpg.add_theme_style(dpg.mvStyleVar_FramePadding, 0.0, 1.0, category=dpg.mvThemeCat_Core)
+        #dpg.add_theme_color(dpg.mvThemeCol_Button, (50, 150, 250))  # Button color
+        #dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, (70, 170, 255))  # Hover color
+        #dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, (90, 190, 255))  # Active color
+
+    # Customize specific widget types
+    with dpg.theme_component(dpg.mvInputInt):
+        #dpg.add_theme_color(dpg.mvThemeCol_FrameBg, (100, 100, 100))  # Background color
+        dpg.add_theme_color(dpg.mvThemeCol_FrameBgHovered, (150, 150, 150))  # Hovered background color
+        dpg.add_theme_color(dpg.mvThemeCol_FrameBgActive, (200, 200, 200))  # Active background color
+
+    with dpg.theme_component(dpg.mvInputText):
+        #dpg.add_theme_color(dpg.mvThemeCol_FrameBg, (100, 100, 100))  # Background color
+        dpg.add_theme_color(dpg.mvThemeCol_FrameBgHovered, (150, 150, 150))  # Hovered background color
+        dpg.add_theme_color(dpg.mvThemeCol_FrameBgActive, (200, 200, 200))  # Active background color
+
+    with dpg.theme_component(dpg.mvCheckbox):
+        #dpg.add_theme_color(dpg.mvThemeCol_FrameBg, (100, 100, 100))  # Background color
+        #dpg.add_theme_color(dpg.mvThemeCol_FrameBgHovered, (150, 150, 150))  # Hovered background color
+        #dpg.add_theme_color(dpg.mvThemeCol_FrameBgActive, (200, 200, 200))  # Active background color
+        dpg.add_theme_color(dpg.mvThemeCol_CheckMark, (50, 150, 250))  # Checkmark color
+
+# Bind the rounded button theme globally
+dpg.bind_theme("rounded_widget_theme")
+
 # Create themes for RTSS status
 with dpg.theme(tag="rtss_running_theme"):
     with dpg.theme_component(dpg.mvButton):
@@ -669,6 +700,18 @@ with dpg.theme(tag="rtss_not_running_theme"):
         dpg.add_theme_color(dpg.mvThemeCol_Button, (100, 0, 0))
         dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, (120, 0, 0))
         dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, (140, 0, 0))
+
+with dpg.theme(tag="detect_gpu_theme"):
+    with dpg.theme_component(dpg.mvButton):
+        dpg.add_theme_color(dpg.mvThemeCol_Button, (50, 150, 250))  # Blue background
+        dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, (70, 170, 255))  # Hover color
+        dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, (90, 190, 255))  # Active color
+
+with dpg.theme(tag="revert_gpu_theme"):
+    with dpg.theme_component(dpg.mvButton):
+        dpg.add_theme_color(dpg.mvThemeCol_Button, (150, 50, 50))  # Red background
+        dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, (170, 70, 70))  # Hover color
+        dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, (190, 90, 90))  # Active color
 
 with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
     
