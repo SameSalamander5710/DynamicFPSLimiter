@@ -1,6 +1,9 @@
 # DFL_v4.py
 # Dynamic FPS Limiter v4.0.0
 
+import ctypes
+ctypes.windll.shcore.SetProcessDpiAwareness(2)
+
 import dearpygui.dearpygui as dpg
 import threading
 import configparser
@@ -113,8 +116,8 @@ for key in settings_config["GlobalSettings"]:
         globals()[key] = value
 
 # Default viewport size
-Viewport_width = 550
-Viewport_height = 610
+Viewport_width = 600
+Viewport_height = 640
 Plot_height = 220  # Height of the plot when shown
 
 def save_to_profile():
@@ -652,7 +655,7 @@ dpg.create_context()
 
 with dpg.font_registry():
     try:
-        default_font = dpg.add_font(font_path, 16)
+        default_font = dpg.add_font(font_path, 18)
         if default_font:
             dpg.bind_font(default_font)
     except Exception as e:
@@ -731,38 +734,39 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
         dpg.add_button(label="Exit", callback=exit_gui, width=50)  # Exit button
 
     # Profiles
-    with dpg.child_window(width=-1, height=135):
+    with dpg.child_window(width=-1, height=145):
         with dpg.table(header_row=False):
             dpg.add_table_column(init_width_or_weight=55)
-            dpg.add_table_column(init_width_or_weight=120)
+            dpg.add_table_column(init_width_or_weight=140)
             dpg.add_table_column(init_width_or_weight=60)
 
             # First row
             with dpg.table_row():
                 dpg.add_text("Select Profile:")
-                dpg.add_combo(tag="profile_dropdown", callback=load_profile_callback, width=240, default_value="Global")
+                dpg.add_combo(tag="profile_dropdown", callback=load_profile_callback, width=260, default_value="Global")
                 dpg.add_button(label="Delete Profile", callback=delete_selected_profile_callback, width=120)
 
             # Second row
             with dpg.table_row():
                 dpg.add_text("New RTSS Profile:")
-                dpg.add_input_text(tag="new_profile_input", width=240)
+                dpg.add_input_text(tag="new_profile_input", width=260)
                 dpg.add_button(label="Add Profile", callback=add_new_profile_callback, width=120)
 
         dpg.add_spacer(height=3)        
         with dpg.group(horizontal=True):
             dpg.add_text("Last active process:")
-            dpg.add_spacer(width=250)
+            dpg.add_spacer(width=260)
             dpg.add_button(label="Add process to Profiles", callback=add_process_profile_callback)
         dpg.add_spacer(height=1)
         dpg.add_input_text(tag="LastProcess", multiline=False, readonly=True, width=-1)    
     
     #Tabs
+    dpg.add_spacer(height=1)
     with dpg.tab_bar():
         with dpg.tab(label="Profile Settings", tag="tab1"):
-            with dpg.child_window(height=140):
+            with dpg.child_window(height=135):
                 with dpg.group(horizontal=True):
-                    with dpg.group(width=180):
+                    with dpg.group(width=200):
                         with dpg.table(header_row=False, resizable=False, policy=dpg.mvTable_SizingFixedFit):
                             dpg.add_table_column(width_fixed=True)  # Column for labels
                             dpg.add_table_column(width_fixed=True)  # Column for input boxes
@@ -771,11 +775,11 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                                             ("Frame rate step:", "capstep")]:
                                 with dpg.table_row():
                                     dpg.add_text(label)
-                                    dpg.add_input_int(tag=f"input_{key}", default_value=int(settings[key]), width=80, step=1, step_fast=10)
+                                    dpg.add_input_int(tag=f"input_{key}", default_value=int(settings[key]), width=90, step=1, step_fast=10)
 # Give the tooltip its own tag
                                     with dpg.tooltip(parent=f"input_{key}", tag=f"input_{key}_tooltip", show=ShowTooltip, delay=1):
                                         dpg.add_text(tooltips[key], wrap = 200)
-                    dpg.add_spacer(width=5)
+                    dpg.add_spacer(width=1)
                     with dpg.group(width=150):
                         with dpg.table(header_row=False, resizable=False, policy=dpg.mvTable_SizingFixedFit):
                             dpg.add_table_column(width_fixed=True)
@@ -791,7 +795,8 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                                     with dpg.tooltip(parent=f"input_{key}", tag=f"input_{key}_tooltip", show=ShowTooltip, delay=1):
                                         dpg.add_text(tooltips[key], wrap=200)
                     
-                    with dpg.group(width=145):
+                    dpg.add_spacer(width=3)
+                    with dpg.group(width=165):
                         #dpg.add_spacer(height=3)
                         with dpg.group(horizontal=False):
                             with dpg.group(tag="quick_save_load"):
@@ -811,7 +816,7 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                                 dpg.add_text(tooltips["SaveToProfile"], wrap = 200)
 
         with dpg.tab(label="Preferences", tag="tab2"):
-            with dpg.child_window(height=140):
+            with dpg.child_window(height=135):
                 dpg.add_checkbox(label="Show Tooltips", tag="tooltip_checkbox",
                                  default_value=ShowTooltip, callback=update_tooltip_setting)
                 dpg.add_checkbox(label="Set Global RTSS FPS Limit on Exit", tag="limit_on_exit_checkbox",
@@ -825,7 +830,7 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                     dpg.add_text(tooltips["exit_fps_input"], wrap = 200)
 
         with dpg.tab(label="Log", tag="tab3"):
-            with dpg.child_window(tag="LogWindow", autosize_x=True, height=140, border=True):
+            with dpg.child_window(tag="LogWindow", autosize_x=True, height=135, border=True):
                 #dpg.add_text("", tag="LogText", tracked = True, track_offset = 1.0)
                 dpg.add_spacer(height=2)
                 dpg.add_input_text(tag="LogText", multiline=True, readonly=True, width=-1, height=110)
@@ -839,6 +844,7 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                 dpg.bind_item_theme("LogText", "transparent_input_theme")
 
     # Third Row: Plot Section
+    dpg.add_spacer(height=1)
     with dpg.child_window(width=-1, height=Plot_height):
         with dpg.theme(tag="plot_theme") as item_theme:
             with dpg.theme_component(dpg.mvAll):
@@ -892,7 +898,7 @@ logger.add_log(f"Current highed GPU core load: {gpu_monitor.gpu_percentile}%")
 #usage, luid = gpu_monitor.get_gpu_usage(engine_type="engtype_3D")
 #logger.add_log(f"Current Top LUID: {luid}, 3D engine usage: {usage}%")
 
-cpu_monitor = CPUUsageMonitor(lambda: running, logger, dpg, interval=0.1, max_samples=20, percentile=50)
+cpu_monitor = CPUUsageMonitor(lambda: running, logger, dpg, interval=0.1, max_samples=20, percentile=70)
 logger.add_log(f"Current highed CPU core load: {cpu_monitor.cpu_percentile}%")
 
 logger.add_log("Initialized successfully.")

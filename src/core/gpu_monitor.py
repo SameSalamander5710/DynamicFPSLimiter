@@ -181,7 +181,7 @@ class GPUUsageMonitor:
             pdh.PdhCloseQuery(self.query_handle)
             self.query_handle = None
 
-    def gpu_run(self, engine_type: str = "engtype_"):
+    def gpu_run(self, engine_type: str = "engtype_3D"):
 
         # Setup counters for the specified engine type
         _, self.counter_handles = self._setup_gpu_query_from_instances(
@@ -220,6 +220,7 @@ class GPUUsageMonitor:
                         return 0, ""
 
                     max_luid, max_usage = max(usage_by_luid.items(), key=lambda item: item[1])
+                    self.logger.add_log(f"target: {target_luid}, Current max LUID: {max_luid}, engine type: {engine_type}")
                     highest_usage = max_usage
 
                     with self._lock:
