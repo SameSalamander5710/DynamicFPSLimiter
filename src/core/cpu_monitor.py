@@ -3,7 +3,6 @@
 import time
 import threading
 import psutil
-import numpy as np
 import dearpygui.dearpygui as dpg
 
 class CPUUsageMonitor:
@@ -35,9 +34,8 @@ class CPUUsageMonitor:
                         self.samples.append(highest_usage)
                         if len(self.samples) > self.max_samples:
                             self.samples.pop(0)
-                        self.cpu_percentile = round(np.percentile(self.samples, self.percentile))
-
-                            #self.logger.add_log(f"> CPU usage percentile: {self.cpu_percentile}%")
+                        self.cpu_percentile = round(CPUUsageMonitor.calculate_percentile(self.samples, self.percentile))
+                        #self.logger.add_log(f"> CPU usage percentile: {self.cpu_percentile}%")
                 except Exception as e:
                     self.logger.add_log(f"> CPU monitor error: {e}")
             
@@ -48,3 +46,37 @@ class CPUUsageMonitor:
         self.looping = False
         if self._thread.is_alive():
             self._thread.join()
+
+    def calculate_percentile(data: list, percentile: float) -> float:
+        """
+        Calculate the percentile of a list of numbers.
+
+        Args:
+            data (list): The list of numbers.
+            percentile (float): The desired percentile (0-100).
+
+        Returns:
+            float: The value at the specified percentile.
+        """
+        if not data:
+            raise ValueError("Data list is empty.")
+        if not (0 <= percentile <= 100):
+            raise ValueError("Percentile must be between 0 and 100.")
+
+        # Sort the data
+        sorted_data = sorted(data)
+
+        # Calculate the index
+        k = (len(sorted_data) - 1) * (percentile / 100.0)
+        f = int(k)  # Floor index
+        c = f + 1  # Ceiling index
+
+        if c >= len(data):
+            return data[f]
+
+        # If the index is an integer, return the value at that index
+        if f == k:
+            return sorted_data[f]
+
+        # Otherwise, interpolate between the two closest values
+        return sorted_data[f] + (k - f) * (sorted_data[c] - sorted_data[f])

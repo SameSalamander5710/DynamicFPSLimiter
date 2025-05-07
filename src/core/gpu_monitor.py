@@ -6,7 +6,6 @@ from collections import defaultdict
 import re
 from typing import Optional, Dict, List, Tuple
 import threading
-import numpy as np
 
 pdh = ctypes.windll.pdh
 
@@ -220,15 +219,49 @@ class GPUUsageMonitor:
                         return 0, ""
 
                     max_luid, max_usage = max(usage_by_luid.items(), key=lambda item: item[1])
-                    self.logger.add_log(f"target: {target_luid}, Current max LUID: {max_luid}, engine type: {engine_type}")
+                    #self.logger.add_log(f"target: {target_luid}, Current max LUID: {max_luid}, engine type: {engine_type}")
                     highest_usage = max_usage
 
                     with self._lock:
                         self.samples.append(highest_usage)
                         if len(self.samples) > self.max_samples:
                             self.samples.pop(0)
-                        self.gpu_percentile = round(np.percentile(self.samples, self.percentile))
-
+                        self.gpu_percentile = round(GPUUsageMonitor.calculate_percentile(self.samples, self.percentile))
                         #self.logger.add_log(f"> GPU usage percentile: {self.gpu_percentile}%")
+
                 except Exception as e:
                     self.logger.add_log(f"> GPU monitor error: {e}")
+
+    def calculate_percentile(data: list, percentile: float) -> float:
+        """
+        Calculate the percentile of a list of numbers.
+
+        Args:
+            data (list): The list of numbers.
+            percentile (float): The desired percentile (0-100).
+
+        Returns:
+            float: The value at the specified percentile.
+        """
+        if not data:
+            raise ValueError("Data list is empty.")
+        if not (0 <= percentile <= 100):
+            raise ValueError("Percentile must be between 0 and 100.")
+
+        # Sort the data
+        sorted_data = sorted(data)
+
+        # Calculate the index
+        k = (len(sorted_data) - 1) * (percentile / 100.0)
+        f = int(k)  # Floor index
+        c = f + 1  # Ceiling index
+
+        if c >= len(data):
+            return data[f]
+
+        # If the index is an integer, return the value at that index
+        if f == k:
+            return sorted_data[f]
+
+        # Otherwise, interpolate between the two closest values
+        return sorted_data[f] + (k - f) * (sorted_data[c] - sorted_data[f])

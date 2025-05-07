@@ -820,12 +820,14 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
             with dpg.child_window(height=135):
                 dpg.add_checkbox(label="Show Tooltips", tag="tooltip_checkbox",
                                  default_value=ShowTooltip, callback=update_tooltip_setting)
-                dpg.add_checkbox(label="Set Global RTSS FPS Limit on Exit", tag="limit_on_exit_checkbox",
+                dpg.add_checkbox(label="Reset Global RTSS Framerate Limit on Exit", tag="limit_on_exit_checkbox",
                                  default_value=GlobalLimitonExit, callback=update_limit_on_exit_setting)
                 dpg.add_spacer(height=3)
-                dpg.add_input_int(label="RTSS framerate limit", tag="exit_fps_input",
-                                  default_value=globallimitonexit_fps, callback=update_exit_fps_value,
-                                  width=100, step=1, step_fast=10)
+                with dpg.group(horizontal=True):
+                    dpg.add_text("Framerate limit:")
+                    dpg.add_input_int(tag="exit_fps_input",
+                                    default_value=globallimitonexit_fps, callback=update_exit_fps_value,
+                                    width=100, step=1, step_fast=10)
                 # Give the tooltip its own tag
                 with dpg.tooltip(parent="exit_fps_input", tag="exit_fps_input_tooltip", show=ShowTooltip, delay=1):
                     dpg.add_text(tooltips["exit_fps_input"], wrap = 200)
