@@ -20,7 +20,7 @@ class CPUUsageMonitor:
         # Start background thread
         self._thread = threading.Thread(target=self.cpu_run, daemon=True)
         self._thread.start()
-        self.logger.add_log(f"CPU monitoring started with interval: {self.interval} seconds, max_samples: {self.max_samples}, percentile: {self.percentile}")
+        self.logger.add_log(f"CPU monitoring started with interval: {round(self.interval*1000)} ms, max_samples: {self.max_samples}, percentile: {self.percentile}")
 
     def cpu_run(self):
         

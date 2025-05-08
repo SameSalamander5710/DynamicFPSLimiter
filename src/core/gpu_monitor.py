@@ -35,7 +35,7 @@ class GPUUsageMonitor:
         self._lock = threading.Lock()
         self._thread = threading.Thread(target=self.gpu_run, daemon=True)
         self._thread.start()
-        self.logger.add_log(f"GPU monitoring started with interval: {self.interval} seconds, max_samples: {self.max_samples}, percentile: {self.percentile}")
+        self.logger.add_log(f"GPU monitoring started with interval: {round(self.interval*1000)} ms, max_samples: {self.max_samples}, percentile: {self.percentile}")
 
     def initialize(self) -> None:
         """Initialize PDH query."""

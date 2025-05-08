@@ -62,6 +62,12 @@ else:
         'minvalidgpu': '20',
         'minvalidfps': '20',
         'globallimitonexit_fps': '98',
+        'cpupercentile': '70',
+        'cpupollinginterval': '100',
+        'cpupollingsamples': '20',
+        'gpupercentile': '70',
+        'gpupollinginterval': '100',
+        'gpupollingsamples': '20',
     }
     with open(settings_path, 'w') as f:
         settings_config.write(f)
@@ -95,12 +101,19 @@ Default_settings_original = {
     "minvalidgpu": 20,
     "minvalidfps": 20,
     "globallimitonexit_fps": 98,
+    'cpupercentile': 70,
+    'cpupollinginterval': 100,
+    'cpupollingsamples': 20,
+    'gpupercentile': 70,
+    'gpupollinginterval': 100,
+    'gpupollingsamples': 20
 }
 
 # Function to get values with correct types
 def get_setting(key, value_type=int):
     """Get setting from appropriate config section based on key type."""
-    if key in ["delaybeforedecrease", "delaybeforeincrease", "minvalidgpu", "minvalidfps", "globallimitonexit_fps"]:
+    if key in ["delaybeforedecrease", "delaybeforeincrease", "minvalidgpu", "minvalidfps", "globallimitonexit_fps",
+               "cpupercentile", "cpupollinginterval", "cpupollingsamples", "gpupercentile", "gpupollinginterval", "gpupollingsamples"]:
         return value_type(settings_config["GlobalSettings"].get(key, Default_settings_original[key]))
     return value_type(profiles_config["Global"].get(key, Default_settings_original[key]))
 
@@ -132,17 +145,9 @@ def save_to_profile():
             value = dpg.get_value(f"input_{key}")  # Get value from input field
             profiles_config[selected_profile][key] = str(value) 
         
-        # Update global settings
-        for key in ["delaybeforedecrease", "delaybeforeincrease", 
-                   "minvalidgpu", "minvalidfps"]:
-            settings_config["GlobalSettings"][key] = str(get_setting(key))
-        
-        # Save both configs
         with open(profiles_path, "w") as configfile:
             profiles_config.write(configfile)
-        with open(settings_path, "w") as configfile:
-            settings_config.write(configfile)
-            
+
         logger.add_log(f"Settings saved to profile: {selected_profile}")
 settings = Default_settings.copy()
 
@@ -906,13 +911,13 @@ update_profile_dropdown(select_first=True)
 
 logger.add_log("Initializing...")
 
-gpu_monitor = GPUUsageMonitor(lambda: luid, lambda: running, logger, dpg, interval=0.1, max_samples=20, percentile=70)
+gpu_monitor = GPUUsageMonitor(lambda: luid, lambda: running, logger, dpg, interval=(gpupollinginterval/1000), max_samples=gpupollingsamples, percentile=gpupercentile)
 #logger.add_log(f"Current highed GPU core load: {gpu_monitor.gpu_percentile}%")
 
 #usage, luid = gpu_monitor.get_gpu_usage(engine_type="engtype_3D")
 #logger.add_log(f"Current Top LUID: {luid}, 3D engine usage: {usage}%")
 
-cpu_monitor = CPUUsageMonitor(lambda: running, logger, dpg, interval=0.1, max_samples=20, percentile=70)
+cpu_monitor = CPUUsageMonitor(lambda: running, logger, dpg, interval=(cpupollinginterval/1000), max_samples=cpupollingsamples, percentile=cpupercentile)
 #logger.add_log(f"Current highed CPU core load: {cpu_monitor.cpu_percentile}%")
 
 # Assuming logger and dpg are initialized, and rtss_dll_path is defined
