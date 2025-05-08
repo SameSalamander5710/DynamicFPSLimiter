@@ -655,6 +655,11 @@ tooltips = {
     "Reset_Default": "Resets all settings to the program's default values. This is useful if you want to start fresh or if you encounter issues."
 }
 
+FAQs = {
+    "faq_1": "Toggle the 'Detect Render GPU' button to reset the GPU monitoring initialzation parameters. This will fix the error.",
+    "faq_2": "You can disable CPU usage monitoring by setting the CPU usage upper threshold to >100 in the settings."
+}
+
 # GUI setup
 dpg.create_context()
 
@@ -739,12 +744,12 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
         dpg.add_text("Dynamic FPS Limiter v4.0.0")
         dpg.add_spacer(width=30)
         dpg.add_button(label="Detect Render GPU", callback=toggle_luid_selection, tag="luid_button", width=150)
-# Give the tooltip its own tag
+        # Give the tooltip its own tag
         with dpg.tooltip(parent="luid_button", tag="luid_button_tooltip", show=ShowTooltip, delay=1):
             dpg.add_text(tooltips["luid_button"], wrap = 200)
         dpg.add_spacer(width=30)
         dpg.add_button(label="Start", tag="start_stop_button", callback=start_stop_callback, width=50)
-# Give the tooltip its own tag
+        # Give the tooltip its own tag
         with dpg.tooltip(parent="start_stop_button", tag="start_stop_button_tooltip", show=ShowTooltip, delay=1):
             dpg.add_text(tooltips["start_stop_button"], wrap = 200)
         dpg.add_button(label="Exit", callback=exit_gui, width=50)  # Exit button
@@ -792,7 +797,7 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                                 with dpg.table_row():
                                     dpg.add_text(label)
                                     dpg.add_input_int(tag=f"input_{key}", default_value=int(settings[key]), width=90, step=1, step_fast=10)
-# Give the tooltip its own tag
+                                    # Give the tooltip its own tag
                                     with dpg.tooltip(parent=f"input_{key}", tag=f"input_{key}_tooltip", show=ShowTooltip, delay=1):
                                         dpg.add_text(tooltips[key], wrap = 200)
                     dpg.add_spacer(width=0.5)
@@ -808,7 +813,7 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                                     dpg.add_button(label=label, tag=f"button_{key}", width=110)
                                     dpg.bind_item_theme(f"button_{key}", "button_right")
                                     dpg.add_input_text(tag=f"input_{key}", default_value=str(settings[key]), width=40)
-# Give the tooltip its own tag
+                                    # Give the tooltip its own tag
                                     with dpg.tooltip(parent=f"input_{key}", tag=f"input_{key}_tooltip", show=ShowTooltip, delay=1):
                                         dpg.add_text(tooltips[key], wrap=200)
                     
@@ -817,18 +822,18 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                         #dpg.add_spacer(height=3)
                         with dpg.group(horizontal=False):
                             with dpg.group(tag="quick_save_load"):
-# Give the tooltip its own tag
+                                # Give the tooltip its own tag
                                 with dpg.tooltip(parent="quick_save_load", tag="quick_save_load_tooltip", show=ShowTooltip, delay=1):
                                     dpg.add_text(tooltips["quick_save_load"], wrap = 200)
                                 dpg.add_button(label="Quick Save", callback=quick_save_settings)
                                 dpg.add_button(label="Quick Load", callback=quick_load_settings)
                             dpg.add_button(tag="Reset_Default", label="Reset Settings to Default", callback=reset_to_program_default)
-# Give the tooltip its own tag
+                            # Give the tooltip its own tag
                             with dpg.tooltip(parent="Reset_Default", tag="Reset_Default_tooltip", show=ShowTooltip, delay=1):
                                 dpg.add_text(tooltips["Reset_Default"], wrap = 200)
                             dpg.add_spacer(height=3)
                             dpg.add_button(tag="SaveToProfile", label="Save Settings to Profile", callback=save_to_profile)
-# Give the tooltip its own tag
+                            # Give the tooltip its own tag
                             with dpg.tooltip(parent="SaveToProfile", tag="SaveToProfile_tooltip", show=ShowTooltip, delay=1):
                                 dpg.add_text(tooltips["SaveToProfile"], wrap = 200)
 
@@ -862,6 +867,19 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
 
                 dpg.bind_item_theme("LogText", "transparent_input_theme")
 
+        with dpg.tab(label="FAQs", tag="tab4"):
+            with dpg.child_window(height=135):
+                dpg.add_text("Frequently Asked Questions (FAQs): Hover for more info")
+                dpg.add_spacer(height=3)
+                dpg.add_text("1. What to do when I get the error message '02_Failed to read counter (LUID:...'?", 
+                             tag="faq_1", bullet=True)
+                with dpg.tooltip(parent="faq_1", delay=0.5):
+                    dpg.add_text(FAQs["faq_1"], wrap = 300)
+                dpg.add_text("2. How do I disable CPU usage monitoring?",
+                              tag="faq_2", bullet=True)
+                with dpg.tooltip(parent="faq_2", delay=0.5):
+                    dpg.add_text(FAQs["faq_2"], wrap = 300)
+    
     # Third Row: Plot Section
     dpg.add_spacer(height=1)
     with dpg.child_window(width=-1, height=Plot_height):
