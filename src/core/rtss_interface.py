@@ -89,7 +89,7 @@ class RTSSInterface:
             self.rtss_status = False # Update status
             return None, None
         except Exception as e:
-            self.logger.add_log(f"> Error reading RTSS Shared Memory: {e}")
+            self.logger.add_log(f"Error reading RTSS Shared Memory: {e}")
             return None, None
 
         return None, None # Process not found in shared memory
@@ -108,7 +108,7 @@ class RTSSInterface:
                 self.rtss_status = current_status
                 self._update_rtss_status_ui(current_status, force_log=status_changed)
             except Exception as e:
-                self.logger.add_log(f"> Error in RTSS monitor thread: {e}")
+                self.logger.add_log(f"Error in RTSS monitor thread: {e}")
                 time.sleep(5)
             time.sleep(0.2)
 
@@ -122,7 +122,7 @@ class RTSSInterface:
         """
         # Only log when forced (status change or initial)
         if force_log:
-            self.logger.add_log("> RTSS detected" if status else "> RTSS not running!")
+            self.logger.add_log("RTSS detected" if status else "RTSS not running!")
         
         # Always update UI elements if DPG is running
         if self.dpg.is_dearpygui_running():
@@ -138,7 +138,7 @@ class RTSSInterface:
             self.rtss_monitor_running = True
             self._monitor_thread = threading.Thread(target=self._rtss_monitor_thread_func, daemon=True)
             self._monitor_thread.start()
-            self.logger.add_log("> RTSS monitor thread started.")
+            self.logger.add_log("RTSS monitor thread started.")
 
     def stop_monitor_thread(self):
         """Stops the RTSS status monitoring thread."""
@@ -146,5 +146,5 @@ class RTSSInterface:
         if self._monitor_thread and self._monitor_thread.is_alive():
             self._monitor_thread.join(timeout=0.2) # Wait briefly for thread to exit
         self._monitor_thread = None
-        self.logger.add_log("> RTSS monitor thread stopped.")
+        self.logger.add_log("RTSS monitor thread stopped.")
 

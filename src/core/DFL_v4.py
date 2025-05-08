@@ -143,7 +143,7 @@ def save_to_profile():
         with open(settings_path, "w") as configfile:
             settings_config.write(configfile)
             
-        logger.add_log(f"> Settings saved to profile: {selected_profile}")
+        logger.add_log(f"Settings saved to profile: {selected_profile}")
 settings = Default_settings.copy()
 
 #Functions for profiles start --------------
@@ -187,17 +187,17 @@ def add_new_profile_callback():
     if new_name and new_name not in profiles_config:
         save_profile(new_name)
         dpg.set_value("new_profile_input", "")
-        logger.add_log(f"> New profile created: {new_name}")
+        logger.add_log(f"New profile created: {new_name}")
     else:
-        logger.add_log("> Profile name is empty or already exists.")
+        logger.add_log("Profile name is empty or already exists.")
 
 def add_process_profile_callback():
     new_name = dpg.get_value("LastProcess")
     if new_name and new_name not in profiles_config:
         save_profile(new_name)
-        logger.add_log(f"> New profile created: {new_name}")
+        logger.add_log(f"New profile created: {new_name}")
     else:
-        logger.add_log("> Profile name is empty or already exists.")
+        logger.add_log("Profile name is empty or already exists.")
 
 def delete_selected_profile_callback():
     
@@ -205,7 +205,7 @@ def delete_selected_profile_callback():
     
     profile_to_delete = dpg.get_value("profile_dropdown")
     if profile_to_delete == "Global":
-        logger.add_log("> Cannot delete the default 'Global' profile.")
+        logger.add_log("Cannot delete the default 'Global' profile.")
         return
     if profile_to_delete in profiles_config:
         profiles_config.remove_section(profile_to_delete)
@@ -215,7 +215,7 @@ def delete_selected_profile_callback():
         for key in profiles_config["Global"]:
             dpg.set_value(f"input_{key}", profiles_config["Global"][key])
         update_global_variables()
-        logger.add_log(f"> Deleted profile: {profile_to_delete}")
+        logger.add_log(f"Deleted profile: {profile_to_delete}")
         current_profile = "Global"
 
 #Functions for profiles end ----------------
@@ -275,29 +275,29 @@ def start_stop_callback():
         # Start threads
         monitoring_thread = threading.Thread(target=monitoring_loop, daemon=True)
         monitoring_thread.start()
-        logger.add_log("> Monitoring started")
+        logger.add_log("Monitoring started")
         plotting_thread = threading.Thread(target=plotting_loop, daemon=True)
         plotting_thread.start()
-        logger.add_log("> Plotting started")
+        logger.add_log("Plotting started")
     else:
         reset_stats()
         CurrentFPSOffset = 0
         rtss_cli.set_property(current_profile, "FramerateLimit", int(maxcap))
-        logger.add_log("> Monitoring stopped")
+        logger.add_log("Monitoring stopped")
 
 def quick_save_settings():
     for key in ["maxcap", "mincap", "capstep", 
                 "gpucutofffordecrease", "gpucutoffforincrease", "cpucutofffordecrease", "cpucutoffforincrease"]:
         settings[key] = dpg.get_value(f"input_{key}")
     update_global_variables()
-    logger.add_log("> Settings quick saved")
+    logger.add_log("Settings quick saved")
 
 def quick_load_settings():
     for key in ["maxcap", "mincap", "capstep", 
                 "gpucutofffordecrease", "gpucutoffforincrease", "cpucutofffordecrease", "cpucutoffforincrease"]:
         dpg.set_value(f"input_{key}", settings[key])
     update_global_variables()
-    logger.add_log("> Settings quick loaded")
+    logger.add_log("Settings quick loaded")
 
 def enable_plot_callback(sender, app_data): #Currently not in use
     dpg.configure_item("plot_section", show=app_data)
@@ -333,7 +333,7 @@ def reset_to_program_default():
         dpg.set_value(f"input_{key}", Default_settings_original[key])
     for key in ["gpucutofffordecrease", "gpucutoffforincrease", "cpucutofffordecrease", "cpucutoffforincrease"]:
         dpg.set_value(f"input_{key}", Default_settings_original[key])
-    logger.add_log("> Settings reset to program default")  
+    logger.add_log("Settings reset to program default")  
 
 time_series = []        # For GPU/CPU usage (updated every 0.2s)
 fps_time_series = []    # For FPS/Cap (updated every 1s)
@@ -418,16 +418,16 @@ def toggle_luid_selection():
         # First click: detect top LUID
         usage, luid = gpu_monitor.get_gpu_usage(engine_type="engtype_3D")
         if luid:
-            logger.add_log(f"> Tracking LUID: {luid} | Current 3D engine Utilization: {usage}%")
+            logger.add_log(f"Tracking LUID: {luid} | Current 3D engine Utilization: {usage}%")
             dpg.configure_item("luid_button", label="Revert to all GPUs")
             dpg.bind_item_theme("luid_button", "revert_gpu_theme")  # Apply red theme
             luid_selected = True
         else:
-            logger.add_log("> Failed to detect active LUID.")
+            logger.add_log("Failed to detect active LUID.")
     else:
         # Second click: deselect
         luid = "All"
-        logger.add_log("> Tracking all GPU engines.")
+        logger.add_log("Tracking all GPU engines.")
         dpg.configure_item("luid_button", label="Detect Render GPU")
         dpg.bind_item_theme("luid_button", "detect_gpu_theme")  # Apply blue theme
         luid_selected = False
@@ -544,8 +544,8 @@ def update_tooltip_setting(sender, app_data, user_data):
     settings_config["Preferences"]["ShowTooltip"] = str(app_data)
     with open(settings_path, 'w') as f:
         settings_config.write(f)
-    logger.add_log(f"> Tooltip visibility set to: {ShowTooltip}")
-    logger.add_log(f"> Applying tooltip visibility: {ShowTooltip}")
+    logger.add_log(f"Tooltip visibility set to: {ShowTooltip}")
+    logger.add_log(f"Applying tooltip visibility: {ShowTooltip}")
 
     for key in tooltips.keys():
         parent_tag = ""
@@ -565,7 +565,7 @@ def update_tooltip_setting(sender, app_data, user_data):
                 dpg.configure_item(tooltip_specific_tag, show=ShowTooltip)
             except SystemError as e:
                 # This error is less likely now but kept for safety
-                logger.add_log(f"> Minor issue configuring tooltip '{tooltip_specific_tag}' for key '{key}': {e}")
+                logger.add_log(f"Minor issue configuring tooltip '{tooltip_specific_tag}' for key '{key}': {e}")
 
 def update_limit_on_exit_setting(sender, app_data, user_data):
     global GlobalLimitonExit
@@ -573,7 +573,7 @@ def update_limit_on_exit_setting(sender, app_data, user_data):
     settings_config["Preferences"]["GlobalLimitOnExit"] = str(app_data)
     with open(settings_path, 'w') as f:
         settings_config.write(f)
-    logger.add_log(f"> Global Limit on Exit set to: {GlobalLimitonExit}")
+    logger.add_log(f"Global Limit on Exit set to: {GlobalLimitonExit}")
 
 # Callback for the exit FPS limit input
 def update_exit_fps_value(sender, app_data, user_data):
@@ -585,9 +585,9 @@ def update_exit_fps_value(sender, app_data, user_data):
         settings_config["GlobalSettings"]["globallimitonexit_fps"] = str(new_value)
         with open(settings_path, 'w') as f:
             settings_config.write(f)
-        logger.add_log(f"> Global Limit on Exit FPS value set to: {globallimitonexit_fps}")
+        logger.add_log(f"Global Limit on Exit FPS value set to: {globallimitonexit_fps}")
     else:
-        logger.add_log(f"> Invalid value entered for Global Limit on Exit FPS: {app_data}. Reverting.")
+        logger.add_log(f"Invalid value entered for Global Limit on Exit FPS: {app_data}. Reverting.")
         # Revert UI to the current global value if input is invalid
         dpg.set_value(sender, globallimitonexit_fps)
 
@@ -610,19 +610,19 @@ def exit_gui():
     
         # Wait for the monitoring thread to finish
     if monitoring_thread and monitoring_thread.is_alive():
-        logger.add_log("> Waiting for monitoring thread to stop...")
+        logger.add_log("Waiting for monitoring thread to stop...")
         monitoring_thread.join(timeout=0.1) # Wait up to 2 seconds
         if monitoring_thread.is_alive():
-            logger.add_log("> Warning: Monitoring thread did not stop gracefully.")
+            logger.add_log("Warning: Monitoring thread did not stop gracefully.")
         else:
-            logger.add_log("> Monitoring thread stopped.")
+            logger.add_log("Monitoring thread stopped.")
     if plotting_thread and plotting_thread.is_alive():
-        logger.add_log("> Waiting for monitoring thread to stop...")
+        logger.add_log("Waiting for monitoring thread to stop...")
         plotting_thread.join(timeout=0.1) # Wait up to 2 seconds
         if plotting_thread.is_alive():
-            logger.add_log("> Warning: Plotting thread did not stop gracefully.")
+            logger.add_log("Warning: Plotting thread did not stop gracefully.")
         else:
-            logger.add_log("> Plotting thread stopped.")
+            logger.add_log("Plotting thread stopped.")
 
 
 # Main Window
@@ -659,7 +659,7 @@ with dpg.font_registry():
         if default_font:
             dpg.bind_font(default_font)
     except Exception as e:
-        logger.add_log(f"> Failed to load system font: {e}")
+        logger.add_log(f"Failed to load system font: {e}")
         # Will use DearPyGui's default font as fallback
 
 # Create a theme for rounded buttons
@@ -701,21 +701,21 @@ with dpg.theme(tag="rtss_running_theme"):
 
 with dpg.theme(tag="rtss_not_running_theme"):
     with dpg.theme_component(dpg.mvButton):
-        dpg.add_theme_color(dpg.mvThemeCol_Button, (100, 0, 0))
-        dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, (120, 0, 0))
-        dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, (140, 0, 0))
+        dpg.add_theme_color(dpg.mvThemeCol_Button, (170, 70, 70)) #Reds
+        dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, (190, 90, 90))
+        dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, (190, 90, 90))
 
 with dpg.theme(tag="detect_gpu_theme"):
     with dpg.theme_component(dpg.mvButton):
         dpg.add_theme_color(dpg.mvThemeCol_Button, (51, 51, 55))  # Defualt grey button background
-        dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, (70, 170, 255))  # Hover color
-        dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, (90, 190, 255))  # Active color
+        dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, (15, 86, 135))
+        dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, (15, 86, 135))
 
 with dpg.theme(tag="revert_gpu_theme"):
     with dpg.theme_component(dpg.mvButton):
-        dpg.add_theme_color(dpg.mvThemeCol_Button, (150, 50, 50))  # Red background
-        dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, (170, 70, 70))  # Hover color
-        dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, (190, 90, 90))  # Active color
+        dpg.add_theme_color(dpg.mvThemeCol_Button, (15, 86, 135))  # Blue color background
+        dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, (6, 96, 158))
+        dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, (0, 105, 176))
 
 background_colour = (37, 37, 38)  # Default grey background
 
@@ -907,15 +907,13 @@ update_profile_dropdown(select_first=True)
 logger.add_log("Initializing...")
 
 gpu_monitor = GPUUsageMonitor(lambda: luid, lambda: running, logger, dpg, interval=0.1, max_samples=20, percentile=70)
-logger.add_log(f"Current highed GPU core load: {gpu_monitor.gpu_percentile}%")
+#logger.add_log(f"Current highed GPU core load: {gpu_monitor.gpu_percentile}%")
 
 #usage, luid = gpu_monitor.get_gpu_usage(engine_type="engtype_3D")
 #logger.add_log(f"Current Top LUID: {luid}, 3D engine usage: {usage}%")
 
 cpu_monitor = CPUUsageMonitor(lambda: running, logger, dpg, interval=0.1, max_samples=20, percentile=70)
-logger.add_log(f"Current highed CPU core load: {cpu_monitor.cpu_percentile}%")
-
-logger.add_log("Initialized successfully.")
+#logger.add_log(f"Current highed CPU core load: {cpu_monitor.cpu_percentile}%")
 
 # Assuming logger and dpg are initialized, and rtss_dll_path is defined
 rtss_cli = RTSSCLI(logger, rtss_dll_path)
@@ -925,7 +923,8 @@ rtss_manager = RTSSInterface(logger, dpg)
 if rtss_manager:
     rtss_manager.start_monitor_thread()
 
-#Always make sure the corresponding GUI element exists before trying to get/set its value
+logger.add_log("Initialized successfully.")
 
+#Always make sure the corresponding GUI element exists before trying to get/set its value
 dpg.start_dearpygui()
 

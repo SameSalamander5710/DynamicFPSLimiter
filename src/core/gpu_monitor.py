@@ -35,6 +35,7 @@ class GPUUsageMonitor:
         self._lock = threading.Lock()
         self._thread = threading.Thread(target=self.gpu_run, daemon=True)
         self._thread.start()
+        self.logger.add_log(f"GPU monitoring started with interval: {self.interval} seconds, max_samples: {self.max_samples}, percentile: {self.percentile}")
 
     def initialize(self) -> None:
         """Initialize PDH query."""
@@ -227,10 +228,10 @@ class GPUUsageMonitor:
                         if len(self.samples) > self.max_samples:
                             self.samples.pop(0)
                         self.gpu_percentile = round(GPUUsageMonitor.calculate_percentile(self.samples, self.percentile))
-                        #self.logger.add_log(f"> GPU usage percentile: {self.gpu_percentile}%")
+                        #self.logger.add_log(f"GPU usage percentile: {self.gpu_percentile}%")
 
                 except Exception as e:
-                    self.logger.add_log(f"> GPU monitor error: {e}")
+                    self.logger.add_log(f"GPU monitor error: {e}")
 
     def calculate_percentile(data: list, percentile: float) -> float:
         """

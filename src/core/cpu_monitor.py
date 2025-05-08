@@ -20,6 +20,7 @@ class CPUUsageMonitor:
         # Start background thread
         self._thread = threading.Thread(target=self.cpu_run, daemon=True)
         self._thread.start()
+        self.logger.add_log(f"CPU monitoring started with interval: {self.interval} seconds, max_samples: {self.max_samples}, percentile: {self.percentile}")
 
     def cpu_run(self):
         
@@ -35,9 +36,9 @@ class CPUUsageMonitor:
                         if len(self.samples) > self.max_samples:
                             self.samples.pop(0)
                         self.cpu_percentile = round(CPUUsageMonitor.calculate_percentile(self.samples, self.percentile))
-                        #self.logger.add_log(f"> CPU usage percentile: {self.cpu_percentile}%")
+                        #self.logger.add_log(f"CPU usage percentile: {self.cpu_percentile}%")
                 except Exception as e:
-                    self.logger.add_log(f"> CPU monitor error: {e}")
+                    self.logger.add_log(f"CPU monitor error: {e}")
             
             time.sleep(self.interval)
 

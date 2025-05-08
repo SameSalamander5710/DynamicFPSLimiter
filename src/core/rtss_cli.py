@@ -37,10 +37,10 @@ class RTSSCLI:
         # Replace "Global" with an empty string
         if profile == "Global":
             profile = ""
-        self.logger.add_log(f"{profile.encode()}, {prop.encode()}, {value}")
+        #self.logger.add_log(f"{profile.encode()}, {prop.encode()}, {value}")
         self.rtss.set_property(profile.encode(), prop.encode(), value)
-        self.logger.add_log(f"{ctypes.get_last_error()}")
-        self.logger.add_log(f"> FPS Limiter set to {value} for profile '{profile}' with property '{prop}'.")
+        self.logger.add_log(f"Last RTSS error, if present: {ctypes.get_last_error()}")
+        self.logger.add_log(f"FPS Limiter set to {value} for profile '{profile}' with property '{prop}'.")
 
     def get_property(self, profile, prop):
         """Gets a property value for a given profile."""
@@ -66,7 +66,7 @@ class RTSSCLI:
         """Enables the RTSS frame rate limiter."""
         self.logger.add_log(f"Enabling RTSS limiter...")
         self.set_flags(~RTSSHOOKSFLAG_LIMITER_DISABLED, 0)
-        self.logger.add_log(f"RTSS limiter enabled.")
+        #self.logger.add_log(f"RTSS limiter enabled.")
 
     def disable_limiter(self):
         """Disables the RTSS frame rate limiter."""
