@@ -87,7 +87,6 @@ else:
     with open(profiles_path, 'w') as f:
         profiles_config.write(f)
 
-# Default values
 Default_settings_original = {
     "maxcap": 60,
     "mincap": 30,
@@ -123,7 +122,6 @@ ShowTooltip = str(settings_config["Preferences"].get("ShowTooltip", "True")).str
 GlobalLimitonExit = str(settings_config["Preferences"].get("GlobalLimitOnExit", "True")).strip().lower() == "true"
 
 for key in settings_config["GlobalSettings"]:
-    # Assuming these are integers
     value = get_setting(key, int)
     if value is not None:
         globals()[key] = value
@@ -131,13 +129,11 @@ for key in settings_config["GlobalSettings"]:
 # Default viewport size
 Viewport_width = 600
 Viewport_height = 640
-Plot_height = 220  # Height of the plot when shown
+Plot_height = 220
 
 def save_to_profile():
-    # Get current selected profile from the dropdown
     selected_profile = dpg.get_value("profile_dropdown")
-    
-    # Only proceed if a profile is selected
+
     if selected_profile:
         # Update profile-specific settings
         for key in ["maxcap", "mincap", "capstep",
@@ -150,8 +146,6 @@ def save_to_profile():
 
         logger.add_log(f"Settings saved to profile: {selected_profile}")
 settings = Default_settings.copy()
-
-#Functions for profiles start --------------
 
 def update_profile_dropdown(select_first=False):
     profiles = profiles_config.sections()
@@ -205,9 +199,8 @@ def add_process_profile_callback():
         logger.add_log("Profile name is empty or already exists.")
 
 def delete_selected_profile_callback():
-    
     global current_profile
-    
+
     profile_to_delete = dpg.get_value("profile_dropdown")
     if profile_to_delete == "Global":
         logger.add_log("Cannot delete the default 'Global' profile.")
@@ -217,13 +210,22 @@ def delete_selected_profile_callback():
         with open(profiles_path, 'w') as f:
             profiles_config.write(f)
         update_profile_dropdown(select_first=True)
-        for key in profiles_config["Global"]:
-            dpg.set_value(f"input_{key}", profiles_config["Global"][key])
-        update_global_variables()
+
+        # Reset input fields to the "Global" profile values
+        if "Global" in profiles_config:
+            for key in profiles_config["Global"]:
+                try:
+                    # Convert the value to the appropriate type before setting it
+                    value = int(profiles_config["Global"][key])
+                    dpg.set_value(f"input_{key}", value)
+                except ValueError:
+                    logger.add_log(f"Error: Unable to convert value for key '{key}' to int.")
+            update_global_variables()  # Ensure global variables are updated
+        else:
+            logger.add_log("Error: 'Global' profile not found in configuration.")
+
         logger.add_log(f"Deleted profile: {profile_to_delete}")
         current_profile = "Global"
-
-#Functions for profiles end ----------------
 
 running = False  # Flag to control the monitoring loop
 
@@ -269,7 +271,7 @@ def start_stop_callback():
         # Apply current settings and start monitoring
         
         time_series.clear()
-        fps_time_series.clear() # Clear the new list too
+        fps_time_series.clear()
         gpu_usage_series.clear()
         cpu_usage_series.clear()
         fps_series.clear()
@@ -304,17 +306,6 @@ def quick_load_settings():
     update_global_variables()
     logger.add_log("Settings quick loaded")
 
-def enable_plot_callback(sender, app_data): #Currently not in use
-    dpg.configure_item("plot_section", show=app_data)
-    
-    # Get current viewport size
-    current_width, current_height = dpg.get_viewport_width(), dpg.get_viewport_height()
-    
-    # Compute new height based on plot visibility
-    new_height = current_height + Plot_height if app_data else current_height - Plot_height
-
-    dpg.set_viewport_height(new_height)
-    
 def reset_stats():
     
     dpg.configure_item("gpu_usage_series", label="GPU: --")
@@ -340,13 +331,13 @@ def reset_to_program_default():
         dpg.set_value(f"input_{key}", Default_settings_original[key])
     logger.add_log("Settings reset to program default")  
 
-time_series = []        # For GPU/CPU usage (updated every 0.2s)
-fps_time_series = []    # For FPS/Cap (updated every 1s)
+time_series = []
+fps_time_series = []
 gpu_usage_series = []
 cpu_usage_series = []
 fps_series = []
 cap_series = []
-max_points = 300
+max_points = 600
 elapsed_time = 0 # Global time updated by plotting_loop
 
 def update_plot_FPS(fps_val, cap_val):
@@ -354,35 +345,29 @@ def update_plot_FPS(fps_val, cap_val):
     global fps_time_series, fps_series, cap_series, elapsed_time
     global max_points, mincap, maxcap, capstep
 
-    # Apply max_points limit to FPS-specific lists
-    while len(fps_time_series) >= max_points: # Use while for safety
+    while len(fps_time_series) >= max_points:
         fps_time_series.pop(0)
         fps_series.pop(0)
         cap_series.pop(0)
 
-# Append current global time and new values
-    current_time = elapsed_time # Capture the time when this function is called
+    current_time = elapsed_time
     fps_time_series.append(current_time)
     fps_series.append(fps_val)
     cap_series.append(cap_val)
 
-# Update DPG series using the FPS-specific time series
     dpg.set_value("fps_series", [fps_time_series, fps_series])
     dpg.set_value("cap_series", [fps_time_series, cap_series])  
 
-# Set Y-axis limits for FPS/Cap (Right Axis)
-    # Ensure mincap, maxcap, capstep are up-to-date globals if they can change
     min_ft = mincap - capstep
     max_ft = maxcap + capstep
     dpg.set_axis_limits("y_axis_right", min_ft, max_ft) 
 
 def update_plot_usage(time_val, gpu_val, cpu_val):
-# Uses the main time_series    
+   
     global time_series, gpu_usage_series, cpu_usage_series
     global max_points, gpucutofffordecrease, gpucutoffforincrease # Add needed globals
     
-    # Apply max_points limit to Usage-specific lists
-    while len(time_series) >= max_points: # Use while for safety
+    while len(time_series) >= max_points:
         time_series.pop(0)
         gpu_usage_series.pop(0)
         cpu_usage_series.pop(0)
@@ -390,16 +375,14 @@ def update_plot_usage(time_val, gpu_val, cpu_val):
     gpu_val = gpu_val or 0
     cpu_val = cpu_val or 0
 
-# Append passed-in time and new values
+    # Append passed-in time and new values
     time_series.append(time_val)
     gpu_usage_series.append(gpu_val)
     cpu_usage_series.append(cpu_val)
 
-# Update DPG series using the main time series
     dpg.set_value("gpu_usage_series", [time_series, gpu_usage_series])
     dpg.set_value("cpu_usage_series", [time_series, cpu_usage_series])
 
-    # Update X-axis limits based on the main time_series
     if time_series:
         start_x = time_series[0]
         end_x = time_series[-1]
@@ -414,7 +397,7 @@ def update_plot_usage(time_val, gpu_val, cpu_val):
         dpg.set_axis_limits_auto("x_axis")
 
 luid_selected = False  # default state
-luid = "All" # Placeholder for LUID
+luid = "All"
 
 def toggle_luid_selection():
     global luid_selected, luid
@@ -425,7 +408,7 @@ def toggle_luid_selection():
         if luid:
             logger.add_log(f"Tracking LUID: {luid} | Current 3D engine Utilization: {usage}%")
             dpg.configure_item("luid_button", label="Revert to all GPUs")
-            dpg.bind_item_theme("luid_button", "revert_gpu_theme")  # Apply red theme
+            dpg.bind_item_theme("luid_button", "revert_gpu_theme")  # Apply blue theme
             luid_selected = True
         else:
             logger.add_log("Failed to detect active LUID.")
@@ -434,7 +417,7 @@ def toggle_luid_selection():
         luid = "All"
         logger.add_log("Tracking all GPU engines.")
         dpg.configure_item("luid_button", label="Detect Render GPU")
-        dpg.bind_item_theme("luid_button", "detect_gpu_theme")  # Apply blue theme
+        dpg.bind_item_theme("luid_button", "detect_gpu_theme")  # Apply default grey theme
         luid_selected = False
 
 fps_values = []
@@ -457,7 +440,7 @@ def monitoring_loop():
         #logger.add_log(f"Current highed CPU core load: {cpu_monitor.cpu_percentile}%")
         
         if process_name is not None and process_name != "DynamicFPSLimiter.exe":
-            last_process_name = process_name #Make exception for DynamicFPSLimiter.exe and pythonw.exe
+            last_process_name = process_name
             dpg.set_value("LastProcess", last_process_name)
         if fps:
             if len(fps_values) > 2:
@@ -476,7 +459,7 @@ def monitoring_loop():
         cpu_values.append(cpuUsage)
 
         # To prevent loading screens from affecting the fps cap
-        if gpuUsage and process_name not in {"pythonw.exe"}:#, "DynamicFPSLimiter.exe", "python.exe"}:
+        if gpuUsage and process_name not in {"DynamicFPSLimiter.exe"}:
             if gpuUsage > minvalidgpu and fps_mean > minvalidfps: 
 
                 should_decrease = False
@@ -513,7 +496,7 @@ def monitoring_loop():
             dpg.configure_item("cpu_usage_series", label=f"CPU: {cpuUsage}%")
 
             # Update plot if fps is valid
-            if fps and process_name not in {"pythonw.exe"}:#, "DynamicFPSLimiter.exe", "python.exe"}:
+            if fps and process_name not in {"DynamicFPSLimiter.exe"}:
                 # Scaling FPS value to fit 0-100 axis
                 scaled_fps = ((fps - min_ft)/(max_ft - min_ft))*100
                 scaled_cap = ((maxcap + CurrentFPSOffset - min_ft)/(max_ft - min_ft))*100
@@ -528,11 +511,11 @@ def monitoring_loop():
         time.sleep(1) # This loop runs every 1 second
 
 def plotting_loop():
-    global running, elapsed_time # Make sure elapsed_time is global
+    global running, elapsed_time, gpupollinginterval, cpupollinginterval# Make sure elapsed_time is global
 
     start_time = time.time()
     while running:
-# Calculate elapsed time SINCE start_time
+        # Calculate elapsed time SINCE start_time
         elapsed_time = time.time() - start_time
 
         gpuUsage = gpu_monitor.gpu_percentile
@@ -541,7 +524,7 @@ def plotting_loop():
         # CALL update_plot_usage with the current time and usage values
         update_plot_usage(elapsed_time, gpuUsage, cpuUsage)
 
-        time.sleep(0.2) # This loop runs every 0.2 seconds
+        time.sleep(math.lcm(gpupollinginterval, cpupollinginterval) / 1000.0)  # Convert to seconds
 
 def update_tooltip_setting(sender, app_data, user_data):
     global ShowTooltip, input_field_keys, tooltips
@@ -550,11 +533,10 @@ def update_tooltip_setting(sender, app_data, user_data):
     with open(settings_path, 'w') as f:
         settings_config.write(f)
     logger.add_log(f"Tooltip visibility set to: {ShowTooltip}")
-    logger.add_log(f"Applying tooltip visibility: {ShowTooltip}")
 
     for key in tooltips.keys():
         parent_tag = ""
-        # Determine the PARENT tag first
+        # Determine the parent tag first
         if key in input_field_keys:
             parent_tag = f"input_{key}"
         else:
@@ -580,11 +562,10 @@ def update_limit_on_exit_setting(sender, app_data, user_data):
         settings_config.write(f)
     logger.add_log(f"Global Limit on Exit set to: {GlobalLimitonExit}")
 
-# Callback for the exit FPS limit input
 def update_exit_fps_value(sender, app_data, user_data):
-    global globallimitonexit_fps # Ensure this global variable exists and is loaded
+    global globallimitonexit_fps 
     new_value = app_data
-    # Optional: Add validation (e.g., ensure it's within a reasonable range)
+
     if isinstance(new_value, int) and new_value > 0:
         globallimitonexit_fps = new_value
         settings_config["GlobalSettings"]["globallimitonexit_fps"] = str(new_value)
@@ -593,44 +574,38 @@ def update_exit_fps_value(sender, app_data, user_data):
         logger.add_log(f"Global Limit on Exit FPS value set to: {globallimitonexit_fps}")
     else:
         logger.add_log(f"Invalid value entered for Global Limit on Exit FPS: {app_data}. Reverting.")
-        # Revert UI to the current global value if input is invalid
         dpg.set_value(sender, globallimitonexit_fps)
 
-# Function to close all active processes and exit the GUI
 def exit_gui():
     global running, rtss_manager, monitoring_thread, plotting_thread, globallimitonexit_fps, GlobalLimitonExit
 
     if GlobalLimitonExit:
         rtss_cli.set_property("Global", "FramerateLimit", int(globallimitonexit_fps))
 
-    running = False # Signal monitoring_loop to stop
+    running = False 
     if rtss_manager:
-        rtss_manager.stop_monitor_thread()  # Signal RTSS monitor thread to stop
+        rtss_manager.stop_monitor_thread()
     if gpu_monitor:
-        gpu_monitor.cleanup()  # Clean up GPU monitor
+        gpu_monitor.cleanup()
     if cpu_monitor:
-        cpu_monitor.stop()  # Stop CPU monitor
+        cpu_monitor.stop()
     if dpg.is_dearpygui_running():
-        dpg.destroy_context() # Close Dear PyGui
+        dpg.destroy_context()
     
-        # Wait for the monitoring thread to finish
     if monitoring_thread and monitoring_thread.is_alive():
         logger.add_log("Waiting for monitoring thread to stop...")
-        monitoring_thread.join(timeout=0.1) # Wait up to 2 seconds
+        monitoring_thread.join(timeout=0.1)
         if monitoring_thread.is_alive():
             logger.add_log("Warning: Monitoring thread did not stop gracefully.")
         else:
             logger.add_log("Monitoring thread stopped.")
     if plotting_thread and plotting_thread.is_alive():
         logger.add_log("Waiting for monitoring thread to stop...")
-        plotting_thread.join(timeout=0.1) # Wait up to 2 seconds
+        plotting_thread.join(timeout=0.1)
         if plotting_thread.is_alive():
             logger.add_log("Warning: Plotting thread did not stop gracefully.")
         else:
             logger.add_log("Plotting thread stopped.")
-
-
-# Main Window
 
 # Define keys used for input fields (used to construct tooltip tags)
 input_field_keys = ["maxcap", "mincap", "capstep", "gpucutofffordecrease", "gpucutoffforincrease", "cpucutofffordecrease", "cpucutoffforincrease"]
@@ -655,12 +630,21 @@ tooltips = {
     "Reset_Default": "Resets all settings to the program's default values. This is useful if you want to start fresh or if you encounter issues."
 }
 
+questions = [
+    "1. What to do when I get the error message '02_Failed to read counter (LUID:...'?",
+    "2. How do I disable CPU usage monitoring?",
+    "3. How do I toggle the visibility of the plot legend?"
+]
+
 FAQs = {
     "faq_1": "Toggle the 'Detect Render GPU' button to reset the GPU monitoring initialzation parameters. This will fix the error.",
-    "faq_2": "You can disable CPU usage monitoring by setting the CPU usage upper threshold to >100 in the settings."
+    "faq_2": "You can disable CPU usage monitoring by setting the CPU usage upper threshold to >100 in the settings.",
+    "faq_3": "You can click on the plot legent elements to toggle their visibility."
 }
 
-# GUI setup
+faq_keys = ["faq_1", "faq_2", "faq_3"]
+
+# GUI setup: Main Window
 dpg.create_context()
 
 with dpg.font_registry():
@@ -673,6 +657,8 @@ with dpg.font_registry():
         # Will use DearPyGui's default font as fallback
 
 # Create a theme for rounded buttons
+background_colour = (37, 37, 38)  # Default grey background
+
 with dpg.theme(tag="rounded_widget_theme"):
     with dpg.theme_component(dpg.mvAll):
         dpg.add_theme_style(dpg.mvStyleVar_FrameRounding, 3.0)  # Set corner rounding to 10.0
@@ -683,20 +669,11 @@ with dpg.theme(tag="rounded_widget_theme"):
         #dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, (90, 190, 255))  # Active color
 
     # Customize specific widget types
-    with dpg.theme_component(dpg.mvInputInt):
-        #dpg.add_theme_color(dpg.mvThemeCol_FrameBg, (100, 100, 100))  # Background color
-        dpg.add_theme_color(dpg.mvThemeCol_FrameBgHovered, (150, 150, 150))  # Hovered background color
-        dpg.add_theme_color(dpg.mvThemeCol_FrameBgActive, (200, 200, 200))  # Active background color
+    #with dpg.theme_component(dpg.mvInputInt):
 
-    with dpg.theme_component(dpg.mvInputText):
-        #dpg.add_theme_color(dpg.mvThemeCol_FrameBg, (100, 100, 100))  # Background color
-        dpg.add_theme_color(dpg.mvThemeCol_FrameBgHovered, (150, 150, 150))  # Hovered background color
-        dpg.add_theme_color(dpg.mvThemeCol_FrameBgActive, (200, 200, 200))  # Active background color
+    #with dpg.theme_component(dpg.mvInputText):
 
     with dpg.theme_component(dpg.mvCheckbox):
-        #dpg.add_theme_color(dpg.mvThemeCol_FrameBg, (100, 100, 100))  # Background color
-        #dpg.add_theme_color(dpg.mvThemeCol_FrameBgHovered, (150, 150, 150))  # Hovered background color
-        #dpg.add_theme_color(dpg.mvThemeCol_FrameBgActive, (200, 200, 200))  # Active background color
         dpg.add_theme_color(dpg.mvThemeCol_CheckMark, (50, 150, 250))  # Checkmark color
 
 # Bind the rounded button theme globally
@@ -723,11 +700,9 @@ with dpg.theme(tag="detect_gpu_theme"):
 
 with dpg.theme(tag="revert_gpu_theme"):
     with dpg.theme_component(dpg.mvButton):
-        dpg.add_theme_color(dpg.mvThemeCol_Button, (15, 86, 135))  # Blue color background
+        dpg.add_theme_color(dpg.mvThemeCol_Button, (15, 86, 135))  # Blue color botton background
         dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, (6, 96, 158))
         dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, (0, 105, 176))
-
-background_colour = (37, 37, 38)  # Default grey background
 
 with dpg.theme(tag="button_right"):
     with dpg.theme_component(dpg.mvButton):
@@ -869,16 +844,12 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
 
         with dpg.tab(label="FAQs", tag="tab4"):
             with dpg.child_window(height=135):
-                dpg.add_text("Frequently Asked Questions (FAQs): Hover for more info")
+                dpg.add_text("Frequently Asked Questions (FAQs): Hover for answers")
                 dpg.add_spacer(height=3)
-                dpg.add_text("1. What to do when I get the error message '02_Failed to read counter (LUID:...'?", 
-                             tag="faq_1", bullet=True)
-                with dpg.tooltip(parent="faq_1", delay=0.5):
-                    dpg.add_text(FAQs["faq_1"], wrap = 300)
-                dpg.add_text("2. How do I disable CPU usage monitoring?",
-                              tag="faq_2", bullet=True)
-                with dpg.tooltip(parent="faq_2", delay=0.5):
-                    dpg.add_text(FAQs["faq_2"], wrap = 300)
+                for question, key in zip(questions, faq_keys):
+                    dpg.add_text(question, tag=key, bullet=True)  # Add the question text
+                    with dpg.tooltip(parent=key, delay=0.5):  # Create a tooltip for the question
+                        dpg.add_text(FAQs[key], wrap=300)  # Add the tooltip content dynamically from FAQs
     
     # Third Row: Plot Section
     dpg.add_spacer(height=1)
@@ -893,7 +864,7 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                               no_highlight_item=True, no_highlight_axis=True, outside=True)
 
             # Left Y-axis for GPU Usage
-            with dpg.plot_axis(dpg.mvYAxis, label="GPU/CPU Usage (%)", tag="y_axis_left", no_gridlines=False) as y_axis_left:
+            with dpg.plot_axis(dpg.mvYAxis, label="GPU/CPU Usage (%)", tag="y_axis_left", no_gridlines=True) as y_axis_left:
                 dpg.add_line_series([], [], label="GPU: --", parent=y_axis_left, tag="gpu_usage_series")
                 dpg.add_line_series([], [], label="CPU: --", parent=y_axis_left, tag="cpu_usage_series")
                 # Add static horizontal dashed lines
