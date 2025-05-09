@@ -1,6 +1,6 @@
 # Dynamic FPS Limiter v4.0
 
-A simple companion app for RTSS to dynamically adjust framerate limits based on GPU/CPU usage. Especially useful in reducing input latency when running external frame generation tools such as lossless scaling.
+A lightweight companion app for RTSS that dynamically adjusts framerate limits based on real-time GPU and CPU usage. It's especially useful for reducing input latency when using frame generation tools like Lossless Scaling.
 
 > [!NOTE]
 > - This app requires Rivatuner Statistics Server (RTSS) running in the background to function.
@@ -25,8 +25,6 @@ This app solves the issue by dynamically adjusting the base FPS limit in demandi
   <img src="/docs/Images/DFL_v4.0.0_01.png" style="width: 450px; max-width: 45%;" />
 </p>
 
-For more example images, check [here.](/docs/Examples.md)
-
 - **Global Dynamic FPS Cap:**
   - Outside its use with Lossless Scaling (LSFG), this app can be used to set a general, game-agnostic dynamic FPS cap for your global profile. Simply set the ‘Max FPS limit’ to your monitor’s refresh rate before launching a game, and the app will automatically adjust your FPS to keep GPU usage below your desired threshold.
 - **Improved Adaptive Frame Generation (AFG) Experience:**
@@ -34,7 +32,7 @@ For more example images, check [here.](/docs/Examples.md)
 
 ## Installation
 
-### Build It Yourself
+### To Build It Yourself,
 If you'd like to inspect or customize the source code, follow the instructions in [BUILD.md](/src/BUILD.md)
 
 ### To Use Prebuilt Executable,
@@ -45,13 +43,17 @@ If you'd like to inspect or customize the source code, follow the instructions i
 
 > [!CAUTION]
 > - The executable in the release was packaged using PyInstaller and may be flagged by some antivirus software as a Trojan. 
-> - You can find the VirusTotal report on the app's behaviour for the latest release (v3.0.2):
->   - [DynamicFPSLimiter_v3.0.2.zip](https://www.virustotal.com/gui/file/d3b5bf17bfc9b77d6cc86685769c921239c9ea1bdae64f1bf63887a3353d40bf/behavior)
+> - You can find the VirusTotal report on the app's behaviour for the latest release (v4.0.0):
+>   - [DynamicFPSLimiter_v4.0.2.zip](https://www.virustotal.com/gui/file/d3b5bf17bfc9b77d6cc86685769c921239c9ea1bdae64f1bf63887a3353d40bf/behavior)
 >   - [DynamicFPSLimiter.exe](https://www.virustotal.com/gui/file/d09875d3eb17335e28336e3a499b640928b6bed129af43175e74ec5ebd29667c/behavior)
 
 ## Troubleshooting
 
 Check out the [Troubleshooting Guide](/docs/Troubleshooting.md) for a list of known bugs, common problems, and their solutions.
+
+# Under the hood
+
+To learn more about the internal logic, including how GPU/CPU usage is monitored and how framerate limits are calculated and applied, check out the [How It Works](docs/HOW_IT_WORKS.md) guide.
 
 ## Disclaimer
 
