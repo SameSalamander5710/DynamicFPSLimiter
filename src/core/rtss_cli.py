@@ -34,13 +34,14 @@ class RTSSCLI:
 
     def set_property(self, profile, prop, value):
         """Sets a property for a given profile."""
+        self.logger.add_log(f"Setting framerate Limit to {value} for profile '{profile}' with property '{prop}'.")
         # Replace "Global" with an empty string
         if profile == "Global":
             profile = ""
         #self.logger.add_log(f"{profile.encode()}, {prop.encode()}, {value}")
         self.rtss.set_property(profile.encode(), prop.encode(), value)
         self.logger.add_log(f"Last RTSS error, if present: {ctypes.get_last_error()}")
-        self.logger.add_log(f"FPS Limiter set to {value} for profile '{profile}' with property '{prop}'.")
+    
 
     def get_property(self, profile, prop):
         """Gets a property value for a given profile."""

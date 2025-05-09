@@ -1,0 +1,4 @@
+key,question,answer
+faq_1,What to do when I get the error message '02_Failed to read counter (LUID:...'?,Toggle the 'Detect Render GPU' button to reset the GPU monitoring initialization parameters. This will fix the error.
+faq_2,How do I disable CPU usage monitoring?,You can disable CPU usage monitoring by setting the CPU usage upper threshold to >100 in the settings.
+faq_3,How do I toggle the visibility of the plot elements?,You can click on the corresponding plot legend to toggle their visibility.

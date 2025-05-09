@@ -11,6 +11,7 @@ import time
 import math
 import os
 import sys
+import csv
 
 # tweak path so "src/" (or wherever your modules live) is on sys.path
 _this_dir = os.path.abspath(os.path.dirname(__file__))
@@ -39,6 +40,7 @@ rtss_dll_path = os.path.join(Base_dir, "assets/rtss.dll")
 error_log_file = os.path.join(parent_dir, "error_log.txt")
 icon_path = os.path.join(Base_dir, 'assets/DynamicFPSLimiter.ico')
 font_path = os.path.join(os.environ["WINDIR"], "Fonts", "segoeui.ttf") #segoeui, Verdana, Tahoma, Calibri, micross
+faq_path = os.path.join(Base_dir, "assets/faqs.csv")
 
 logger.init_logging(error_log_file)
 rtss_manager = None
@@ -107,6 +109,15 @@ Default_settings_original = {
     'gpupollinginterval': 100,
     'gpupollingsamples': 20
 }
+
+questions = []
+FAQs = {}
+
+with open(faq_path, newline='', encoding='utf-8') as csvfile:
+    reader = csv.DictReader(csvfile)
+    for row in reader:
+        questions.append(row["question"])
+        FAQs[row["key"]] = row["answer"]
 
 # Function to get values with correct types
 def get_setting(key, value_type=int):
@@ -630,20 +641,6 @@ tooltips = {
     "Reset_Default": "Resets all settings to the program's default values. This is useful if you want to start fresh or if you encounter issues."
 }
 
-questions = [
-    "1. What to do when I get the error message '02_Failed to read counter (LUID:...'?",
-    "2. How do I disable CPU usage monitoring?",
-    "3. How do I toggle the visibility of the plot legend?"
-]
-
-FAQs = {
-    "faq_1": "Toggle the 'Detect Render GPU' button to reset the GPU monitoring initialzation parameters. This will fix the error.",
-    "faq_2": "You can disable CPU usage monitoring by setting the CPU usage upper threshold to >100 in the settings.",
-    "faq_3": "You can click on the plot legent elements to toggle their visibility."
-}
-
-faq_keys = ["faq_1", "faq_2", "faq_3"]
-
 # GUI setup: Main Window
 dpg.create_context()
 
@@ -846,10 +843,10 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
             with dpg.child_window(height=135):
                 dpg.add_text("Frequently Asked Questions (FAQs): Hover for answers")
                 dpg.add_spacer(height=3)
-                for question, key in zip(questions, faq_keys):
-                    dpg.add_text(question, tag=key, bullet=True)  # Add the question text
-                    with dpg.tooltip(parent=key, delay=0.5):  # Create a tooltip for the question
-                        dpg.add_text(FAQs[key], wrap=300)  # Add the tooltip content dynamically from FAQs
+                for question, (key, answer) in zip(questions, FAQs.items()):
+                    dpg.add_text(question, tag=key, bullet=True)
+                    with dpg.tooltip(parent=key, delay=0.5):
+                        dpg.add_text(answer, wrap=300)
     
     # Third Row: Plot Section
     dpg.add_spacer(height=1)
