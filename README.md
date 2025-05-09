@@ -1,20 +1,14 @@
-# Dynamic FPS Limiter v3.0
-A GUI app to assess GPU usage using PowerShell and dynamically adjust frame rate limits via RTSS. 
+# Dynamic FPS Limiter v4.0
+
+A lightweight companion app for RTSS that dynamically adjusts framerate limits based on real-time GPU and CPU usage. It's especially useful for reducing input latency when using frame generation tools like Lossless Scaling.
 
 > [!NOTE]
-> - This app requires Rivatuner Statistics Server (RTSS) to function.
-> - RTSS runs as an elevated process, so DynamicFPSLimiter must be run with administrator privileges for full functionality.
-
-- Now uses [@xanderfrangos](https://github.com/xanderfrangos)'s [rtss-cli.exe](https://github.com/xanderfrangos/rtss-cli) to directly modify RTSS framerate limits—no more reliance on AutoHotkey or RTSS hotkeys.
-  - All framerate control functionality is now fully handled within the DynamicFPSLimiter app—no manual updates in RTSS required.
-- Added `Detect Render GPU` button: Automatically detects the GPU used for game rendering by checking which GPU has the highest "3D engine" utilization at the time of clicking. Run this while the game is active to detect the render GPU.
-- Added `Profiles` functionality: Lets users manually create target profiles that are already configured in RTSS. This is required to make changes to non-Global target profiles in RTSS.
+> - This app requires Rivatuner Statistics Server (RTSS) running in the background to function.
+> - Since RTSS runs with elevated privileges, DynamicFPSLimiter must also be run as Administrator to function fully.
 
 ## Table of Contents
 - [The Concept](#the-concept)
 - [Installation](#installation)
-- [Setup](#setup)
-- [What The App Does](#what-the-app-does)
 - [Troubleshooting](#troubleshooting)
 
 ## The Concept
@@ -28,10 +22,8 @@ This app solves the issue by dynamically adjusting the base FPS limit in demandi
 
 
 <p float="left">
-  <img src="/Docs/Images/DFL_v3.0.0_01.png" style="width: 450px; max-width: 45%;" />
+  <img src="/docs/Images/DFL_v4.0.0_01.png" style="width: 450px; max-width: 45%;" />
 </p>
-
-For more example images, check [here.](/Docs/Examples.md)
 
 - **Global Dynamic FPS Cap:**
   - Outside its use with Lossless Scaling (LSFG), this app can be used to set a general, game-agnostic dynamic FPS cap for your global profile. Simply set the ‘Max FPS limit’ to your monitor’s refresh rate before launching a game, and the app will automatically adjust your FPS to keep GPU usage below your desired threshold.
@@ -40,42 +32,28 @@ For more example images, check [here.](/Docs/Examples.md)
 
 ## Installation
 
-> [!CAUTION]
-> - The executable in the release was packaged using PyInstaller and may be flagged by some antivirus software as a Trojan (e.g., ZkarletFlash). Until this issue is fixed, feel free to build the executable from source using the provided Python scripts.
-> - You can find the VirusTotal report on the app's behaviour for the latest release (v3.0.2):
->   - [DynamicFPSLimiter_v3.0.2.zip](https://www.virustotal.com/gui/file/d3b5bf17bfc9b77d6cc86685769c921239c9ea1bdae64f1bf63887a3353d40bf/behavior)
->   - [DynamicFPSLimiter.exe](https://www.virustotal.com/gui/file/d09875d3eb17335e28336e3a499b640928b6bed129af43175e74ec5ebd29667c/behavior)
+### To Build It Yourself,
+If you'd like to inspect or customize the source code, follow the instructions in [BUILD.md](/src/BUILD.md)
 
+### To Use Prebuilt Executable,
 1. Download the `DynamicFPSLimiter_vX.X.X.zip` file from the latest release [here.](https://github.com/SameSalamander5710/DynamicFPSLimiter/releases)
 2. Extract the zip file to a desired location
-3. Run `DynamicFPSLimiter.exe` with admin privileges.
+3. Run `DynamicFPSLimiter.exe`  as Administrator.
+4. No additional configuration in RTSS is necessary.
 
-## Setup
-
-1. Install RTSS and make sure framerate limits are being enforced in general.
-2. If you're using non-Global profiles in RTSS, then in the DynamicFPSLimiter app, create a profile with the same name as the one you've set up in RTSS
-3. Once everything is set up, you’re good to go!
-   - Click **'Start'** either before or after launching the game. The app will automatically set the target FPS limit and begin adjusting the framerate limit in RTSS.
-   - **Note:** Any changes in the app must be made before clicking **'Start'**. Changes made during operation may not be applied.
-
-## What The App Does
-
-The DynamicFPSLimiter app uses a simple PowerShell command to monitor GPU usage in real-time and dynamically adjust the frame limit based on GPU load.
-
-How It Works (with ~default~ random values, but this customizable):
-- **When GPU usage exceeds 80% for 2 consecutive seconds:**
-  - The app reduces the frame limit by 5 FPS (or multiples of 5) to bring the FPS below the average of the last two seconds when GPU usage was high.
-  - Example: If the FPS drops from a capped 60 FPS to 48 FPS, the new frame limit will be set to 45 FPS.
-- **When GPU usage drops below 70% for 2 consecutive seconds:**
-  - The app increases the frame limit by 5 FPS. This continues as long as the GPU load stays below 70%, until the original frame cap is reached.
-- **If GPU usage or FPS drops below 20% or 20 FPS respectively:**
-  - The app does not trigger any FPS cap change. This is to prevent loading screens or other low-performance states from unnecessarily affecting the FPS cap.
-- The app checks **GPU usage and FPS once every second**.
-
+> [!CAUTION]
+> - The executable in the release was packaged using PyInstaller and may be flagged by some antivirus software as a Trojan. 
+> - You can find the VirusTotal report on the app's behaviour for the latest release (v4.0.0):
+>   - [DynamicFPSLimiter_v4.0.0.zip](https://www.virustotal.com/gui/file/b1fcaa5d0854e68359837562bf3df99158d89a457e2839d8b5e7fea2a20e5c32/behavior)
+>   - [DynamicFPSLimiter.exe](https://www.virustotal.com/gui/file/44bb6393c624da36c34e009c52f0057b92c65371f493196155fda6cdceab4d88/behavior)
 
 ## Troubleshooting
 
-Check out the [Troubleshooting Guide](/Docs/Troubleshooting.md) for a list of known bugs, common problems, and their solutions.
+Check out the [Troubleshooting Guide](/docs/Troubleshooting.md) for a list of known bugs, common problems, and their solutions.
+
+# Under the hood
+
+To learn more about the internal logic, including how GPU/CPU usage is monitored and how framerate limits are calculated and applied, check out the [How It Works](docs/HOW_IT_WORKS.md) guide.
 
 ## Disclaimer
 
@@ -84,10 +62,15 @@ Check out the [Troubleshooting Guide](/Docs/Troubleshooting.md) for a list of kn
 
 ## Older versions 
 
-For the older interaction of the same idea, see: 
-1. [DynamicFPSLimiter v1.0](https://github.com/SameSalamander5710/DynamicFPSLimiter/tree/DFL_v1.0)
-2. [DynamicFPSLimiter v2.0](https://github.com/SameSalamander5710/DynamicFPSLimiter/tree/DFL_v2.0)
+For the older interactions or versions of the same idea, see:
+1. [DynamicFPSLimiter v1.0](https://github.com/SameSalamander5710/DynamicFPSLimiter/tree/DFL_v1)
+2. [DynamicFPSLimiter v2.0](https://github.com/SameSalamander5710/DynamicFPSLimiter/tree/DFL_v2)
+3. [DynamicFPSLimiter v3.0](https://github.com/SameSalamander5710/DynamicFPSLimiter/tree/DFL_v3)
 
-## Miscellaneous
+## License
 
+This project is currently licensed under the Apache License 2.0. See the [LICENSE](./LICENSE.txt) file for details.
 
+Previously licensed under the MIT License. The project was relicensed to Apache 2.0 on April 25, 2025 to provide clearer legal protections and attribution requirements.
+
+<!-- ## Miscellaneous -->
