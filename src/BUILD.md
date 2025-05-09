@@ -53,6 +53,3 @@ To create a standalone executable:
 ### Notes
 - **Administrator Privileges**: Only required when running the application, not when building.
 - **Executable Location**: After building, find the executable in `output/dist`. It includes all dependencies.
-- **First Run**: When running the built executable, Windows may show a UAC prompt for administrator privileges.
-
-
