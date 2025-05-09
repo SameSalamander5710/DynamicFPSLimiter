@@ -34,10 +34,11 @@ def build_executable():
         '--noconfirm',
         '--noconsole',
         '--name', 'DynamicFPSLimiter',
-        '--icon', 'src/assets/DynamicFPSLimiter.ico',
+        '--icon', 'src/core/assets/DynamicFPSLimiter.ico',
         '--version-file', 'src/metadata/version.txt',
-        '--add-data', 'src/assets/DynamicFPSLimiter.ico:assets',
-        '--add-data', 'src/assets/rtss.dll:assets',
+        '--add-data', 'src/core/assets/DynamicFPSLimiter.ico:assets',
+        '--add-data', 'src/core/assets/rtss.dll:assets',
+        '--add-data', 'src/core/assets/faqs.csv:assets',
         '--distpath', 'output/dist',
         '--workpath', 'output/build'
     ])

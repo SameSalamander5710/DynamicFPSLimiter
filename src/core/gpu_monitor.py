@@ -42,7 +42,7 @@ class GPUUsageMonitor:
         self.query_handle = self._init_gpu_state()
         self.instances = self._setup_gpu_instances()  # Store instances
         self.query_handle, self.counter_handles = self._setup_gpu_query_from_instances(
-            self.query_handle, self.instances, "engtype_" 
+            self.query_handle, self.instances, "engtype_3D"
         )
         if self.query_handle is None:
             raise RuntimeError("Query handle not set up.")
@@ -213,7 +213,7 @@ class GPUUsageMonitor:
                                 total += val.doubleValue
                             else:
                                 self.logger.add_log(f"02_Failed to read counter (LUID: {luid}): status={status}")
-                                
+                                self.initialize()
                         usage_by_luid[luid] = total
 
                     if not usage_by_luid:
