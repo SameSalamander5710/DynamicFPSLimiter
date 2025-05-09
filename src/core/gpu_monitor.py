@@ -206,15 +206,17 @@ class GPUUsageMonitor:
 
                     for luid, handles in handles_to_use.items():
                         total = 0.0
+                        #max_value = 0.0
                         for h in handles:
                             val = PDH_FMT_COUNTERVALUE()
                             status = pdh.PdhGetFormattedCounterValue(h, PDH_FMT_DOUBLE, None, ctypes.byref(val))
                             if status == 0 and val.CStatus == 0:
                                 total += val.doubleValue
+                                #max_value = max(max_value, val.doubleValue)
                             else:
                                 self.logger.add_log(f"02_Failed to read counter (LUID: {luid}): status={status}")
-                                self.initialize()
-                        usage_by_luid[luid] = total
+                                self.reinitialize()
+                        usage_by_luid[luid] = total #max_value or total
 
                     if not usage_by_luid:
                         return 0, ""
@@ -232,6 +234,20 @@ class GPUUsageMonitor:
 
                 except Exception as e:
                     self.logger.add_log(f"GPU monitor error: {e}")
+
+    def reinitialize(self, engine_type: str = "engtype_3D"):
+        self.logger.add_log("Reinitializing GPU monitor.")
+        self.initialize()
+
+        temp_counter_handles = {}
+        # Setup counters for the specified engine type
+        _, temp_counter_handles = self._setup_gpu_query_from_instances(
+            self.query_handle, self.instances, engine_type  # Use stored instances
+        )
+
+        pdh.PdhCollectQueryData(self.query_handle)
+        time.sleep(0.1)
+        pdh.PdhCollectQueryData(self.query_handle)
 
     def calculate_percentile(data: list, percentile: float) -> float:
         """

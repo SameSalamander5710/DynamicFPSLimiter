@@ -81,10 +81,10 @@ else:
         'maxcap': '60',
         'mincap': '30',
         'capstep': '5',
-        'gpucutofffordecrease': '80',
-        'gpucutoffforincrease': '70',
-        'cpucutofffordecrease': '100',
-        'cpucutoffforincrease': '95'
+        'gpucutofffordecrease': '85',
+        'gpucutoffforincrease': '75',
+        'cpucutofffordecrease': '95',
+        'cpucutoffforincrease': '85'
     }
     with open(profiles_path, 'w') as f:
         profiles_config.write(f)
@@ -93,11 +93,11 @@ Default_settings_original = {
     "maxcap": 60,
     "mincap": 30,
     "capstep": 5,
-    "gpucutofffordecrease": 80,
+    "gpucutofffordecrease": 85,
+    "gpucutoffforincrease": 75,
+    'cpucutofffordecrease': 95,
+    'cpucutoffforincrease': 85,
     "delaybeforedecrease": 2,
-    "gpucutoffforincrease": 70,
-    'cpucutofffordecrease': 100,
-    'cpucutoffforincrease': 95,
     "delaybeforeincrease": 2,
     "minvalidgpu": 20,
     "minvalidfps": 20,
@@ -447,13 +447,19 @@ def monitoring_loop():
     min_ft = mincap - capstep
     max_ft = maxcap + capstep
     
+    gpu_monitor.reinitialize()
+
     while running:
         fps, process_name = rtss_manager.get_fps_for_active_window()
         #logger.add_log(f"Current highed CPU core load: {cpu_monitor.cpu_percentile}%")
         
-        if process_name is not None and process_name != "DynamicFPSLimiter.exe":
+        if process_name and process_name != last_process_name:
             last_process_name = process_name
-            dpg.set_value("LastProcess", last_process_name)
+            logger.add_log(f"Active window changed to: {last_process_name}") 
+            if process_name != "DynamicFPSLimiter.exe":
+                dpg.set_value("LastProcess", last_process_name)
+            gpu_monitor.reinitialize()
+
         if fps:
             if len(fps_values) > 2:
                 fps_values.pop(0)
