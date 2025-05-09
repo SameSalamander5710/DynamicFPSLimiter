@@ -115,9 +115,10 @@ FAQs = {}
 
 with open(faq_path, newline='', encoding='utf-8') as csvfile:
     reader = csv.DictReader(csvfile)
-    for row in reader:
+    for idx, row in enumerate(reader, start=1):
+        key = f"faq_{idx}"
         questions.append(row["question"])
-        FAQs[row["key"]] = row["answer"]
+        FAQs[key] = row["answer"]
 
 # Function to get values with correct types
 def get_setting(key, value_type=int):
