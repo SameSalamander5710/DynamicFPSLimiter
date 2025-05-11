@@ -31,7 +31,7 @@ class FPSCapSelector:
     def update_fps_cap_visualization(self):
         dpg.delete_item("fps_cap_drawlist", children_only=True)  # Clear the drawlist
         if self.selected_fps_caps:
-            draw_width = 400  # Width of the drawlist
+            draw_width = 380  # Width of the drawlist
             draw_height = 50  # Height of the drawlist
             margin = 10  # Margin around the drawlist
 
@@ -80,26 +80,48 @@ class FPSCapSelector:
 
             with dpg.group(horizontal=True):
                 dpg.add_spacer(width=1)
-                dpg.add_slider_int(tag="fps_slider", default_value=self.x_min, min_value=self.x_min, max_value=self.x_max, clamped=True, width=300)
-                dpg.add_button(label="+ Add", callback=self.add_fps_cap)
 
-            #dpg.add_spacer(height=5)
-            #dpg.add_text("Visual Representation of FPS Caps:")
+                dpg.add_button(label="-", width=30, callback=self.decrement_slider)
+
+                # Add the slider
+                dpg.add_slider_int(
+                    tag="fps_slider",
+                    default_value=self.x_min,
+                    min_value=self.x_min,
+                    max_value=self.x_max,
+                    clamped=True,
+                    width=250,
+                    )
+      
+                dpg.add_button(label="+", width=30, callback=self.increment_slider)
+
+                # Add the "Add" button
+                dpg.add_button(label="Add", callback=self.add_fps_cap)
 
             # Add a drawlist to represent the FPS caps
             with dpg.drawlist(width=420, height=70, tag="fps_cap_drawlist"):
                 pass  # Populated dynamically
-            
+
             dpg.add_spacer(height=10)
-            dpg.add_text("Active FPS Caps:")
+            dpg.add_text("Selected FPS Caps:")
 
             with dpg.child_window(tag="fps_cap_group", height=100, width=420):
                 pass  # Populated dynamically
 
+            # Ensure x_min and x_max are displayed by default
+            self.update_fps_cap_display()
 
+    def increment_slider(self, sender, app_data):
+        """Increment the slider value."""
+        current_value = dpg.get_value("fps_slider")
+        if current_value < self.x_max:  # Ensure the value does not exceed the maximum
+            dpg.set_value("fps_slider", current_value + 1)
 
-        # Ensure x_min and x_max are displayed by default
-        self.update_fps_cap_display()
+    def decrement_slider(self, sender, app_data):
+        """Decrement the slider value."""
+        current_value = dpg.get_value("fps_slider")
+        if current_value > self.x_min:  # Ensure the value does not go below the minimum
+            dpg.set_value("fps_slider", current_value - 1)
 
     def start(self):
         dpg.create_viewport(title="FPS Cap Selector", width=500, height=450)
@@ -110,6 +132,6 @@ class FPSCapSelector:
 
 # If this script is run directly, create and start the UI
 if __name__ == "__main__":
-    fps_cap_selector = FPSCapSelector(x_min=30, x_max=60)  # Example of custom range
+    fps_cap_selector = FPSCapSelector(x_min=30, x_max=100)  # Example of custom range
     fps_cap_selector.create_ui()
     fps_cap_selector.start()
