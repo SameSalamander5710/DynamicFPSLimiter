@@ -9,15 +9,12 @@ class FPSCapSelector:
         self.x_min = x_min  # Minimum value for the slider range
         self.x_max = x_max  # Maximum value for the slider range
         self.selected_fps_caps = {self.x_min, self.x_max}  # Initialize with x_min and x_max
-        self.create_context()
+        dpg.create_context()
+        self.create_transparent_button_theme()
         with dpg.font_registry():
             default_font = dpg.add_font(os.path.join(os.environ["WINDIR"], "Fonts", "segoeui.ttf"), 18)
             if default_font:
                 dpg.bind_font(default_font)
-
-
-    def create_context(self):
-        dpg.create_context()
 
     def update_fps_cap_display(self):
         dpg.delete_item("fps_cap_group", children_only=True)
@@ -30,9 +27,10 @@ class FPSCapSelector:
 
     def update_fps_cap_visualization(self):
         dpg.delete_item("fps_cap_drawlist", children_only=True)  # Clear the drawlist
+        dpg.delete_item("fps_cap_button_group", children_only=True)  # Clear the button group
         if self.selected_fps_caps:
             draw_width = 380  # Width of the drawlist
-            draw_height = 50  # Height of the drawlist
+            draw_height = 70  # Height of the drawlist
             margin = 10  # Margin around the drawlist
 
             # Draw the base line
@@ -56,14 +54,29 @@ class FPSCapSelector:
                 )
 
                 # Draw the corresponding value below the rectangle
-                text_y_pos = y_pos + rect_height // 2 + 5  # Position the text slightly below the rectangle
+                text_y_pos = y_pos - rect_height // 2 - 25  # Position the text slightly above the rectangle
                 dpg.draw_text(
-                    (x_pos - 5, text_y_pos),  # Center the text horizontally
+                    (x_pos - 10, text_y_pos),  # Center the text horizontally
                     str(cap),
                     color=(255, 255, 255),  # White text color
                     size=18,  # Font size
                     parent="fps_cap_drawlist"
                 )
+
+                # Add a button below the text in a separate group
+                button_y_pos = text_y_pos + 140  # Position the button slightly below the text
+                button_id = dpg.add_button(
+                    label="x",
+                    width=15,
+                    height=25,
+                    pos=(x_pos, button_y_pos),  # Center the button horizontally
+                    callback=self.remove_fps_cap,
+                    user_data=cap,
+                    parent="fps_cap_button_group"
+                )
+
+                # Bind the transparent theme to the button
+                dpg.bind_item_theme(button_id, "transparent_button_theme")
 
     def add_fps_cap(self, sender, app_data, user_data):
         cap = dpg.get_value("fps_slider")
@@ -74,6 +87,15 @@ class FPSCapSelector:
         self.selected_fps_caps.discard(user_data)
         self.update_fps_cap_display()
 
+    def create_transparent_button_theme(self):
+        """Create a theme to make buttons transparent."""
+        with dpg.theme(tag="transparent_button_theme"):
+            with dpg.theme_component(dpg.mvButton):
+                # Set the button's background color to transparent
+                dpg.add_theme_color(dpg.mvThemeCol_Button, (0, 0, 0, 0))  # Fully transparent
+                dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, (255, 255, 255, 50))  # Slightly visible on hover
+                dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, (255, 255, 255, 100))  # Slightly more visible when active
+
     def create_ui(self):
         with dpg.window(label="Custom FPS Cap Selector", width=450, height=400):
             dpg.add_text("Select an FPS cap and add it to the list:")
@@ -81,7 +103,7 @@ class FPSCapSelector:
             with dpg.group(horizontal=True):
                 dpg.add_spacer(width=1)
 
-                dpg.add_button(label="-", width=30, callback=self.decrement_slider)
+                dpg.add_button(label="<", width=30, callback=lambda: self.adjust_slider(None, None, increment=False))
 
                 # Add the slider
                 dpg.add_slider_int(
@@ -91,36 +113,36 @@ class FPSCapSelector:
                     max_value=self.x_max,
                     clamped=True,
                     width=250,
-                    )
-      
-                dpg.add_button(label="+", width=30, callback=self.increment_slider)
+                )
+
+                dpg.add_button(label=">", width=30, callback=lambda: self.adjust_slider(None, None, increment=True))
 
                 # Add the "Add" button
                 dpg.add_button(label="Add", callback=self.add_fps_cap)
 
             # Add a drawlist to represent the FPS caps
-            with dpg.drawlist(width=420, height=70, tag="fps_cap_drawlist"):
+            with dpg.drawlist(width=420, height=50, tag="fps_cap_drawlist"):
                 pass  # Populated dynamically
 
-            dpg.add_spacer(height=10)
-            dpg.add_text("Selected FPS Caps:")
+            # Add a group for buttons below the drawlist
+            with dpg.group(tag="fps_cap_button_group"):
+                pass  # Buttons will be added dynamically
 
-            with dpg.child_window(tag="fps_cap_group", height=100, width=420):
+            dpg.add_spacer(height=10)
+            dpg.add_text("Active FPS Caps:")
+
+            with dpg.child_window(tag="fps_cap_group", height=85, width=420, horizontal_scrollbar=True, border=True):
                 pass  # Populated dynamically
 
             # Ensure x_min and x_max are displayed by default
             self.update_fps_cap_display()
 
-    def increment_slider(self, sender, app_data):
-        """Increment the slider value."""
+    def adjust_slider(self, sender, app_data, increment=True):
+        """Adjust the slider value by incrementing or decrementing."""
         current_value = dpg.get_value("fps_slider")
-        if current_value < self.x_max:  # Ensure the value does not exceed the maximum
+        if increment and current_value < self.x_max:  # Increment the value
             dpg.set_value("fps_slider", current_value + 1)
-
-    def decrement_slider(self, sender, app_data):
-        """Decrement the slider value."""
-        current_value = dpg.get_value("fps_slider")
-        if current_value > self.x_min:  # Ensure the value does not go below the minimum
+        elif not increment and current_value > self.x_min:  # Decrement the value
             dpg.set_value("fps_slider", current_value - 1)
 
     def start(self):
@@ -132,6 +154,6 @@ class FPSCapSelector:
 
 # If this script is run directly, create and start the UI
 if __name__ == "__main__":
-    fps_cap_selector = FPSCapSelector(x_min=30, x_max=100)  # Example of custom range
+    fps_cap_selector = FPSCapSelector(x_min=30, x_max=120)  # Example of custom range
     fps_cap_selector.create_ui()
     fps_cap_selector.start()
