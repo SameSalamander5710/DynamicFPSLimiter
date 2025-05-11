@@ -27,14 +27,22 @@ class FPSCapSelector:
             margin = 10  # Margin around the drawlist
 
             # Draw the base line
-            dpg.draw_line((margin, draw_height // 2), (draw_width + margin, draw_height // 2), color=(200, 200, 200), thickness=2, parent="fps_cap_drawlist")
+            dpg.draw_line((margin, draw_height // 2), (draw_width + margin, draw_height // 2), color=(200, 200, 200), thickness=4, parent="fps_cap_drawlist")
 
-            # Draw points for each selected FPS cap
+            # Draw rectangles for each selected FPS cap
             for cap in sorted(self.selected_fps_caps):
                 # Map the FPS cap value to the drawlist width
                 x_pos = margin + int((cap - self.x_min) / (self.x_max - self.x_min) * draw_width)
                 y_pos = draw_height // 2
-                dpg.draw_circle((x_pos, y_pos), 5, color=(255, 0, 0), fill=(255, 0, 0), parent="fps_cap_drawlist")
+                rect_width = 10  # Width of the rectangle
+                rect_height = 20  # Height of the rectangle
+                dpg.draw_rectangle(
+                    (x_pos - rect_width // 2, y_pos - rect_height // 2),
+                    (x_pos + rect_width // 2, y_pos + rect_height // 2),
+                    color=(255, 0, 0),
+                    fill=(255, 0, 0),
+                    parent="fps_cap_drawlist"
+                )
 
     def add_fps_cap(self, sender, app_data, user_data):
         cap = dpg.get_value("fps_slider")
@@ -50,7 +58,7 @@ class FPSCapSelector:
             dpg.add_text("Select an FPS cap and add it to the list:")
 
             with dpg.group(horizontal=True):
-                dpg.add_slider_int(tag="fps_slider", default_value=60, min_value=self.x_min, max_value=self.x_max, width=300)
+                dpg.add_slider_int(tag="fps_slider", default_value=self.x_min, min_value=self.x_min, max_value=self.x_max, width=300)
                 dpg.add_button(label="+ Add", callback=self.add_fps_cap)
 
             dpg.add_spacer(height=5)
@@ -78,6 +86,6 @@ class FPSCapSelector:
 
 # If this script is run directly, create and start the UI
 if __name__ == "__main__":
-    fps_cap_selector = FPSCapSelector(x_min=20, x_max=200)  # Example of custom range
+    fps_cap_selector = FPSCapSelector(x_min=30, x_max=60)  # Example of custom range
     fps_cap_selector.create_ui()
     fps_cap_selector.start()
