@@ -1,4 +1,8 @@
 import dearpygui.dearpygui as dpg
+import ctypes
+import os
+
+ctypes.windll.shcore.SetProcessDpiAwareness(2)  # Enable DPI awareness
 
 class FPSCapSelector:
     def __init__(self, x_min=10, x_max=240):
@@ -6,6 +10,11 @@ class FPSCapSelector:
         self.x_max = x_max  # Maximum value for the slider range
         self.selected_fps_caps = {self.x_min, self.x_max}  # Initialize with x_min and x_max
         self.create_context()
+        with dpg.font_registry():
+            default_font = dpg.add_font(os.path.join(os.environ["WINDIR"], "Fonts", "segoeui.ttf"), 18)
+            if default_font:
+                dpg.bind_font(default_font)
+
 
     def create_context(self):
         dpg.create_context()
@@ -27,20 +36,32 @@ class FPSCapSelector:
             margin = 10  # Margin around the drawlist
 
             # Draw the base line
-            dpg.draw_line((margin, draw_height // 2), (draw_width + margin, draw_height // 2), color=(200, 200, 200), thickness=4, parent="fps_cap_drawlist")
+            dpg.draw_line((margin, draw_height // 2), (draw_width + margin, draw_height // 2), color=(200, 200, 200), thickness=2, parent="fps_cap_drawlist")
 
-            # Draw rectangles for each selected FPS cap
+            # Draw rectangles and their corresponding values
             for cap in sorted(self.selected_fps_caps):
                 # Map the FPS cap value to the drawlist width
                 x_pos = margin + int((cap - self.x_min) / (self.x_max - self.x_min) * draw_width)
                 y_pos = draw_height // 2
                 rect_width = 10  # Width of the rectangle
                 rect_height = 20  # Height of the rectangle
+
+                # Draw the rectangle
                 dpg.draw_rectangle(
                     (x_pos - rect_width // 2, y_pos - rect_height // 2),
                     (x_pos + rect_width // 2, y_pos + rect_height // 2),
                     color=(255, 0, 0),
                     fill=(255, 0, 0),
+                    parent="fps_cap_drawlist"
+                )
+
+                # Draw the corresponding value below the rectangle
+                text_y_pos = y_pos + rect_height // 2 + 5  # Position the text slightly below the rectangle
+                dpg.draw_text(
+                    (x_pos - 5, text_y_pos),  # Center the text horizontally
+                    str(cap),
+                    color=(255, 255, 255),  # White text color
+                    size=18,  # Font size
                     parent="fps_cap_drawlist"
                 )
 
@@ -58,21 +79,24 @@ class FPSCapSelector:
             dpg.add_text("Select an FPS cap and add it to the list:")
 
             with dpg.group(horizontal=True):
-                dpg.add_slider_int(tag="fps_slider", default_value=self.x_min, min_value=self.x_min, max_value=self.x_max, width=300)
+                dpg.add_spacer(width=1)
+                dpg.add_slider_int(tag="fps_slider", default_value=self.x_min, min_value=self.x_min, max_value=self.x_max, clamped=True, width=300)
                 dpg.add_button(label="+ Add", callback=self.add_fps_cap)
 
-            dpg.add_spacer(height=5)
+            #dpg.add_spacer(height=5)
+            #dpg.add_text("Visual Representation of FPS Caps:")
+
+            # Add a drawlist to represent the FPS caps
+            with dpg.drawlist(width=420, height=70, tag="fps_cap_drawlist"):
+                pass  # Populated dynamically
+            
+            dpg.add_spacer(height=10)
             dpg.add_text("Active FPS Caps:")
 
             with dpg.child_window(tag="fps_cap_group", height=100, width=420):
                 pass  # Populated dynamically
 
-            dpg.add_spacer(height=10)
-            dpg.add_text("Visual Representation of FPS Caps:")
 
-            # Add a drawlist to represent the FPS caps
-            with dpg.drawlist(width=420, height=50, tag="fps_cap_drawlist"):
-                pass  # Populated dynamically
 
         # Ensure x_min and x_max are displayed by default
         self.update_fps_cap_display()
