@@ -83,6 +83,18 @@ class FPSCapSelector:
                 # Bind the transparent theme to the button
                 dpg.bind_item_theme(button_id, "transparent_button_theme")
                 dpg.bind_item_theme(button_opaque, "opaque_button_theme")
+            
+            dpg.add_input_text(
+                tag="fps_cap_list_input",
+                default_value=", ".join(map(str, sorted(self.selected_fps_caps))),
+                width=300,
+                #multiline=True,
+                pos=(10, 140),  # Center the input horizontally
+                callback=self.update_fps_caps_from_input,
+                #user_data=cap,
+                parent="fps_cap_window",
+                on_enter=True
+            )
 
     def update_fps_cap_value(self, sender, app_data, user_data):
         """Update the FPS cap value when the input field is changed."""
@@ -97,6 +109,23 @@ class FPSCapSelector:
         else:
             # Reset the input field to the old value if the new value is invalid
             dpg.set_value(sender, old_cap)
+
+    def update_fps_caps_from_input(self, sender, app_data):
+        """Update the FPS cap values based on the user's input in the text field."""
+        try:
+            # Parse the input text into a list of integers
+            new_caps = set(map(int, app_data.split(",")))
+
+            # Validate the new caps (ensure they are within the valid range)
+            if all(self.x_min <= cap <= self.x_max for cap in new_caps):
+                self.selected_fps_caps = new_caps  # Update the FPS caps
+                self.update_fps_cap_display()  # Refresh the display
+                dpg.set_value("fps_cap_list_input", ", ".join(map(str, sorted(self.selected_fps_caps))))  # Update the input field
+            else:
+                raise ValueError("One or more values are out of range.")
+        except ValueError:
+            # Reset the input field to the current valid caps if there's an error
+            dpg.set_value("fps_cap_list_input", ", ".join(map(str, sorted(self.selected_fps_caps))))
 
     def add_fps_cap(self, sender, app_data, user_data):
         cap = dpg.get_value("fps_slider")
@@ -147,7 +176,7 @@ class FPSCapSelector:
                 dpg.add_button(label="Add", callback=self.add_fps_cap)
 
             # Add a window to represent the FPS caps + buttons
-            with dpg.window(width=420, height=150, tag="fps_cap_window"):
+            with dpg.window(width=420, height=180, tag="fps_cap_window"):
                 pass  # Populated dynamically
 
             dpg.add_spacer(height=10)
