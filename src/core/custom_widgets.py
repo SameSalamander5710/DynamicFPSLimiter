@@ -45,6 +45,14 @@ class FPSCapSelector:
                 rect_width = 10  # Width of the rectangle
                 rect_height = 20  # Height of the rectangle
 
+                dpg.draw_rectangle(
+                    (x_pos - rect_width // 2, y_pos - rect_height // 2),
+                    (x_pos + rect_width // 2, y_pos + rect_height // 2),
+                    color=(255, 0, 0),
+                    fill=(255, 0, 0),
+                    parent="fps_cap_window"
+                )
+
                 # Add the rectangle button
                 button_opaque = dpg.add_button(
                     label="",

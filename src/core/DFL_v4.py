@@ -110,6 +110,8 @@ Default_settings_original = {
     'gpupollingsamples': 20
 }
 
+input_field_keys = ["maxcap", "mincap", "capstep", 
+                "gpucutofffordecrease", "gpucutoffforincrease", "cpucutofffordecrease", "cpucutoffforincrease"]
 questions = []
 FAQs = {}
 
@@ -140,7 +142,7 @@ for key in settings_config["GlobalSettings"]:
 
 # Default viewport size
 Viewport_width = 600
-Viewport_height = 640
+Viewport_height = 705
 Plot_height = 220
 
 def save_to_profile():
@@ -148,8 +150,7 @@ def save_to_profile():
 
     if selected_profile:
         # Update profile-specific settings
-        for key in ["maxcap", "mincap", "capstep",
-                "gpucutofffordecrease", "gpucutoffforincrease", "cpucutofffordecrease", "cpucutoffforincrease"]:
+        for key in input_field_keys:
             value = dpg.get_value(f"input_{key}")  # Get value from input field
             profiles_config[selected_profile][key] = str(value) 
         
@@ -176,8 +177,7 @@ def load_profile_callback(sender, app_data, user_data):
     
     if profile_name not in profiles_config:
         return
-    for key in ["maxcap", "mincap", "capstep",
-                "gpucutofffordecrease", "gpucutoffforincrease", "cpucutofffordecrease", "cpucutoffforincrease"]:
+    for key in input_field_keys:
         value = profiles_config[profile_name].get(key, Default_settings_original[key])
         dpg.set_value(f"input_{key}", int(value))
     update_global_variables()
@@ -186,8 +186,7 @@ def load_profile_callback(sender, app_data, user_data):
 def save_profile(profile_name):
     profiles_config[profile_name] = {}
     # Save input fields
-    for key in ["maxcap", "mincap", "capstep",
-                "gpucutofffordecrease", "gpucutoffforincrease", "cpucutofffordecrease", "cpucutoffforincrease"]:
+    for key in input_field_keys:
         profiles_config[profile_name][key] = str(dpg.get_value(f"input_{key}"))
     with open(profiles_path, 'w') as f:
         profiles_config.write(f)
@@ -251,8 +250,7 @@ update_global_variables()
 
 # Read values from UI input fields without modifying `settings`
 def apply_current_input_values():
-    for key in ["maxcap", "mincap", "capstep", 
-                "gpucutofffordecrease", "gpucutoffforincrease", "cpucutofffordecrease", "cpucutoffforincrease"]:
+    for key in input_field_keys:
         globals()[key] = int(dpg.get_value(f"input_{key}"))  # Convert to int
 
 def start_stop_callback():
@@ -271,8 +269,7 @@ def start_stop_callback():
 
     # Freeze input fields
 
-    for key in ["maxcap", "mincap", "capstep", 
-                "gpucutofffordecrease", "gpucutoffforincrease", "cpucutofffordecrease", "cpucutoffforincrease"]:
+    for key in input_field_keys:
         dpg.configure_item(f"input_{key}", enabled=not running)
 
     if running:
@@ -305,15 +302,13 @@ def start_stop_callback():
         logger.add_log("Monitoring stopped")
 
 def quick_save_settings():
-    for key in ["maxcap", "mincap", "capstep", 
-                "gpucutofffordecrease", "gpucutoffforincrease", "cpucutofffordecrease", "cpucutoffforincrease"]:
+    for key in input_field_keys:
         settings[key] = dpg.get_value(f"input_{key}")
     update_global_variables()
     logger.add_log("Settings quick saved")
 
 def quick_load_settings():
-    for key in ["maxcap", "mincap", "capstep", 
-                "gpucutofffordecrease", "gpucutoffforincrease", "cpucutofffordecrease", "cpucutoffforincrease"]:
+    for key in input_field_keys:
         dpg.set_value(f"input_{key}", settings[key])
     update_global_variables()
     logger.add_log("Settings quick loaded")
@@ -337,9 +332,7 @@ def reset_to_program_default():
     
     global Default_settings_original
     
-    for key in ["maxcap", "mincap", "capstep"]:
-        dpg.set_value(f"input_{key}", Default_settings_original[key])
-    for key in ["gpucutofffordecrease", "gpucutoffforincrease", "cpucutofffordecrease", "cpucutoffforincrease"]:
+    for key in input_field_keys:
         dpg.set_value(f"input_{key}", Default_settings_original[key])
     logger.add_log("Settings reset to program default")  
 
@@ -626,7 +619,6 @@ def exit_gui():
             logger.add_log("Plotting thread stopped.")
 
 # Define keys used for input fields (used to construct tooltip tags)
-input_field_keys = ["maxcap", "mincap", "capstep", "gpucutofffordecrease", "gpucutoffforincrease", "cpucutofffordecrease", "cpucutoffforincrease"]
 
 tooltips = {
     "maxcap": "Defines the maximum FPS limit for the game.",
@@ -761,10 +753,11 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
         dpg.add_input_text(tag="LastProcess", multiline=False, readonly=True, width=-1)    
     
     #Tabs
+    tab_height = 200
     dpg.add_spacer(height=1)
     with dpg.tab_bar():
         with dpg.tab(label="Profile Settings", tag="tab1"):
-            with dpg.child_window(height=135):
+            with dpg.child_window(height=tab_height):
                 with dpg.group(horizontal=True):
                     with dpg.group(width=200):
                         with dpg.table(header_row=False, resizable=False, policy=dpg.mvTable_SizingFixedFit):
@@ -779,6 +772,8 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                                     # Give the tooltip its own tag
                                     with dpg.tooltip(parent=f"input_{key}", tag=f"input_{key}_tooltip", show=ShowTooltip, delay=1):
                                         dpg.add_text(tooltips[key], wrap = 200)
+                        dpg.add_spacer(height=1)
+                        dpg.add_checkbox(label="Define custom FPS limits", tag="custom_fps_limits_checkbox", default_value=True)#CustomFPSLimits, callback=update_custom_fps_limits)
                     dpg.add_spacer(width=0.5)
                     with dpg.group(width=160):
                         with dpg.table(header_row=False, resizable=False, policy=dpg.mvTable_SizingFixedFit):
@@ -815,9 +810,25 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                             # Give the tooltip its own tag
                             with dpg.tooltip(parent="SaveToProfile", tag="SaveToProfile_tooltip", show=ShowTooltip, delay=1):
                                 dpg.add_text(tooltips["SaveToProfile"], wrap = 200)
-
+                
+                draw_height = 30
+                draw_width = Viewport_width - 60
+                margin = 10
+                with dpg.drawlist(width= draw_width, height=draw_height, tag="fps_cap_drawlist"):
+                    dpg.draw_line((margin, draw_height // 2), (draw_width + margin, draw_height // 2), color=(200, 200, 200), thickness=2)
+                
+                with dpg.group(horizontal=True):
+                    dpg.add_input_text(
+                        tag="fps_cap_list_input",
+                        default_value=f"{mincap}, {maxcap}",#", ".join(map(str, sorted(self.selected_fps_caps))),
+                        width=draw_width - 100,
+                        #pos=(10, 140),  # Center the input horizontally
+                        #callback=self.update_fps_caps_from_input,
+                        on_enter=True)
+                    dpg.add_button(label="Reset", tag="rest_fps_cap_button", width=100)#, callback=remove_fps_cap_callback)
+    
         with dpg.tab(label="Preferences", tag="tab2"):
-            with dpg.child_window(height=135):
+            with dpg.child_window(height=tab_height):
                 dpg.add_checkbox(label="Show Tooltips", tag="tooltip_checkbox",
                                  default_value=ShowTooltip, callback=update_tooltip_setting)
                 dpg.add_checkbox(label="Reset Global RTSS Framerate Limit on Exit", tag="limit_on_exit_checkbox",
@@ -833,7 +844,7 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                     dpg.add_text(tooltips["exit_fps_input"], wrap = 200)
 
         with dpg.tab(label="Log", tag="tab3"):
-            with dpg.child_window(tag="LogWindow", autosize_x=True, height=135, border=True):
+            with dpg.child_window(tag="LogWindow", autosize_x=True, height=tab_height, border=True):
                 #dpg.add_text("", tag="LogText", tracked = True, track_offset = 1.0)
                 dpg.add_spacer(height=2)
                 dpg.add_input_text(tag="LogText", multiline=True, readonly=True, width=-1, height=110)
@@ -847,7 +858,7 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                 dpg.bind_item_theme("LogText", "transparent_input_theme")
 
         with dpg.tab(label="FAQs", tag="tab4"):
-            with dpg.child_window(height=135):
+            with dpg.child_window(height=tab_height):
                 dpg.add_text("Frequently Asked Questions (FAQs): Hover for answers")
                 dpg.add_spacer(height=3)
                 for question, (key, answer) in zip(questions, FAQs.items()):
