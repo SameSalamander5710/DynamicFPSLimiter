@@ -336,6 +336,12 @@ def reset_to_program_default():
         dpg.set_value(f"input_{key}", Default_settings_original[key])
     logger.add_log("Settings reset to program default")  
 
+def reset_customFPSLimits():
+
+    global mincap, maxcap
+
+    dpg.set_value("fps_cap_list_input", f"{mincap}, {maxcap}")
+
 time_series = []
 fps_time_series = []
 gpu_usage_series = []
@@ -825,7 +831,7 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                         #pos=(10, 140),  # Center the input horizontally
                         #callback=self.update_fps_caps_from_input,
                         on_enter=True)
-                    dpg.add_button(label="Reset", tag="rest_fps_cap_button", width=100)#, callback=remove_fps_cap_callback)
+                    dpg.add_button(label="Reset", tag="rest_fps_cap_button", width=100, callback=reset_customFPSLimits)
     
         with dpg.tab(label="Preferences", tag="tab2"):
             with dpg.child_window(height=tab_height):
