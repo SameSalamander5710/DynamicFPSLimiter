@@ -84,7 +84,9 @@ else:
         'gpucutofffordecrease': '85',
         'gpucutoffforincrease': '75',
         'cpucutofffordecrease': '95',
-        'cpucutoffforincrease': '85'
+        'cpucutoffforincrease': '85',
+        'enablecustomfpslimits': '0',
+        'customfpslimits': '30, 60',
     }
     with open(profiles_path, 'w') as f:
         profiles_config.write(f)
@@ -99,6 +101,8 @@ Default_settings_original = {
     'cpucutoffforincrease': 85,
     "delaybeforedecrease": 2,
     "delaybeforeincrease": 2,
+    "enablecustomfpslimits": 0,
+    "customfpslimits": {30, 60},
     "minvalidgpu": 20,
     "minvalidfps": 20,
     "globallimitonexit_fps": 98,
@@ -111,7 +115,33 @@ Default_settings_original = {
 }
 
 input_field_keys = ["maxcap", "mincap", "capstep", 
-                "gpucutofffordecrease", "gpucutoffforincrease", "cpucutofffordecrease", "cpucutoffforincrease"]
+                "gpucutofffordecrease", "gpucutoffforincrease", "cpucutofffordecrease", "cpucutoffforincrease", "enablecustomfpslimits"]
+
+input_set_keys = ["customfpslimits"]
+
+key_type_map = {
+    "maxcap": int,
+    "mincap": int,
+    "capstep": int,
+    "gpucutofffordecrease": int,
+    "gpucutoffforincrease": int,
+    "cpucutofffordecrease": int,
+    "cpucutoffforincrease": int,
+    "enablecustomfpslimits": int,
+    "customfpslimits": set,
+    "delaybeforedecrease": int,
+    "delaybeforeincrease": int,
+    "minvalidgpu": int,
+    "minvalidfps": int,
+    "globallimitonexit_fps": int,
+    "cpupercentile": int,
+    "cpupollinginterval": int,
+    "cpupollingsamples": int,
+    "gpupercentile": int,
+    "gpupollinginterval": int,
+    "gpupollingsamples": int
+}
+
 questions = []
 FAQs = {}
 
@@ -123,18 +153,37 @@ with open(faq_path, newline='', encoding='utf-8') as csvfile:
         FAQs[key] = row["answer"]
 
 # Function to get values with correct types
-def get_setting(key, value_type=int):
+def get_setting(key, value_type=None):
     """Get setting from appropriate config section based on key type."""
-    if key in ["delaybeforedecrease", "delaybeforeincrease", "minvalidgpu", "minvalidfps", "globallimitonexit_fps",
-               "cpupercentile", "cpupollinginterval", "cpupollingsamples", "gpupercentile", "gpupollinginterval", "gpupollingsamples"]:
-        return value_type(settings_config["GlobalSettings"].get(key, Default_settings_original[key]))
-    return value_type(profiles_config["Global"].get(key, Default_settings_original[key]))
+    if value_type is None:
+        value_type = key_type_map.get(key, str)
+    # Get the raw value from the appropriate config section
+    if key in settings_config["GlobalSettings"]:
+        raw_value = settings_config["GlobalSettings"].get(key, Default_settings_original[key])
+    else:
+        raw_value = profiles_config["Global"].get(key, Default_settings_original[key])
 
-Default_settings = {key: get_setting(key, str if isinstance(Default_settings_original[key], str) else int) for key in Default_settings_original}
+    # Convert to the correct type
+    if value_type is set:
+        try:
+            return set(int(x.strip()) for x in str(raw_value).split(",") if x.strip().isdigit())
+        except Exception:
+            return set(int(x.strip()) for x in str(Default_settings_original[key]).split(",") if x.strip().isdigit())
+    
+    try:
+        return value_type(raw_value)
+    except Exception:
+        try:
+            return value_type(Default_settings_original[key])
+        except Exception:
+            return Default_settings_original[key]
+
+Default_settings = {key: get_setting(key, set if isinstance(Default_settings_original[key], set) else int) for key in Default_settings_original}
 
 ShowTooltip = str(settings_config["Preferences"].get("ShowTooltip", "True")).strip().lower() == "true"
 GlobalLimitonExit = str(settings_config["Preferences"].get("GlobalLimitOnExit", "True")).strip().lower() == "true"
 
+#continue from here
 for key in settings_config["GlobalSettings"]:
     value = get_setting(key, int)
     if value is not None:
