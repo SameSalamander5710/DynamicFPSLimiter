@@ -387,9 +387,9 @@ def reset_to_program_default():
 
 def reset_customFPSLimits():
 
-    global mincap, maxcap
-
-    dpg.set_value("fps_cap_list_input", f"{mincap}, {maxcap}")
+    lowerlimit = dpg.get_value(f"input_mincap")
+    upperlimit = dpg.get_value(f"input_maxcap")
+    dpg.set_value("input_customfpslimits", f"{lowerlimit}, {upperlimit}")
 
 time_series = []
 fps_time_series = []
@@ -874,7 +874,7 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                 
                 with dpg.group(horizontal=True):
                     dpg.add_input_text(
-                        tag="fps_cap_list_input",
+                        tag="input_customfpslimits",
                         default_value=f"{mincap}, {maxcap}",#", ".join(map(str, sorted(self.selected_fps_caps))),
                         width=draw_width - 100,
                         #pos=(10, 140),  # Center the input horizontally
