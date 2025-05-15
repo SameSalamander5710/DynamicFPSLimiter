@@ -236,8 +236,13 @@ def save_to_profile():
     if selected_profile:
         # Update profile-specific settings
         for key in input_field_keys:
-            value = dpg.get_value(f"input_{key}")  # Get value from input field
-            profiles_config[selected_profile][key] = str(value) 
+            value = dpg.get_value(f"input_{key}")
+            parsed_value = parse_input_value(key, value)
+            # Store as string for config file
+            if isinstance(parsed_value, set):
+                profiles_config[selected_profile][key] = ", ".join(str(x) for x in sorted(parsed_value))
+            else:
+                profiles_config[selected_profile][key] = str(parsed_value)
         
         with open(profiles_path, "w") as configfile:
             profiles_config.write(configfile)
@@ -266,17 +271,12 @@ def load_profile_callback(sender, app_data, user_data):
         return
     for key in input_field_keys:
         value = profiles_config[profile_name].get(key, Default_settings_original[key])
-        value_type = key_type_map.get(key, str)
-        if value_type is set:
-            # Display as comma-separated string for set type
-            if isinstance(value, set):
-                value_str = ", ".join(str(x) for x in sorted(value))
-            else:
-                # Parse string to set, then back to string for display
-                value_str = ", ".join(str(int(x.strip())) for x in str(value).split(",") if x.strip().isdigit())
+        parsed_value = parse_input_value(key, value)
+        if isinstance(parsed_value, set):
+            value_str = ", ".join(str(x) for x in sorted(parsed_value))
             dpg.set_value(f"input_{key}", value_str)
         else:
-            dpg.set_value(f"input_{key}", value_type(value))
+            dpg.set_value(f"input_{key}", parsed_value)
     update_global_variables()
     dpg.set_value("new_profile_input", "")
 
@@ -284,7 +284,12 @@ def save_profile(profile_name):
     profiles_config[profile_name] = {}
     # Save input fields
     for key in input_field_keys:
-        profiles_config[profile_name][key] = str(dpg.get_value(f"input_{key}"))
+        value = dpg.get_value(f"input_{key}")
+        parsed_value = parse_input_value(key, value)
+        if isinstance(parsed_value, set):
+            profiles_config[profile_name][key] = ", ".join(str(x) for x in sorted(parsed_value))
+        else:
+            profiles_config[profile_name][key] = str(parsed_value)
     with open(profiles_path, 'w') as f:
         profiles_config.write(f)
     update_profile_dropdown()
@@ -324,13 +329,12 @@ def delete_selected_profile_callback():
             for key in profiles_config["Global"]:
                 try:
                     value = profiles_config["Global"][key]
-                    value_type = key_type_map.get(key, str)
-                    if value_type is set:
-                        # Parse string to set, then back to string for display
-                        value_str = ", ".join(str(int(x.strip())) for x in str(value).split(",") if x.strip().isdigit())
+                    parsed_value = parse_input_value(key, value)
+                    if isinstance(parsed_value, set):
+                        value_str = ", ".join(str(x) for x in sorted(parsed_value))
                         dpg.set_value(f"input_{key}", value_str)
                     else:
-                        dpg.set_value(f"input_{key}", value_type(value))
+                        dpg.set_value(f"input_{key}", parsed_value)
                 except Exception as e:
                     logger.add_log(f"Error: Unable to convert value for key '{key}': {e}")
             update_global_variables()  # Ensure global variables are updated
