@@ -118,8 +118,6 @@ input_field_keys = ["maxcap", "mincap", "capstep",
                 "gpucutofffordecrease", "gpucutoffforincrease", "cpucutofffordecrease", "cpucutoffforincrease",
                 "enablecustomfpslimits", "customfpslimits"]
 
-input_set_keys = ["customfpslimits"]
-
 key_type_map = {
     "maxcap": int,
     "mincap": int,
@@ -152,6 +150,30 @@ with open(faq_path, newline='', encoding='utf-8') as csvfile:
         key = f"faq_{idx}"
         questions.append(row["question"])
         FAQs[key] = row["answer"]
+
+def parse_input_value(key, value):
+    """Parse input value from UI based on key_type_map."""
+    value_type = key_type_map.get(key, int)
+    if value_type is set:
+        if isinstance(value, set):
+            return value
+        try:
+            return set(int(x.strip()) for x in str(value).split(",") if x.strip().isdigit())
+        except Exception:
+            return set()
+    else:
+        try:
+            return value_type(value)
+        except Exception:
+            return value
+
+def format_output_value(key, value):
+    value_type = key_type_map.get(key, int)
+    if value_type is set:
+        if isinstance(value, set):
+            return ", ".join(str(x) for x in sorted(value))
+        return str(value)
+    return value
 
 # Function to get values with correct types
 def get_setting(key, value_type=None):
@@ -221,6 +243,7 @@ def save_to_profile():
             profiles_config.write(configfile)
 
         logger.add_log(f"Settings saved to profile: {selected_profile}")
+
 settings = Default_settings.copy()
 
 #continue from here
@@ -235,16 +258,25 @@ def update_profile_dropdown(select_first=False):
 current_profile = "Global"
 
 def load_profile_callback(sender, app_data, user_data):
-    
     global current_profile
     current_profile = app_data
     profile_name = app_data
-    
+
     if profile_name not in profiles_config:
         return
     for key in input_field_keys:
         value = profiles_config[profile_name].get(key, Default_settings_original[key])
-        dpg.set_value(f"input_{key}", int(value))
+        value_type = key_type_map.get(key, str)
+        if value_type is set:
+            # Display as comma-separated string for set type
+            if isinstance(value, set):
+                value_str = ", ".join(str(x) for x in sorted(value))
+            else:
+                # Parse string to set, then back to string for display
+                value_str = ", ".join(str(int(x.strip())) for x in str(value).split(",") if x.strip().isdigit())
+            dpg.set_value(f"input_{key}", value_str)
+        else:
+            dpg.set_value(f"input_{key}", value_type(value))
     update_global_variables()
     dpg.set_value("new_profile_input", "")
 
@@ -291,11 +323,16 @@ def delete_selected_profile_callback():
         if "Global" in profiles_config:
             for key in profiles_config["Global"]:
                 try:
-                    # Convert the value to the appropriate type before setting it
-                    value = int(profiles_config["Global"][key])
-                    dpg.set_value(f"input_{key}", value)
-                except ValueError:
-                    logger.add_log(f"Error: Unable to convert value for key '{key}' to int.")
+                    value = profiles_config["Global"][key]
+                    value_type = key_type_map.get(key, str)
+                    if value_type is set:
+                        # Parse string to set, then back to string for display
+                        value_str = ", ".join(str(int(x.strip())) for x in str(value).split(",") if x.strip().isdigit())
+                        dpg.set_value(f"input_{key}", value_str)
+                    else:
+                        dpg.set_value(f"input_{key}", value_type(value))
+                except Exception as e:
+                    logger.add_log(f"Error: Unable to convert value for key '{key}': {e}")
             update_global_variables()  # Ensure global variables are updated
         else:
             logger.add_log("Error: 'Global' profile not found in configuration.")
@@ -308,15 +345,29 @@ running = False  # Flag to control the monitoring loop
 # Function to sync settings with variables
 def update_global_variables():
     for key, value in settings.items():
-        if str(value).isdigit():  # Check if value is a number
+        value_type = key_type_map.get(key, type(value))
+        if value_type is set:
+            # If value is a string, parse it to a set of ints
+            if isinstance(value, set):
+                globals()[key] = value
+            else:
+                try:
+                    values = [int(x.strip()) for x in str(value).split(",") if x.strip().isdigit()]
+                    globals()[key] = set(values)
+                except Exception:
+                    globals()[key] = set()
+        elif str(value).isdigit():
             globals()[key] = int(value)
+        else:
+            globals()[key] = value
 
 update_global_variables()
 
 # Read values from UI input fields without modifying `settings`
 def apply_current_input_values():
     for key in input_field_keys:
-        globals()[key] = int(dpg.get_value(f"input_{key}"))  # Convert to int
+        value = dpg.get_value(f"input_{key}")
+        globals()[key] = parse_input_value(key, value)
 
 def start_stop_callback():
     global running, maxcap, current_profile
@@ -368,13 +419,14 @@ def start_stop_callback():
 
 def quick_save_settings():
     for key in input_field_keys:
-        settings[key] = dpg.get_value(f"input_{key}")
+        value = dpg.get_value(f"input_{key}")
+        settings[key] = parse_input_value(key, value)
     update_global_variables()
     logger.add_log("Settings quick saved")
 
 def quick_load_settings():
     for key in input_field_keys:
-        dpg.set_value(f"input_{key}", settings[key])
+        dpg.set_value(f"input_{key}", format_output_value(key, settings[key]))
     update_global_variables()
     logger.add_log("Settings quick loaded")
 
