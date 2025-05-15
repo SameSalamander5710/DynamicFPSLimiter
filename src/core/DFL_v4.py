@@ -115,7 +115,8 @@ Default_settings_original = {
 }
 
 input_field_keys = ["maxcap", "mincap", "capstep", 
-                "gpucutofffordecrease", "gpucutoffforincrease", "cpucutofffordecrease", "cpucutoffforincrease", "enablecustomfpslimits"]
+                "gpucutofffordecrease", "gpucutoffforincrease", "cpucutofffordecrease", "cpucutoffforincrease",
+                "enablecustomfpslimits", "customfpslimits"]
 
 input_set_keys = ["customfpslimits"]
 
@@ -166,9 +167,22 @@ def get_setting(key, value_type=None):
     # Convert to the correct type
     if value_type is set:
         try:
-            return set(int(x.strip()) for x in str(raw_value).split(",") if x.strip().isdigit())
+            values = []
+            for x in str(raw_value).split(","):
+                x = x.strip()
+                if x.isdigit():
+                    values.append(int(x))
+                else:
+                    logger.add_log(f"Warning: Skipped non-integer value '{x}' in key '{key}'")
+            return set(values)
         except Exception:
-            return set(int(x.strip()) for x in str(Default_settings_original[key]).split(",") if x.strip().isdigit())
+            logger.add_log(f"Error parsing set for key '{key}', using default.")
+            values = []
+            for x in str(Default_settings_original[key]).split(","):
+                x = x.strip()
+                if x.isdigit():
+                    values.append(int(x))
+            return set(values)
     
     try:
         return value_type(raw_value)
@@ -183,9 +197,9 @@ Default_settings = {key: get_setting(key, set if isinstance(Default_settings_ori
 ShowTooltip = str(settings_config["Preferences"].get("ShowTooltip", "True")).strip().lower() == "true"
 GlobalLimitonExit = str(settings_config["Preferences"].get("GlobalLimitOnExit", "True")).strip().lower() == "true"
 
-#continue from here
 for key in settings_config["GlobalSettings"]:
-    value = get_setting(key, int)
+    value_type = key_type_map.get(key, str)
+    value = get_setting(key, value_type)
     if value is not None:
         globals()[key] = value
 
@@ -208,6 +222,8 @@ def save_to_profile():
 
         logger.add_log(f"Settings saved to profile: {selected_profile}")
 settings = Default_settings.copy()
+
+#continue from here
 
 def update_profile_dropdown(select_first=False):
     profiles = profiles_config.sections()
