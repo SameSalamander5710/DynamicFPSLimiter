@@ -156,6 +156,7 @@ def parse_input_value(key, value):
     value_type = key_type_map.get(key, int)
     if value_type is set:
         if isinstance(value, set):
+            logger.add_log(f"Warning: Skipped non-integer value '{value}' in key '{key}'")
             return value
         try:
             return set(int(x.strip()) for x in str(value).split(",") if x.strip().isdigit())
@@ -171,7 +172,9 @@ def format_output_value(key, value):
     value_type = key_type_map.get(key, int)
     if value_type is set:
         if isinstance(value, set):
+            logger.add_log(f"1 Warning: Skipped non-integer value '{value}' in key '{key}'")
             return ", ".join(str(x) for x in sorted(value))
+        logger.add_log(f"2 Warning: Skipped non-integer value '{value}' in key '{key}'")
         return str(value)
     return value
 
@@ -886,7 +889,7 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                                     with dpg.tooltip(parent=f"input_{key}", tag=f"input_{key}_tooltip", show=ShowTooltip, delay=1):
                                         dpg.add_text(tooltips[key], wrap = 200)
                         dpg.add_spacer(height=1)
-                        dpg.add_checkbox(label="Define custom FPS limits", tag="custom_fps_limits_checkbox", default_value=True)#CustomFPSLimits, callback=update_custom_fps_limits)
+                        dpg.add_checkbox(label="Define custom FPS limits", tag="input_enablecustomfpslimits", default_value=True)
                     dpg.add_spacer(width=0.5)
                     with dpg.group(width=160):
                         with dpg.table(header_row=False, resizable=False, policy=dpg.mvTable_SizingFixedFit):
