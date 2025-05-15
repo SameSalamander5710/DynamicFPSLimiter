@@ -239,10 +239,7 @@ def save_to_profile():
             value = dpg.get_value(f"input_{key}")
             parsed_value = parse_input_value(key, value)
             # Store as string for config file
-            if isinstance(parsed_value, set):
-                profiles_config[selected_profile][key] = ", ".join(str(x) for x in sorted(parsed_value))
-            else:
-                profiles_config[selected_profile][key] = str(parsed_value)
+            profiles_config[selected_profile][key] = format_output_value(key, parsed_value)
         
         with open(profiles_path, "w") as configfile:
             profiles_config.write(configfile)
@@ -272,11 +269,7 @@ def load_profile_callback(sender, app_data, user_data):
     for key in input_field_keys:
         value = profiles_config[profile_name].get(key, Default_settings_original[key])
         parsed_value = parse_input_value(key, value)
-        if isinstance(parsed_value, set):
-            value_str = ", ".join(str(x) for x in sorted(parsed_value))
-            dpg.set_value(f"input_{key}", value_str)
-        else:
-            dpg.set_value(f"input_{key}", parsed_value)
+        dpg.set_value(f"input_{key}", format_output_value(key, parsed_value))
     update_global_variables()
     dpg.set_value("new_profile_input", "")
 
@@ -286,10 +279,7 @@ def save_profile(profile_name):
     for key in input_field_keys:
         value = dpg.get_value(f"input_{key}")
         parsed_value = parse_input_value(key, value)
-        if isinstance(parsed_value, set):
-            profiles_config[profile_name][key] = ", ".join(str(x) for x in sorted(parsed_value))
-        else:
-            profiles_config[profile_name][key] = str(parsed_value)
+        profiles_config[selected_profile][key] = format_output_value(key, parsed_value)
     with open(profiles_path, 'w') as f:
         profiles_config.write(f)
     update_profile_dropdown()
@@ -330,11 +320,7 @@ def delete_selected_profile_callback():
                 try:
                     value = profiles_config["Global"][key]
                     parsed_value = parse_input_value(key, value)
-                    if isinstance(parsed_value, set):
-                        value_str = ", ".join(str(x) for x in sorted(parsed_value))
-                        dpg.set_value(f"input_{key}", value_str)
-                    else:
-                        dpg.set_value(f"input_{key}", parsed_value)
+                    dpg.set_value(f"input_{key}", format_output_value(key, parsed_value))
                 except Exception as e:
                     logger.add_log(f"Error: Unable to convert value for key '{key}': {e}")
             update_global_variables()  # Ensure global variables are updated
