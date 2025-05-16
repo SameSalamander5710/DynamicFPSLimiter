@@ -189,6 +189,17 @@ def sync_int_to_checkbox():
     val = dpg.get_value("input_enablecustomfpslimits")
     dpg.set_value("checkbox_enablecustomfpslimits", bool(val))
 
+def sort_customfpslimits_callback(sender, app_data, user_data):
+    # Get the current value from the input field
+    value = dpg.get_value("input_customfpslimits")
+    # Parse to set of ints
+    try:
+        numbers = set(int(x.strip()) for x in value.split(",") if x.strip().isdigit())
+        sorted_str = ", ".join(str(x) for x in sorted(numbers))
+        dpg.set_value("input_customfpslimits", sorted_str)
+    except Exception:
+        # If parsing fails, do nothing or optionally reset to previous valid value
+        pass
 
 # Function to get values with correct types
 def get_setting(key, value_type=None):
@@ -955,7 +966,7 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                         default_value=", ".join(str(x) for x in sorted(settings["customfpslimits"])),#", ".join(map(str, sorted(self.selected_fps_caps))),
                         width=draw_width - 100,
                         #pos=(10, 140),  # Center the input horizontally
-                        #callback=self.update_fps_caps_from_input,
+                        callback=sort_customfpslimits_callback,
                         on_enter=True)
                     dpg.add_button(label="Reset", tag="rest_fps_cap_button", width=100, callback=reset_customFPSLimits)
     
