@@ -150,14 +150,16 @@ with open(faq_path, newline='', encoding='utf-8') as csvfile:
         key = f"faq_{idx}"
         questions.append(row["question"])
         FAQs[key] = row["answer"]
-
 def parse_input_value(key, value):
-    """Parse input value from UI based on key_type_map."""
     value_type = key_type_map.get(key, int)
     if value_type is set:
         if isinstance(value, set):
-            logger.add_log(f"Warning: Skipped non-integer value '{value}' in key '{key}'")
             return value
+        # Remove curly braces if present
+        if isinstance(value, str):
+            value = value.strip()
+            if value.startswith("{") and value.endswith("}"):
+                value = value[1:-1]
         try:
             return set(int(x.strip()) for x in str(value).split(",") if x.strip().isdigit())
         except Exception:
@@ -252,7 +254,7 @@ def save_to_profile():
             value = dpg.get_value(f"input_{key}")
             parsed_value = parse_input_value(key, value)
             # Store as string for config file
-            profiles_config[selected_profile][key] = format_output_value(key, str(parsed_value))
+            profiles_config[selected_profile][key] = str(format_output_value(key, parsed_value))
         
         with open(profiles_path, "w") as configfile:
             profiles_config.write(configfile)
@@ -292,7 +294,7 @@ def save_profile(profile_name):
     for key in input_field_keys:
         value = dpg.get_value(f"input_{key}")
         parsed_value = parse_input_value(key, value)
-        profiles_config[selected_profile][key] = format_output_value(key, str(parsed_value))
+        profiles_config[selected_profile][key] = str(format_output_value(key, parsed_value))
     with open(profiles_path, 'w') as f:
         profiles_config.write(f)
     update_profile_dropdown()
