@@ -952,7 +952,7 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                 with dpg.group(horizontal=True):
                     dpg.add_input_text(
                         tag="input_customfpslimits",
-                        default_value=f"{mincap}, {maxcap}",#", ".join(map(str, sorted(self.selected_fps_caps))),
+                        default_value=", ".join(str(x) for x in sorted(settings["customfpslimits"])),#", ".join(map(str, sorted(self.selected_fps_caps))),
                         width=draw_width - 100,
                         #pos=(10, 140),  # Center the input horizontally
                         #callback=self.update_fps_caps_from_input,
