@@ -178,6 +178,16 @@ def format_output_value(key, value):
         return str(value)
     return value
 
+def sync_checkbox_to_int(sender, app_data, user_data):
+    # app_data is True/False from checkbox
+    dpg.set_value("input_enablecustomfpslimits", int(app_data))
+
+def sync_int_to_checkbox():
+    # Call this after loading profile/settings to update checkbox state
+    val = dpg.get_value("input_enablecustomfpslimits")
+    dpg.set_value("checkbox_enablecustomfpslimits", bool(val))
+
+
 # Function to get values with correct types
 def get_setting(key, value_type=None):
     """Get setting from appropriate config section based on key type."""
@@ -242,7 +252,7 @@ def save_to_profile():
             value = dpg.get_value(f"input_{key}")
             parsed_value = parse_input_value(key, value)
             # Store as string for config file
-            profiles_config[selected_profile][key] = format_output_value(key, parsed_value)
+            profiles_config[selected_profile][key] = format_output_value(key, str(parsed_value))
         
         with open(profiles_path, "w") as configfile:
             profiles_config.write(configfile)
@@ -282,7 +292,7 @@ def save_profile(profile_name):
     for key in input_field_keys:
         value = dpg.get_value(f"input_{key}")
         parsed_value = parse_input_value(key, value)
-        profiles_config[selected_profile][key] = format_output_value(key, parsed_value)
+        profiles_config[selected_profile][key] = format_output_value(key, str(parsed_value))
     with open(profiles_path, 'w') as f:
         profiles_config.write(f)
     update_profile_dropdown()
@@ -889,7 +899,11 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                                     with dpg.tooltip(parent=f"input_{key}", tag=f"input_{key}_tooltip", show=ShowTooltip, delay=1):
                                         dpg.add_text(tooltips[key], wrap = 200)
                         dpg.add_spacer(height=1)
-                        dpg.add_checkbox(label="Define custom FPS limits", tag="input_enablecustomfpslimits", default_value=True)
+                        dpg.add_checkbox(label="Define custom FPS limits", tag="checkbox_enablecustomfpslimits", 
+                                         default_value=bool(settings["enablecustomfpslimits"]),
+                                         callback=sync_checkbox_to_int)
+                        dpg.add_input_int(tag="input_enablecustomfpslimits", 
+                                          default_value=int(settings["enablecustomfpslimits"]), show=False)
                     dpg.add_spacer(width=0.5)
                     with dpg.group(width=160):
                         with dpg.table(header_row=False, resizable=False, policy=dpg.mvTable_SizingFixedFit):
