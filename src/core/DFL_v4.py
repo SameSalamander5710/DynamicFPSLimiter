@@ -297,8 +297,6 @@ def save_to_profile():
 
 settings = Default_settings.copy()
 
-#continue from here
-
 def update_profile_dropdown(select_first=False):
     profiles = profiles_config.sections()
     dpg.configure_item("profile_dropdown", items=profiles)
@@ -329,7 +327,7 @@ def save_profile(profile_name):
     for key in input_field_keys:
         value = dpg.get_value(f"input_{key}")
         parsed_value = parse_input_value(key, value)
-        profiles_config[selected_profile][key] = str(format_output_value(key, parsed_value))
+        profiles_config[profile_name][key] = str(format_output_value(key, parsed_value))
     with open(profiles_path, 'w') as f:
         profiles_config.write(f)
     update_profile_dropdown()
@@ -433,7 +431,6 @@ def start_stop_callback():
     if running:
         # Initialize RTSS
         rtss_cli.enable_limiter()
-        rtss_cli.set_property(current_profile, "FramerateLimit", int(maxcap))
         
         # Apply current settings and start monitoring
         
@@ -456,8 +453,10 @@ def start_stop_callback():
     else:
         reset_stats()
         CurrentFPSOffset = 0
-        rtss_cli.set_property(current_profile, "FramerateLimit", int(maxcap))
+        
         logger.add_log("Monitoring stopped")
+    current_stepped_limits
+    rtss_cli.set_property(current_profile, "FramerateLimit", int(max(current_stepped_limits())))
 
 def quick_save_settings():
     for key in input_field_keys:
@@ -649,12 +648,34 @@ def monitoring_loop():
                                           all(value >= cpucutofffordecrease for value in cpu_values[-delaybeforedecrease:]))
                 if gpu_decrease_condition or cpu_decrease_condition:
                     should_decrease = True
+                
                 if CurrentFPSOffset > (mincap - maxcap) and should_decrease:
-                    X = math.ceil(((maxcap + CurrentFPSOffset) - (fps_mean)) / capstep)
-                    X = max(1, X)
-                    CurrentFPSOffset -= (capstep * X)
-                    CurrentFPSOffset = max(CurrentFPSOffset, mincap - maxcap)
-                    rtss_cli.set_property(current_profile, "FramerateLimit", int(maxcap+CurrentFPSOffset))
+                    current_fps_cap = maxcap + CurrentFPSOffset
+                    try:
+                        # Find values lower than current fps_mean
+                        lower_values = [x for x in fps_limit_list if x < fps_mean]
+                        
+                        if lower_values:
+                            # If current cap is already lower than fps_mean
+                            if current_fps_cap <= fps_mean:
+                                # Get current index and move to next lower value
+                                current_index = fps_limit_list.index(current_fps_cap)
+                                if current_index < len(fps_limit_list) - 1:
+                                    next_fps = fps_limit_list[current_index + 1]
+                                    CurrentFPSOffset = next_fps - maxcap
+                                    rtss_cli.set_property(current_profile, "FramerateLimit", next_fps)
+                            else:
+                                # Jump to highest value below fps_mean
+                                next_fps = max(lower_values)
+                                CurrentFPSOffset = next_fps - maxcap
+                                rtss_cli.set_property(current_profile, "FramerateLimit", next_fps)
+                    except ValueError:
+                        # If current FPS not in list, find nearest lower value
+                        lower_values = [x for x in fps_limit_list if x < current_fps_cap]
+                        if lower_values:
+                            next_fps = max(lower_values)
+                            CurrentFPSOffset = next_fps - maxcap
+                            rtss_cli.set_property(current_profile, "FramerateLimit", next_fps)
 
                 should_increase = False
                 gpu_increase_condition = (len(gpu_values) >= delaybeforeincrease and
@@ -663,10 +684,24 @@ def monitoring_loop():
                                           all(value <= cpucutoffforincrease for value in cpu_values[-delaybeforeincrease:]))
                 if gpu_increase_condition and cpu_increase_condition:
                      should_increase = True
+
                 if CurrentFPSOffset < 0 and should_increase:
-                    CurrentFPSOffset += capstep
-                    CurrentFPSOffset = min(CurrentFPSOffset, 0)
-                    rtss_cli.set_property(current_profile, "FramerateLimit", int(maxcap+CurrentFPSOffset))
+                    # Get current index in the fps_limit_list
+                    current_fps = maxcap + CurrentFPSOffset
+                    try:
+                        current_index = fps_limit_list.index(current_fps)
+                        # Move to next higher FPS value if available
+                        if current_index < len(fps_limit_list) - 1:  # Check if we can move up in the list
+                            next_fps = fps_limit_list[current_index + 1]
+                            CurrentFPSOffset = next_fps - maxcap
+                            rtss_cli.set_property(current_profile, "FramerateLimit", int(next_fps))
+                    except ValueError:
+                        # If current FPS not in list, find nearest higher value
+                        higher_values = [x for x in fps_limit_list if x > current_fps]
+                        if higher_values:
+                            next_fps = min(higher_values)
+                            CurrentFPSOffset = next_fps - maxcap
+                            rtss_cli.set_property(current_profile, "FramerateLimit", int(next_fps))
 
         if running:
             # Update legend labels with current values
