@@ -1154,6 +1154,9 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
         with dpg.theme(tag="plot_theme") as item_theme:
             with dpg.theme_component(dpg.mvAll):
                 dpg.add_theme_color(dpg.mvPlotCol_Line, (128, 128, 128), category = dpg.mvThemeCat_Plots)
+        with dpg.theme(tag="fps_cap_theme") as item_theme:
+            with dpg.theme_component(dpg.mvAll):
+                dpg.add_theme_color(dpg.mvPlotCol_Line, (128, 128, 128, 150), category = dpg.mvThemeCat_Plots)
 
         with dpg.plot(height=200, width=-1, tag="plot"):
             dpg.add_plot_axis(dpg.mvXAxis, label="Time (s)", tag="x_axis")
@@ -1171,7 +1174,7 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
             # Right Y-axis for FPS
             with dpg.plot_axis(dpg.mvYAxis, label="FPS", tag="y_axis_right", no_gridlines=True) as y_axis_right:
                 dpg.add_line_series([], [], label="FPS: --", parent=y_axis_right, tag="fps_series")
-                dpg.add_line_series([], [], label="FPS Cap: --", parent=y_axis_right, tag="cap_series", segments=True)
+                dpg.add_line_series([], [], label="FPS Cap: --", parent=y_axis_right, tag="cap_series", segments=False)
                 
             # Set axis limits
             dpg.set_axis_limits("y_axis_left", 0, 100)  # GPU usage range
@@ -1182,6 +1185,7 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
             # apply theme to series
             dpg.bind_item_theme("line1", "plot_theme")
             dpg.bind_item_theme("line2", "plot_theme")
+            dpg.bind_item_theme("cap_series", "fps_cap_theme")
 
 dpg.create_viewport(title="Dynamic FPS Limiter", width=Viewport_width, height=Viewport_height, resizable=False)
 dpg.set_viewport_resizable(False)
