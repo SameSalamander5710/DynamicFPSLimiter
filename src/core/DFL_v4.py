@@ -82,11 +82,11 @@ else:
         'mincap': '30',
         'capstep': '5',
         'gpucutofffordecrease': '85',
-        'gpucutoffforincrease': '70',
+        'gpucutoffforincrease': '65',
         'cpucutofffordecrease': '95',
         'cpucutoffforincrease': '85',
-        'enablecustomfpslimits': '0',
-        'customfpslimits': '30, 60',
+        'enablecustomfpslimits': '1',
+        'customfpslimits': '30, 35, 42, 50, 60',
     }
     with open(profiles_path, 'w') as f:
         profiles_config.write(f)
@@ -96,13 +96,13 @@ Default_settings_original = {
     "mincap": 30,
     "capstep": 5,
     "gpucutofffordecrease": 85,
-    "gpucutoffforincrease": 70,
+    "gpucutoffforincrease": 65,
     'cpucutofffordecrease': 95,
     'cpucutoffforincrease': 85,
     "delaybeforedecrease": 2,
     "delaybeforeincrease": 2,
-    "enablecustomfpslimits": 0,
-    "customfpslimits": {30, 60},
+    "enablecustomfpslimits": 1,
+    "customfpslimits": {30, 35, 42, 50, 60},
     "minvalidgpu": 20,
     "minvalidfps": 20,
     "globallimitonexit_fps": 98,
@@ -285,15 +285,17 @@ def generate_adaptive_fps_limits():
     Generates FPS limits from `max_fps` down to `min_fps` such that each step
     reduces expected GPU usage from `upper_usage` to just above `lower_usage`.
     
-    `safety_factor` makes the step a bit more conservative (e.g. 0.95).
+    `safety_margin` makes the step a bit more conservative (e.g. 0.07).
     """
-    safety_factor=0.90
+    safety_margin = 0.07
+
     lower_usage = float(dpg.get_value("input_gpucutoffforincrease"))
     upper_usage = float(dpg.get_value("input_gpucutofffordecrease"))
     min_fps = int(dpg.get_value("input_mincap"))
     max_fps = int(dpg.get_value("input_maxcap"))
 
-    step_ratio = safety_factor * (lower_usage / upper_usage)
+    base_ratio = lower_usage / upper_usage
+    step_ratio = min(base_ratio + safety_margin, 0.999999)  # Prevent step_ratio >= 1
     fps_limits = []
     fps = max_fps
     while fps >= min_fps:
@@ -574,9 +576,8 @@ def reset_stats():
 def reset_to_program_default():
     
     global Default_settings_original
-    
     for key in input_field_keys:
-        dpg.set_value(f"input_{key}", Default_settings_original[key])
+        dpg.set_value(f"input_{key}", format_output_value(key, Default_settings_original[key]))
     dpg.set_value("checkbox_enablecustomfpslimits", bool(dpg.get_value("input_enablecustomfpslimits")))
     logger.add_log("Settings reset to program default")  
 
