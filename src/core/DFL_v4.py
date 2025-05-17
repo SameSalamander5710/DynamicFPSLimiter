@@ -82,7 +82,7 @@ else:
         'mincap': '30',
         'capstep': '5',
         'gpucutofffordecrease': '85',
-        'gpucutoffforincrease': '75',
+        'gpucutoffforincrease': '70',
         'cpucutofffordecrease': '95',
         'cpucutoffforincrease': '85',
         'enablecustomfpslimits': '0',
@@ -96,7 +96,7 @@ Default_settings_original = {
     "mincap": 30,
     "capstep": 5,
     "gpucutofffordecrease": 85,
-    "gpucutoffforincrease": 75,
+    "gpucutoffforincrease": 70,
     'cpucutofffordecrease': 95,
     'cpucutoffforincrease': 85,
     "delaybeforedecrease": 2,
@@ -890,9 +890,9 @@ def exit_gui():
 # Define keys used for input fields (used to construct tooltip tags)
 
 tooltips = {
-    "maxcap": "Defines the maximum FPS limit for the game.",
-    "mincap": "Specifies the minimum FPS limit that may be reached. For optimal performance, set this to the lowest value you're comfortable with.",
-    "capstep": "Indicates the increment size for adjusting the FPS cap. Smaller step sizes provide finer control",
+    "maxcap": "Defines the maximum FPS limit for the game. Hold CTRL for steps of 10.",
+    "mincap": "Specifies the minimum FPS limit that may be reached. For optimal performance, set this to the lowest value you're comfortable with. Hold CTRL for steps of 10.",
+    "capstep": "Indicates the increment size for adjusting the FPS cap. Smaller step sizes provide finer control. Hold CTRL for steps of 10.",
     "gpucutofffordecrease": "Sets the upper threshold for GPU usage. If GPU usage exceeds this value, the FPS cap will be lowered to maintain system performance.",
     "delaybeforedecrease": "Specifies how many times in a row GPU usage must exceed the upper threshold before the FPS cap begins to drop.",
     "gpucutoffforincrease": "Defines the lower threshold for GPU usage. If GPU usage falls below this value, the FPS cap will increase to improve performance.",
