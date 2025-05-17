@@ -225,53 +225,45 @@ def make_stepped_values(maximum, minimum, step):
 
 def update_fps_cap_visualization():
     # Clear existing items in drawlist
-    dpg.delete_item("fps_cap_drawlist", children_only=True)
+    dpg.delete_item("Foreground")
     
-    # Get current FPS limits
-    fps_limits = current_stepped_limits()
-    if fps_limits:
-        draw_width = Viewport_width - 60  # Width of drawlist
-        draw_height = 30  # Height of drawlist
-        margin = 10  # Margin around drawlist
-        
-        # Draw the base line first
-        dpg.draw_line(
-            (margin, draw_height // 2),
-            (draw_width + margin, draw_height // 2),
-            color=(200, 200, 200),
-            thickness=2,
-            parent="fps_cap_drawlist"
-        )
-        
-        # Calculate min and max for scaling
-        min_fps = min(fps_limits)
-        max_fps = max(fps_limits)
-        fps_range = max_fps - min_fps
-        
-        # Draw rectangles for each FPS limit
-        for cap in fps_limits:
-            # Map the FPS cap value to the drawlist width
-            x_pos = margin + int((cap - min_fps) / fps_range * (draw_width - margin))
-            y_pos = draw_height // 2
-            rect_width = 10
-            rect_height = 20
+    with dpg.draw_layer(tag="Foreground", parent="fps_cap_drawlist"):
+        # Get current FPS limits
+        fps_limits = current_stepped_limits()
+        if fps_limits:
+            draw_width = Viewport_width - 60  # Width of drawlist
+            draw_height = 30  # Height of drawlist
+            margin = 10  # Margin around drawlist
             
-            # Draw rectangle marker
-            dpg.draw_rectangle(
-                (x_pos - rect_width // 2, y_pos - rect_height // 2),
-                (x_pos + rect_width // 2, y_pos + rect_height // 2),
-                color=(128, 128, 128),
-                fill=(128, 128, 128),
-                parent="fps_cap_drawlist"
-            )
+            # Calculate min and max for scaling
+            min_fps = min(fps_limits)
+            max_fps = max(fps_limits)
+            fps_range = max_fps - min_fps
             
-            # Add FPS value text above rectangle
-            dpg.draw_text(
-                (x_pos - 10, y_pos - rect_height - 2),
-                str(cap),
-                color=(200, 200, 200),
-                parent="fps_cap_drawlist"
-            )
+            # Draw rectangles for each FPS limit
+            for cap in fps_limits:
+                # Map the FPS cap value to the drawlist width
+                x_pos = margin + int((cap - min_fps) / fps_range * (draw_width - margin))
+                y_pos = draw_height // 2
+                rect_width = 10
+                rect_height = 20
+                
+                # Draw rectangle marker
+                dpg.draw_rectangle(
+                    (x_pos - rect_width // 2, y_pos - rect_height // 2),
+                    (x_pos + rect_width // 2, y_pos + rect_height // 2),
+                    color=(128, 128, 128),
+                    fill=(128, 128, 128),
+                    parent="Foreground"
+                )
+                
+                # Add FPS value text above rectangle
+                dpg.draw_text(
+                    (x_pos - 10, y_pos - rect_height - 2),
+                    str(cap),
+                    color=(200, 200, 200),
+                    parent="Foreground"
+                )
 
 # Function to get values with correct types
 def get_setting(key, value_type=None):
@@ -1083,7 +1075,10 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                 draw_width = Viewport_width - 60
                 margin = 10
                 with dpg.drawlist(width= draw_width, height=draw_height, tag="fps_cap_drawlist"):
-                    dpg.draw_line((margin, draw_height // 2), (draw_width + margin, draw_height // 2), color=(200, 200, 200), thickness=2)
+                    with dpg.draw_layer(tag="Baseline"):
+                        dpg.draw_line((margin, draw_height // 2), (draw_width + margin, draw_height // 2), color=(200, 200, 200), thickness=2)
+                    with dpg.draw_layer(tag="Foreground"):
+                        dpg.draw_line((margin, draw_height // 2), (draw_width + margin, draw_height // 2), color=(200, 200, 200), thickness=2)
                 
                 with dpg.group(horizontal=True):
                     dpg.add_input_text(
