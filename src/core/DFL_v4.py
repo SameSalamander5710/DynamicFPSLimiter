@@ -1037,7 +1037,9 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                                             ("Frame rate step:", "capstep")]:
                                 with dpg.table_row():
                                     dpg.add_text(label)
-                                    dpg.add_input_int(tag=f"input_{key}", default_value=int(settings[key]), width=90, step=1, step_fast=10)
+                                    dpg.add_input_int(tag=f"input_{key}", default_value=int(settings[key]), 
+                                                      width=90, step=1, step_fast=10, 
+                                                      min_clamped=True, min_value=1)
                                     # Give the tooltip its own tag
                                     with dpg.tooltip(parent=f"input_{key}", tag=f"input_{key}_tooltip", show=ShowTooltip, delay=1):
                                         dpg.add_text(tooltips[key], wrap = 200)
