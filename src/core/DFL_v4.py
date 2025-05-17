@@ -210,12 +210,11 @@ def current_stepped_limits():
             try:
                 custom_limits = set(int(x.strip()) for x in custom_limits.split(",") if x.strip().isdigit())
                 custom_limits = sorted(custom_limits)
-                #logger.add_log(f"Custom FPS limits: {custom_limits}")
                 return sorted(custom_limits)
             except Exception:
                 logger.add_log("Error parsing custom FPS limits, using default stepped limits.")
-    logger.add_log(f"Default stepped limits: {maximum}, {minimum}, {step}")
-    logger.add_log(f"Stepped limits: {make_stepped_values(maximum, minimum, step)}")
+    #logger.add_log(f"Default stepped limits: {maximum}, {minimum}, {step}")
+    #logger.add_log(f"Stepped limits: {make_stepped_values(maximum, minimum, step)}")
     return make_stepped_values(maximum, minimum, step)
 
 def make_stepped_values(maximum, minimum, step):
@@ -455,7 +454,7 @@ def start_stop_callback():
         CurrentFPSOffset = 0
         
         logger.add_log("Monitoring stopped")
-    current_stepped_limits
+    logger.add_log(f"Custom FPS limits: {current_stepped_limits()}")
     rtss_cli.set_property(current_profile, "FramerateLimit", int(max(current_stepped_limits())))
 
 def quick_save_settings():
