@@ -210,7 +210,7 @@ def current_stepped_limits():
             try:
                 custom_limits = set(int(x.strip()) for x in custom_limits.split(",") if x.strip().isdigit())
                 custom_limits = sorted(custom_limits)
-                logger.add_log(f"Custom FPS limits: {custom_limits}")
+                #logger.add_log(f"Custom FPS limits: {custom_limits}")
                 return sorted(custom_limits)
             except Exception:
                 logger.add_log("Error parsing custom FPS limits, using default stepped limits.")
@@ -409,7 +409,7 @@ def apply_current_input_values():
         globals()[key] = parse_input_value(key, value)
 
 def start_stop_callback():
-    global running, maxcap, current_profile
+    global running, current_profile
     running = not running
     dpg.configure_item("start_stop_button", label="Stop" if running else "Start")
     apply_current_input_values()
@@ -529,8 +529,13 @@ def update_plot_FPS(fps_val, cap_val):
     dpg.set_value("fps_series", [fps_time_series, fps_series])
     dpg.set_value("cap_series", [fps_time_series, cap_series])  
 
-    min_ft = mincap - capstep
-    max_ft = maxcap + capstep
+    fps_limit_list = current_stepped_limits()
+
+    current_mincap = min(fps_limit_list)
+    current_maxcap = max(fps_limit_list)
+    min_ft = current_mincap - round((current_maxcap - current_mincap) * 0.1)
+    max_ft = current_maxcap + round((current_maxcap - current_mincap) * 0.1)
+
     dpg.set_axis_limits("y_axis_right", min_ft, max_ft) 
 
 def update_plot_usage(time_val, gpu_val, cpu_val):
@@ -603,12 +608,15 @@ def monitoring_loop():
     global max_points, minvalidgpu, minvalidfps, luid_selected, luid
 
     last_process_name = None
-    min_ft = mincap - capstep
-    max_ft = maxcap + capstep
     
     gpu_monitor.reinitialize()
 
     fps_limit_list = current_stepped_limits()
+
+    current_mincap = min(fps_limit_list)
+    current_maxcap = max(fps_limit_list)
+    min_ft = current_mincap - round((current_maxcap - current_mincap) * 0.1)
+    max_ft = current_maxcap + round((current_maxcap - current_mincap) * 0.1)
 
     while running:
         fps, process_name = rtss_manager.get_fps_for_active_window()
@@ -649,8 +657,8 @@ def monitoring_loop():
                 if gpu_decrease_condition or cpu_decrease_condition:
                     should_decrease = True
                 
-                if CurrentFPSOffset > (mincap - maxcap) and should_decrease:
-                    current_fps_cap = maxcap + CurrentFPSOffset
+                if CurrentFPSOffset > (current_mincap - current_maxcap) and should_decrease:
+                    current_fps_cap = current_maxcap + CurrentFPSOffset
                     try:
                         # Find values lower than current fps_mean
                         lower_values = [x for x in fps_limit_list if x < fps_mean]
@@ -660,21 +668,21 @@ def monitoring_loop():
                             if current_fps_cap <= fps_mean:
                                 # Get current index and move to next lower value
                                 current_index = fps_limit_list.index(current_fps_cap)
-                                if current_index < len(fps_limit_list) - 1:
-                                    next_fps = fps_limit_list[current_index + 1]
-                                    CurrentFPSOffset = next_fps - maxcap
+                                if current_index < 0:
+                                    next_fps = fps_limit_list[current_index - 1]
+                                    CurrentFPSOffset = next_fps - current_maxcap
                                     rtss_cli.set_property(current_profile, "FramerateLimit", next_fps)
                             else:
                                 # Jump to highest value below fps_mean
                                 next_fps = max(lower_values)
-                                CurrentFPSOffset = next_fps - maxcap
+                                CurrentFPSOffset = next_fps - current_maxcap
                                 rtss_cli.set_property(current_profile, "FramerateLimit", next_fps)
                     except ValueError:
                         # If current FPS not in list, find nearest lower value
                         lower_values = [x for x in fps_limit_list if x < current_fps_cap]
                         if lower_values:
                             next_fps = max(lower_values)
-                            CurrentFPSOffset = next_fps - maxcap
+                            CurrentFPSOffset = next_fps - current_maxcap
                             rtss_cli.set_property(current_profile, "FramerateLimit", next_fps)
 
                 should_increase = False
@@ -687,35 +695,35 @@ def monitoring_loop():
 
                 if CurrentFPSOffset < 0 and should_increase:
                     # Get current index in the fps_limit_list
-                    current_fps = maxcap + CurrentFPSOffset
+                    current_fps = current_maxcap + CurrentFPSOffset
                     try:
                         current_index = fps_limit_list.index(current_fps)
                         # Move to next higher FPS value if available
                         if current_index < len(fps_limit_list) - 1:  # Check if we can move up in the list
                             next_fps = fps_limit_list[current_index + 1]
-                            CurrentFPSOffset = next_fps - maxcap
+                            CurrentFPSOffset = next_fps - current_maxcap
                             rtss_cli.set_property(current_profile, "FramerateLimit", int(next_fps))
                     except ValueError:
                         # If current FPS not in list, find nearest higher value
                         higher_values = [x for x in fps_limit_list if x > current_fps]
                         if higher_values:
                             next_fps = min(higher_values)
-                            CurrentFPSOffset = next_fps - maxcap
+                            CurrentFPSOffset = next_fps - current_maxcap
                             rtss_cli.set_property(current_profile, "FramerateLimit", int(next_fps))
 
         if running:
             # Update legend labels with current values
             dpg.configure_item("gpu_usage_series", label=f"GPU: {gpuUsage}%")
             dpg.configure_item("fps_series", label=f"FPS: {fps:.1f}" if fps else "FPS: --")
-            dpg.configure_item("cap_series", label=f"FPS Cap: {maxcap + CurrentFPSOffset}")
+            dpg.configure_item("cap_series", label=f"FPS Cap: {current_maxcap + CurrentFPSOffset}")
             dpg.configure_item("cpu_usage_series", label=f"CPU: {cpuUsage}%")
 
             # Update plot if fps is valid
             if fps and process_name not in {"DynamicFPSLimiter.exe"}:
                 # Scaling FPS value to fit 0-100 axis
                 scaled_fps = ((fps - min_ft)/(max_ft - min_ft))*100
-                scaled_cap = ((maxcap + CurrentFPSOffset - min_ft)/(max_ft - min_ft))*100
-                actual_cap = maxcap + CurrentFPSOffset
+                scaled_cap = ((current_maxcap + CurrentFPSOffset - min_ft)/(max_ft - min_ft))*100
+                actual_cap = current_maxcap + CurrentFPSOffset
                 # Pass actual values, update_plot_FPS handles timing and lists
                 update_plot_FPS(scaled_fps, scaled_cap)
 
