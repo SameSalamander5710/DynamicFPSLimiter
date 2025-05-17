@@ -237,7 +237,7 @@ def update_fps_cap_visualization():
     
     # Store new fps_limits for next comparison
     last_fps_limits = fps_limits.copy()
-    
+
     # Clear existing items in drawlist
     dpg.delete_item("Foreground")
     
@@ -245,7 +245,7 @@ def update_fps_cap_visualization():
         # Get current FPS limits
         
         if fps_limits:
-            draw_width = Viewport_width - 60  # Width of drawlist
+            draw_width = Viewport_width - 67  # Width of drawlist
             draw_height = 30  # Height of drawlist
             margin = 10  # Margin around drawlist
             
@@ -262,12 +262,13 @@ def update_fps_cap_visualization():
                 rect_width = 10
                 rect_height = 20
                 
-                # Draw rectangle marker
-                dpg.draw_rectangle(
-                    (x_pos - rect_width // 2, y_pos - rect_height // 2),
-                    (x_pos + rect_width // 2, y_pos + rect_height // 2),
-                    color=(128, 128, 128),
-                    fill=(128, 128, 128),
+                # Draw FPS marker
+                dpg.draw_circle(
+                    (x_pos, y_pos),  # Center point
+                    7,  # Radius
+                    #thickness=2,
+                    #color=(128, 128, 128),  # Border color (grey)
+                    fill=(200, 200, 200),  # Fill color (white)
                     parent="Foreground"
                 )
                 
@@ -330,7 +331,7 @@ for key in settings_config["GlobalSettings"]:
         globals()[key] = value
 
 # Default viewport size
-Viewport_width = 600
+Viewport_width = 605
 Viewport_height = 705
 Plot_height = 220
 
@@ -1048,7 +1049,7 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                                           default_value=int(settings["enablecustomfpslimits"]), show=False,
                                           width=0)
                     
-                    dpg.add_spacer(width=0.5)
+                    dpg.add_spacer(width=1)
                     with dpg.group(width=160):
                         with dpg.table(header_row=False, resizable=False, policy=dpg.mvTable_SizingFixedFit):
                             dpg.add_table_column(width_fixed=True)
@@ -1065,7 +1066,7 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                                     with dpg.tooltip(parent=f"input_{key}", tag=f"input_{key}_tooltip", show=ShowTooltip, delay=1):
                                         dpg.add_text(tooltips[key], wrap=200)
                     
-                    dpg.add_spacer(width=0.5)
+                    dpg.add_spacer(width=1)
                     with dpg.group(width=160):
                         #dpg.add_spacer(height=3)
                         with dpg.group(horizontal=False):
@@ -1086,13 +1087,13 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                                 dpg.add_text(tooltips["SaveToProfile"], wrap = 200)
                 
                 draw_height = 30
-                draw_width = Viewport_width - 55
+                draw_width = Viewport_width - 60
                 margin = 10
                 with dpg.drawlist(width= draw_width, height=draw_height, tag="fps_cap_drawlist"):
                     with dpg.draw_layer(tag="Baseline"):
-                        dpg.draw_line((margin, draw_height // 2), (draw_width + margin, draw_height // 2), color=(200, 200, 200), thickness=2)
+                        dpg.draw_line((margin, draw_height // 2), (draw_width, draw_height // 2), color=(200, 200, 200), thickness=2)
                     with dpg.draw_layer(tag="Foreground"):
-                        dpg.draw_line((margin, draw_height // 2), (draw_width + margin, draw_height // 2), color=(200, 200, 200), thickness=2)
+                        dpg.draw_line((margin, draw_height // 2), (draw_width, draw_height // 2), color=(200, 200, 200), thickness=2)
                 
                 with dpg.group(horizontal=True):
                     dpg.add_input_text(
