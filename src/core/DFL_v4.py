@@ -246,7 +246,7 @@ def update_fps_cap_visualization():
         
         if fps_limits:
             draw_width = Viewport_width - 67  # Width of drawlist
-            draw_height = 30  # Height of drawlist
+            layer2_height = 30  # Height of drawlist
             margin = 10  # Margin around drawlist
             
             # Calculate min and max for scaling
@@ -258,9 +258,7 @@ def update_fps_cap_visualization():
             for cap in fps_limits:
                 # Map the FPS cap value to the drawlist width
                 x_pos = margin + int((cap - min_fps) / fps_range * (draw_width - margin))
-                y_pos = draw_height // 2
-                rect_width = 10
-                rect_height = 20
+                y_pos = layer2_height // 2
                 
                 # Draw FPS marker
                 dpg.draw_circle(
@@ -274,9 +272,10 @@ def update_fps_cap_visualization():
                 
                 # Add FPS value text above rectangle
                 dpg.draw_text(
-                    (x_pos - 10, y_pos - rect_height - 2),
+                    (x_pos - 10, y_pos + 8),
                     str(cap),
                     color=(200, 200, 200),
+                    size=16,
                     parent="Foreground"
                 )
 
@@ -332,7 +331,7 @@ for key in settings_config["GlobalSettings"]:
 
 # Default viewport size
 Viewport_width = 605
-Viewport_height = 705
+Viewport_height = 710
 Plot_height = 220
 
 def save_to_profile():
@@ -1022,7 +1021,7 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
         dpg.add_input_text(tag="LastProcess", multiline=False, readonly=True, width=-1)    
     
     #Tabs
-    tab_height = 200
+    tab_height = 205
     dpg.add_spacer(height=1)
     with dpg.tab_bar():
         with dpg.tab(label="Profile Settings", tag="tab1"):
@@ -1086,14 +1085,16 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                             with dpg.tooltip(parent="SaveToProfile", tag="SaveToProfile_tooltip", show=ShowTooltip, delay=1):
                                 dpg.add_text(tooltips["SaveToProfile"], wrap = 200)
                 
-                draw_height = 30
+                draw_height = 40
+                layer1_height = 30
+                layer2_height = 30
                 draw_width = Viewport_width - 60
                 margin = 10
                 with dpg.drawlist(width= draw_width, height=draw_height, tag="fps_cap_drawlist"):
                     with dpg.draw_layer(tag="Baseline"):
-                        dpg.draw_line((margin, draw_height // 2), (draw_width, draw_height // 2), color=(200, 200, 200), thickness=2)
+                        dpg.draw_line((margin, layer1_height // 2), (draw_width, layer1_height // 2), color=(200, 200, 200), thickness=2)
                     with dpg.draw_layer(tag="Foreground"):
-                        dpg.draw_line((margin, draw_height // 2), (draw_width, draw_height // 2), color=(200, 200, 200), thickness=2)
+                        dpg.draw_line((margin, layer2_height // 2), (draw_width, layer2_height // 2), color=(200, 200, 200), thickness=2)
                 
                 with dpg.group(horizontal=True):
                     dpg.add_input_text(
