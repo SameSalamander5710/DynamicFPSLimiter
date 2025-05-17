@@ -196,6 +196,34 @@ def sort_customfpslimits_callback(sender, app_data, user_data):
         # If parsing fails, do nothing or optionally reset to previous valid value
         pass
 
+def current_stepped_limits():
+
+    maximum = int(dpg.get_value("input_maxcap"))
+    minimum = int(dpg.get_value("input_mincap"))
+    step = int(dpg.get_value("input_capstep"))
+
+    use_custom  = dpg.get_value("checkbox_enablecustomfpslimits")
+
+    if use_custom:
+        custom_limits = dpg.get_value("input_customfpslimits")
+        if custom_limits:
+            try:
+                custom_limits = set(int(x.strip()) for x in custom_limits.split(",") if x.strip().isdigit())
+                custom_limits = sorted(custom_limits)
+                logger.add_log(f"Custom FPS limits: {custom_limits}")
+                return sorted(custom_limits)
+            except Exception:
+                logger.add_log("Error parsing custom FPS limits, using default stepped limits.")
+    logger.add_log(f"Default stepped limits: {maximum}, {minimum}, {step}")
+    logger.add_log(f"Stepped limits: {make_stepped_values(maximum, minimum, step)}")
+    return make_stepped_values(maximum, minimum, step)
+
+def make_stepped_values(maximum, minimum, step):
+    values = list(range(maximum, minimum - 1, -step))
+    if minimum not in values:
+        values.append(minimum)
+    return sorted(set(values))
+
 # Function to get values with correct types
 def get_setting(key, value_type=None):
     """Get setting from appropriate config section based on key type."""
@@ -401,7 +429,7 @@ def start_stop_callback():
     for key in input_field_keys:
         dpg.configure_item(f"input_{key}", enabled=not running)
     dpg.configure_item("checkbox_enablecustomfpslimits", enabled=not running)
-    
+
     if running:
         # Initialize RTSS
         rtss_cli.enable_limiter()
@@ -580,6 +608,8 @@ def monitoring_loop():
     max_ft = maxcap + capstep
     
     gpu_monitor.reinitialize()
+
+    fps_limit_list = current_stepped_limits()
 
     while running:
         fps, process_name = rtss_manager.get_fps_for_active_window()
