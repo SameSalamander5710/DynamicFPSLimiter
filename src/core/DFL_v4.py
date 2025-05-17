@@ -174,20 +174,15 @@ def format_output_value(key, value):
     value_type = key_type_map.get(key, int)
     if value_type is set:
         if isinstance(value, set):
-            logger.add_log(f"1 Warning: Skipped non-integer value '{value}' in key '{key}'")
             return ", ".join(str(x) for x in sorted(value))
-        logger.add_log(f"2 Warning: Skipped non-integer value '{value}' in key '{key}'")
         return str(value)
     return value
 
 def sync_checkbox_to_int(sender, app_data, user_data):
     # app_data is True/False from checkbox
+    #logger.add_log(f"Checkbox state changed: {app_data}")
     dpg.set_value("input_enablecustomfpslimits", int(app_data))
-
-def sync_int_to_checkbox():
-    # Call this after loading profile/settings to update checkbox state
-    val = dpg.get_value("input_enablecustomfpslimits")
-    dpg.set_value("checkbox_enablecustomfpslimits", bool(val))
+    #logger.add_log(f"Checkbox state synced to int value: {int(app_data)}")
 
 def sort_customfpslimits_callback(sender, app_data, user_data):
     # Get the current value from the input field
@@ -298,6 +293,7 @@ def load_profile_callback(sender, app_data, user_data):
         dpg.set_value(f"input_{key}", format_output_value(key, parsed_value))
     update_global_variables()
     dpg.set_value("new_profile_input", "")
+    dpg.set_value("checkbox_enablecustomfpslimits", bool(dpg.get_value("input_enablecustomfpslimits")))
 
 def save_profile(profile_name):
     profiles_config[profile_name] = {}
@@ -350,6 +346,7 @@ def delete_selected_profile_callback():
                 except Exception as e:
                     logger.add_log(f"Error: Unable to convert value for key '{key}': {e}")
             update_global_variables()  # Ensure global variables are updated
+            dpg.set_value("checkbox_enablecustomfpslimits", bool(dpg.get_value("input_enablecustomfpslimits")))
         else:
             logger.add_log("Error: 'Global' profile not found in configuration.")
 
@@ -403,7 +400,8 @@ def start_stop_callback():
 
     for key in input_field_keys:
         dpg.configure_item(f"input_{key}", enabled=not running)
-
+    dpg.configure_item("checkbox_enablecustomfpslimits", enabled=not running)
+    
     if running:
         # Initialize RTSS
         rtss_cli.enable_limiter()
@@ -444,6 +442,7 @@ def quick_load_settings():
     for key in input_field_keys:
         dpg.set_value(f"input_{key}", format_output_value(key, settings[key]))
     update_global_variables()
+    dpg.set_value("checkbox_enablecustomfpslimits", bool(dpg.get_value("input_enablecustomfpslimits")))
     logger.add_log("Settings quick loaded")
 
 def reset_stats():
@@ -467,6 +466,7 @@ def reset_to_program_default():
     
     for key in input_field_keys:
         dpg.set_value(f"input_{key}", Default_settings_original[key])
+    dpg.set_value("checkbox_enablecustomfpslimits", bool(dpg.get_value("input_enablecustomfpslimits")))
     logger.add_log("Settings reset to program default")  
 
 def reset_customFPSLimits():
@@ -916,7 +916,9 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                                          default_value=bool(settings["enablecustomfpslimits"]),
                                          callback=sync_checkbox_to_int)
                         dpg.add_input_int(tag="input_enablecustomfpslimits", 
-                                          default_value=int(settings["enablecustomfpslimits"]), show=False)
+                                          default_value=int(settings["enablecustomfpslimits"]), show=False,
+                                          width=0)
+                    
                     dpg.add_spacer(width=0.5)
                     with dpg.group(width=160):
                         with dpg.table(header_row=False, resizable=False, policy=dpg.mvTable_SizingFixedFit):
