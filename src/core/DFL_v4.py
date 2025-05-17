@@ -847,6 +847,29 @@ def gui_update_loop():
                     logger.add_log(f"Error in GUI update loop: {e}")
         time.sleep(0.1)
 
+def add_tooltip(key):
+    """
+    Adds a tooltip to a widget using consistent naming convention.
+    key: The key used in the tooltips dictionary
+    """
+    if key in tooltips:
+        # Determine the actual widget ID
+        widget_id = f"input_{key}" if key in input_field_keys else key
+        
+        # Only create tooltip if widget exists
+        if dpg.does_item_exist(widget_id):
+            tooltip_tag = f"{widget_id}_tooltip"
+            with dpg.tooltip(parent=widget_id, tag=tooltip_tag, show=ShowTooltip, delay=1):
+                dpg.add_text(tooltips[key], wrap=200)
+
+def apply_all_tooltips():
+    """Automatically adds tooltips to all widgets that have entries in the tooltips dictionary"""
+    for key in tooltips:
+        try:
+            add_tooltip(key)
+        except Exception as e:
+            logger.add_log(f"Failed to add tooltip for {key}: {e}")
+
 def update_tooltip_setting(sender, app_data, user_data):
     global ShowTooltip, input_field_keys, tooltips
     ShowTooltip = app_data
@@ -934,7 +957,12 @@ tooltips = {
     "luid_button": "Detects the render GPU based on highest 3D engine utilization, and sets it as the target GPU for FPS limiting. Click again to deselect.",
     "exit_fps_input": "The specific FPS limit to apply globally when the application exits, if 'Set Global FPS Limit on Exit' is checked.",
     "SaveToProfile": "Saves the current settings to the selected profile. This allows you to quickly switch between different configurations.",
-    "Reset_Default": "Resets all settings to the program's default values. This is useful if you want to start fresh or if you encounter issues."
+    "Reset_Default": "Resets all settings to the program's default values. This is useful if you want to start fresh or if you encounter issues.",
+    "Reset_CustomFPSLimits": "Resets the custom FPS limits to 'max FPS limit' and 'min FPS limit'.",
+    "DeleteProfile": "Deletes the selected profile. Be cautious, as this action cannot be undone.",
+    "checkbox_enablecustomfpslimits": "Enables or disables the use of custom FPS limits. When enabled, the FPS limits will be applied based on the specified list.",
+    "checkbox_globallimitonexit": "Enables or disables the application of a global FPS limit when exiting the program. When enabled, the specified FPS limit will be applied to all processes.",
+    "autofill_fps_caps": "Generates FPS limits from `max FPS limit` down to `min FPS limit` such that each step reduces expected GPU usage from `upper limit` to just above `lower limit` when triggered.",
 }
 
 # GUI setup: Main Window
@@ -1012,14 +1040,10 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
         dpg.add_text("Dynamic FPS Limiter v4.0.0")
         dpg.add_spacer(width=30)
         dpg.add_button(label="Detect Render GPU", callback=toggle_luid_selection, tag="luid_button", width=150)
-        # Give the tooltip its own tag
-        with dpg.tooltip(parent="luid_button", tag="luid_button_tooltip", show=ShowTooltip, delay=1):
-            dpg.add_text(tooltips["luid_button"], wrap = 200)
+
         dpg.add_spacer(width=30)
         dpg.add_button(label="Start", tag="start_stop_button", callback=start_stop_callback, width=50)
-        # Give the tooltip its own tag
-        with dpg.tooltip(parent="start_stop_button", tag="start_stop_button_tooltip", show=ShowTooltip, delay=1):
-            dpg.add_text(tooltips["start_stop_button"], wrap = 200)
+
         dpg.add_button(label="Exit", callback=exit_gui, width=50)  # Exit button
 
     # Profiles
@@ -1068,9 +1092,6 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                                     dpg.add_input_int(tag=f"input_{key}", default_value=int(settings[key]), 
                                                       width=90, step=1, step_fast=10, 
                                                       min_clamped=True, min_value=1)
-                                    # Give the tooltip its own tag
-                                    with dpg.tooltip(parent=f"input_{key}", tag=f"input_{key}_tooltip", show=ShowTooltip, delay=1):
-                                        dpg.add_text(tooltips[key], wrap = 200)
                         dpg.add_spacer(height=1)
                         dpg.add_checkbox(label="Define custom FPS limits", tag="checkbox_enablecustomfpslimits", 
                                          default_value=bool(settings["enablecustomfpslimits"]),
@@ -1092,29 +1113,17 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                                     dpg.add_button(label=label, tag=f"button_{key}", width=110)
                                     dpg.bind_item_theme(f"button_{key}", "button_right")
                                     dpg.add_input_text(tag=f"input_{key}", default_value=str(settings[key]), width=40)
-                                    # Give the tooltip its own tag
-                                    with dpg.tooltip(parent=f"input_{key}", tag=f"input_{key}_tooltip", show=ShowTooltip, delay=1):
-                                        dpg.add_text(tooltips[key], wrap=200)
                     
                     dpg.add_spacer(width=1)
                     with dpg.group(width=160):
                         #dpg.add_spacer(height=3)
                         with dpg.group(horizontal=False):
                             with dpg.group(tag="quick_save_load"):
-                                # Give the tooltip its own tag
-                                with dpg.tooltip(parent="quick_save_load", tag="quick_save_load_tooltip", show=ShowTooltip, delay=1):
-                                    dpg.add_text(tooltips["quick_save_load"], wrap = 200)
                                 dpg.add_button(label="Quick Save", callback=quick_save_settings)
                                 dpg.add_button(label="Quick Load", callback=quick_load_settings)
                             dpg.add_button(tag="Reset_Default", label="Reset Settings to Default", callback=reset_to_program_default)
-                            # Give the tooltip its own tag
-                            with dpg.tooltip(parent="Reset_Default", tag="Reset_Default_tooltip", show=ShowTooltip, delay=1):
-                                dpg.add_text(tooltips["Reset_Default"], wrap = 200)
                             dpg.add_spacer(height=3)
                             dpg.add_button(tag="SaveToProfile", label="Save Settings to Profile", callback=save_to_profile)
-                            # Give the tooltip its own tag
-                            with dpg.tooltip(parent="SaveToProfile", tag="SaveToProfile_tooltip", show=ShowTooltip, delay=1):
-                                dpg.add_text(tooltips["SaveToProfile"], wrap = 200)
                 
                 draw_height = 40
                 layer1_height = 30
@@ -1137,6 +1146,7 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                         on_enter=True)
                     dpg.add_button(label="Reset", tag="rest_fps_cap_button", width=80, callback=reset_customFPSLimits)
                     dpg.add_button(label="AutoFill", tag="autofill_fps_caps", width=80, callback=generate_adaptive_fps_limits)
+
     
         with dpg.tab(label="Preferences", tag="tab2"):
             with dpg.child_window(height=tab_height):
@@ -1150,9 +1160,6 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                     dpg.add_input_int(tag="exit_fps_input",
                                     default_value=globallimitonexit_fps, callback=update_exit_fps_value,
                                     width=100, step=1, step_fast=10)
-                # Give the tooltip its own tag
-                with dpg.tooltip(parent="exit_fps_input", tag="exit_fps_input_tooltip", show=ShowTooltip, delay=1):
-                    dpg.add_text(tooltips["exit_fps_input"], wrap = 200)
 
         with dpg.tab(label="Log", tag="tab3"):
             with dpg.child_window(tag="LogWindow", autosize_x=True, height=tab_height, border=True):
@@ -1250,6 +1257,8 @@ if rtss_manager:
 # Add after your other thread initializations
 gui_update_thread = threading.Thread(target=gui_update_loop, daemon=True)
 gui_update_thread.start()
+
+apply_all_tooltips()
 
 logger.add_log("Initialized successfully.")
 
