@@ -223,6 +223,56 @@ def make_stepped_values(maximum, minimum, step):
         values.append(minimum)
     return sorted(set(values))
 
+def update_fps_cap_visualization():
+    # Clear existing items in drawlist
+    dpg.delete_item("fps_cap_drawlist", children_only=True)
+    
+    # Get current FPS limits
+    fps_limits = current_stepped_limits()
+    if fps_limits:
+        draw_width = Viewport_width - 60  # Width of drawlist
+        draw_height = 30  # Height of drawlist
+        margin = 10  # Margin around drawlist
+        
+        # Draw the base line first
+        dpg.draw_line(
+            (margin, draw_height // 2),
+            (draw_width + margin, draw_height // 2),
+            color=(200, 200, 200),
+            thickness=2,
+            parent="fps_cap_drawlist"
+        )
+        
+        # Calculate min and max for scaling
+        min_fps = min(fps_limits)
+        max_fps = max(fps_limits)
+        fps_range = max_fps - min_fps
+        
+        # Draw rectangles for each FPS limit
+        for cap in fps_limits:
+            # Map the FPS cap value to the drawlist width
+            x_pos = margin + int((cap - min_fps) / fps_range * (draw_width - margin))
+            y_pos = draw_height // 2
+            rect_width = 10
+            rect_height = 20
+            
+            # Draw rectangle marker
+            dpg.draw_rectangle(
+                (x_pos - rect_width // 2, y_pos - rect_height // 2),
+                (x_pos + rect_width // 2, y_pos + rect_height // 2),
+                color=(128, 128, 128),
+                fill=(128, 128, 128),
+                parent="fps_cap_drawlist"
+            )
+            
+            # Add FPS value text above rectangle
+            dpg.draw_text(
+                (x_pos - 10, y_pos - rect_height - 2),
+                str(cap),
+                color=(200, 200, 200),
+                parent="fps_cap_drawlist"
+            )
+
 # Function to get values with correct types
 def get_setting(key, value_type=None):
     """Get setting from appropriate config section based on key type."""
@@ -748,6 +798,17 @@ def plotting_loop():
 
         time.sleep(math.lcm(gpupollinginterval, cpupollinginterval) / 1000.0)  # Convert to seconds
 
+def gui_update_loop():
+    while True:
+        if not running:
+            try:
+                # Update FPS limit visualization based on current input values
+                update_fps_cap_visualization()
+                
+            except Exception as e:
+                logger.add_log(f"Error in GUI update loop: {e}")
+        time.sleep(0.1)  # Small delay to prevent high CPU usage
+
 def update_tooltip_setting(sender, app_data, user_data):
     global ShowTooltip, input_field_keys, tooltips
     ShowTooltip = app_data
@@ -801,10 +862,11 @@ def update_exit_fps_value(sender, app_data, user_data):
 def exit_gui():
     global running, rtss_manager, monitoring_thread, plotting_thread, globallimitonexit_fps, GlobalLimitonExit
 
+    running = False 
+
     if GlobalLimitonExit:
         rtss_cli.set_property("Global", "FramerateLimit", int(globallimitonexit_fps))
 
-    running = False 
     if rtss_manager:
         rtss_manager.stop_monitor_thread()
     if gpu_monitor:
@@ -813,22 +875,7 @@ def exit_gui():
         cpu_monitor.stop()
     if dpg.is_dearpygui_running():
         dpg.destroy_context()
-    
-    if monitoring_thread and monitoring_thread.is_alive():
-        logger.add_log("Waiting for monitoring thread to stop...")
-        monitoring_thread.join(timeout=0.1)
-        if monitoring_thread.is_alive():
-            logger.add_log("Warning: Monitoring thread did not stop gracefully.")
-        else:
-            logger.add_log("Monitoring thread stopped.")
-    if plotting_thread and plotting_thread.is_alive():
-        logger.add_log("Waiting for monitoring thread to stop...")
-        plotting_thread.join(timeout=0.1)
-        if plotting_thread.is_alive():
-            logger.add_log("Warning: Plotting thread did not stop gracefully.")
-        else:
-            logger.add_log("Plotting thread stopped.")
-
+            
 # Define keys used for input fields (used to construct tooltip tags)
 
 tooltips = {
@@ -1148,6 +1195,10 @@ rtss_cli.enable_limiter()
 rtss_manager = RTSSInterface(logger, dpg)
 if rtss_manager:
     rtss_manager.start_monitor_thread()
+
+# Add after your other thread initializations
+gui_update_thread = threading.Thread(target=gui_update_loop, daemon=True)
+gui_update_thread.start()
 
 logger.add_log("Initialized successfully.")
 
