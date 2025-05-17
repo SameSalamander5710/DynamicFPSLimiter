@@ -280,6 +280,34 @@ def update_fps_cap_visualization():
                         parent="Foreground"
                     )
 
+def generate_adaptive_fps_limits():
+    """
+    Generates FPS limits from `max_fps` down to `min_fps` such that each step
+    reduces expected GPU usage from `upper_usage` to just above `lower_usage`.
+    
+    `safety_factor` makes the step a bit more conservative (e.g. 0.95).
+    """
+    safety_factor=0.90
+    lower_usage = float(dpg.get_value("input_gpucutoffforincrease"))
+    upper_usage = float(dpg.get_value("input_gpucutofffordecrease"))
+    min_fps = int(dpg.get_value("input_mincap"))
+    max_fps = int(dpg.get_value("input_maxcap"))
+
+    step_ratio = safety_factor * (lower_usage / upper_usage)
+    fps_limits = []
+    fps = max_fps
+    while fps >= min_fps:
+        fps_limits.append(round(fps))
+        fps *= step_ratio
+    if fps_limits[-1] != min_fps:
+        fps_limits.append(min_fps)
+    
+    fps_limits = sorted(set(fps_limits))
+    
+    # Convert the list to a comma-separated string of integers
+    fps_limits_str = ", ".join(str(int(round(x))) for x in fps_limits)
+    dpg.set_value("input_customfpslimits", fps_limits_str)
+
 # Function to get values with correct types
 def get_setting(key, value_type=None):
     """Get setting from appropriate config section based on key type."""
@@ -1103,11 +1131,12 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                     dpg.add_input_text(
                         tag="input_customfpslimits",
                         default_value=", ".join(str(x) for x in sorted(settings["customfpslimits"])),#", ".join(map(str, sorted(self.selected_fps_caps))),
-                        width=draw_width - 100,
+                        width=draw_width - 170,
                         #pos=(10, 140),  # Center the input horizontally
                         callback=sort_customfpslimits_callback,
                         on_enter=True)
-                    dpg.add_button(label="Reset", tag="rest_fps_cap_button", width=100, callback=reset_customFPSLimits)
+                    dpg.add_button(label="Reset", tag="rest_fps_cap_button", width=80, callback=reset_customFPSLimits)
+                    dpg.add_button(label="AutoFill", tag="autofill_fps_caps", width=80, callback=generate_adaptive_fps_limits)
     
         with dpg.tab(label="Preferences", tag="tab2"):
             with dpg.child_window(height=tab_height):
