@@ -270,14 +270,15 @@ def update_fps_cap_visualization():
                     parent="Foreground"
                 )
                 
-                # Add FPS value text above rectangle
-                dpg.draw_text(
-                    (x_pos - 10, y_pos + 8),
-                    str(cap),
-                    color=(200, 200, 200),
-                    size=16,
-                    parent="Foreground"
-                )
+                if len(fps_limits) < 20:
+                    # Add FPS value text above rectangle
+                    dpg.draw_text(
+                        (x_pos - 10, y_pos + 8),
+                        str(cap),
+                        color=(200, 200, 200),
+                        size=16,
+                        parent="Foreground"
+                    )
 
 # Function to get values with correct types
 def get_setting(key, value_type=None):
@@ -1090,7 +1091,7 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                 layer2_height = 30
                 draw_width = Viewport_width - 60
                 margin = 10
-                with dpg.drawlist(width= draw_width, height=draw_height, tag="fps_cap_drawlist"):
+                with dpg.drawlist(width= draw_width + 5, height=draw_height, tag="fps_cap_drawlist"):
                     with dpg.draw_layer(tag="Baseline"):
                         dpg.draw_line((margin, layer1_height // 2), (draw_width, layer1_height // 2), color=(200, 200, 200), thickness=2)
                     with dpg.draw_layer(tag="Foreground"):
