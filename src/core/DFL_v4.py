@@ -223,13 +223,27 @@ def make_stepped_values(maximum, minimum, step):
         values.append(minimum)
     return sorted(set(values))
 
+last_fps_limits = []
+
 def update_fps_cap_visualization():
+
+    global last_fps_limits
+    
+    fps_limits = current_stepped_limits()
+    
+    # Check if fps_limits has changed
+    if fps_limits == last_fps_limits:
+        return  # Exit if no change
+    
+    # Store new fps_limits for next comparison
+    last_fps_limits = fps_limits.copy()
+    
     # Clear existing items in drawlist
     dpg.delete_item("Foreground")
     
     with dpg.draw_layer(tag="Foreground", parent="fps_cap_drawlist"):
         # Get current FPS limits
-        fps_limits = current_stepped_limits()
+        
         if fps_limits:
             draw_width = Viewport_width - 60  # Width of drawlist
             draw_height = 30  # Height of drawlist
@@ -1072,7 +1086,7 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                                 dpg.add_text(tooltips["SaveToProfile"], wrap = 200)
                 
                 draw_height = 30
-                draw_width = Viewport_width - 60
+                draw_width = Viewport_width - 55
                 margin = 10
                 with dpg.drawlist(width= draw_width, height=draw_height, tag="fps_cap_drawlist"):
                     with dpg.draw_layer(tag="Baseline"):
