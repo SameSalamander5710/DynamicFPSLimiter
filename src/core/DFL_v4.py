@@ -798,16 +798,19 @@ def plotting_loop():
 
         time.sleep(math.lcm(gpupollinginterval, cpupollinginterval) / 1000.0)  # Convert to seconds
 
+gui_running = True
+
 def gui_update_loop():
-    while True:
+    global gui_running
+    while gui_running:  # Changed from True to gui_running
         if not running:
             try:
                 # Update FPS limit visualization based on current input values
                 update_fps_cap_visualization()
-                
             except Exception as e:
-                logger.add_log(f"Error in GUI update loop: {e}")
-        time.sleep(0.1)  # Small delay to prevent high CPU usage
+                if gui_running:  # Only log if we're still supposed to be running
+                    logger.add_log(f"Error in GUI update loop: {e}")
+        time.sleep(0.1)
 
 def update_tooltip_setting(sender, app_data, user_data):
     global ShowTooltip, input_field_keys, tooltips
@@ -860,8 +863,9 @@ def update_exit_fps_value(sender, app_data, user_data):
         dpg.set_value(sender, globallimitonexit_fps)
 
 def exit_gui():
-    global running, rtss_manager, monitoring_thread, plotting_thread, globallimitonexit_fps, GlobalLimitonExit
-
+    global running, gui_running, rtss_manager, monitoring_thread, plotting_thread, globallimitonexit_fps, GlobalLimitonExit
+    
+    gui_running = False
     running = False 
 
     if GlobalLimitonExit:
