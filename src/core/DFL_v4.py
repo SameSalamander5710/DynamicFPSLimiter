@@ -1,5 +1,5 @@
 # DFL_v4.py
-# Dynamic FPS Limiter v4.0.0
+# Dynamic FPS Limiter v4.1.0
 
 import ctypes
 ctypes.windll.shcore.SetProcessDpiAwareness(2)
@@ -60,7 +60,7 @@ else:
     # Add GlobalSettings section
     settings_config["GlobalSettings"] = {
         'delaybeforedecrease': '2',
-        'delaybeforeincrease': '2',
+        'delaybeforeincrease': '3',
         'minvalidgpu': '20',
         'minvalidfps': '20',
         'globallimitonexit_fps': '98',
@@ -100,7 +100,7 @@ Default_settings_original = {
     'cpucutofffordecrease': 95,
     'cpucutoffforincrease': 85,
     "delaybeforedecrease": 2,
-    "delaybeforeincrease": 2,
+    "delaybeforeincrease": 3,
     "enablecustomfpslimits": 1,
     "customfpslimits": {30, 35, 42, 50, 60},
     "minvalidgpu": 20,
@@ -1038,7 +1038,7 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
     
     # Title and Start/Stop Button
     with dpg.group(horizontal=True):
-        dpg.add_text("Dynamic FPS Limiter v4.0.0")
+        dpg.add_text("Dynamic FPS Limiter v4.1.0")
         dpg.add_spacer(width=30)
         dpg.add_button(label="Detect Render GPU", callback=toggle_luid_selection, tag="luid_button", width=150)
 
