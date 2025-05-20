@@ -1146,7 +1146,7 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                         callback=sort_customfpslimits_callback,
                         on_enter=True)
                     dpg.add_button(label="Reset", tag="rest_fps_cap_button", width=80, callback=reset_customFPSLimits)
-                    dpg.add_button(label="AutoFill", tag="autofill_fps_caps", width=80, callback=generate_adaptive_fps_limits)
+                    dpg.add_button(label="Optimize", tag="autofill_fps_caps", width=80, callback=generate_adaptive_fps_limits)
 
     
         with dpg.tab(label="Preferences", tag="tab2"):
