@@ -80,6 +80,7 @@ else:
     profiles_config["Global"] = {
         'maxcap': '60',
         'mincap': '30',
+        'capratio': '20',
         'capstep': '5',
         'gpucutofffordecrease': '85',
         'gpucutoffforincrease': '65',
@@ -94,6 +95,7 @@ else:
 Default_settings_original = {
     "maxcap": 60,
     "mincap": 30,
+    "capratio": 20,
     "capstep": 5,
     "gpucutofffordecrease": 85,
     "gpucutoffforincrease": 65,
@@ -114,13 +116,14 @@ Default_settings_original = {
     'gpupollingsamples': 20
 }
 
-input_field_keys = ["maxcap", "mincap", "capstep", 
+input_field_keys = ["maxcap", "mincap", "capstep", "capratio",
                 "gpucutofffordecrease", "gpucutoffforincrease", "cpucutofffordecrease", "cpucutoffforincrease",
                 "enablecustomfpslimits", "customfpslimits"]
 
 key_type_map = {
     "maxcap": int,
     "mincap": int,
+    "capratio": int,
     "capstep": int,
     "gpucutofffordecrease": int,
     "gpucutoffforincrease": int,
@@ -201,6 +204,7 @@ def current_stepped_limits():
     maximum = int(dpg.get_value("input_maxcap"))
     minimum = int(dpg.get_value("input_mincap"))
     step = int(dpg.get_value("input_capstep"))
+    ratio = int(dpg.get_value("input_capratio"))
 
     use_custom  = dpg.get_value("checkbox_enablecustomfpslimits")
 
@@ -944,6 +948,7 @@ def exit_gui():
 tooltips = {
     "maxcap": "Defines the maximum FPS limit for the game. Hold CTRL for steps of 10.",
     "mincap": "Specifies the minimum FPS limit that may be reached. For optimal performance, set this to the lowest value you're comfortable with. Hold CTRL for steps of 10.",
+    "capratio": "Generate FPS limits based on given ratio. The FPS cap will be set to the maximum FPS limit multiplied by this ratio.",
     "capstep": "Indicates the increment size for adjusting the FPS cap. Smaller step sizes provide finer control. Hold CTRL for steps of 10.",
     "gpucutofffordecrease": "Sets the upper threshold for GPU usage. If GPU usage exceeds this value, the FPS cap will be lowered to maintain system performance.",
     "delaybeforedecrease": "Specifies how many times in a row GPU usage must exceed the upper threshold before the FPS cap begins to drop.",
@@ -1087,9 +1092,13 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                             dpg.add_table_column(width_fixed=True)  # Column for input boxes
                             for label, key in [("Max FPS limit:", "maxcap"), 
                                             ("Min FPS limit:", "mincap"),
-                                            ("Frame rate step:", "capstep")]:
+                                            ("Framerate ratio:", "capratio"),
+                                            ("Framerate step:", "capstep")]:
                                 with dpg.table_row():
-                                    dpg.add_text(label)
+                                    if key == "capratio" or key == "capstep":
+                                        dpg.add_radio_button(items=[label], user_data=label, horizontal=True)#, callback=set_radio)
+                                    else:
+                                        dpg.add_text(label)
                                     dpg.add_input_int(tag=f"input_{key}", default_value=int(settings[key]), 
                                                       width=90, step=1, step_fast=10, 
                                                       min_clamped=True, min_value=1)
