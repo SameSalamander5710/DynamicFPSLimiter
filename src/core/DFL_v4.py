@@ -24,6 +24,7 @@ from core.rtss_interface import RTSSInterface
 from core.rtss_cli import RTSSCLI
 from core.cpu_monitor import CPUUsageMonitor
 from core.gpu_monitor import GPUUsageMonitor
+from core.themes import create_themes
 
 # Always get absolute path to EXE or script location
 Base_dir = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
@@ -973,6 +974,7 @@ tooltips = {
 
 # GUI setup: Main Window
 dpg.create_context()
+create_themes(background_colour=(37, 37, 38))
 
 with dpg.font_registry():
     try:
@@ -983,60 +985,8 @@ with dpg.font_registry():
         logger.add_log(f"Failed to load system font: {e}")
         # Will use DearPyGui's default font as fallback
 
-# Create a theme for rounded buttons
-background_colour = (37, 37, 38)  # Default grey background
-
-with dpg.theme(tag="rounded_widget_theme"):
-    with dpg.theme_component(dpg.mvAll):
-        dpg.add_theme_style(dpg.mvStyleVar_FrameRounding, 3.0)  # Set corner rounding to 10.0
-        dpg.add_theme_color(dpg.mvThemeCol_Button, (51, 51, 55)) 
-        #dpg.add_theme_style(dpg.mvStyleVar_FramePadding, 0.0, 1.0, category=dpg.mvThemeCat_Core)
-        #dpg.add_theme_color(dpg.mvThemeCol_Button, (50, 150, 250))  # Button color
-        #dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, (70, 170, 255))  # Hover color
-        #dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, (90, 190, 255))  # Active color
-
-    # Customize specific widget types
-    #with dpg.theme_component(dpg.mvInputInt):
-
-    #with dpg.theme_component(dpg.mvInputText):
-
-    with dpg.theme_component(dpg.mvCheckbox):
-        dpg.add_theme_color(dpg.mvThemeCol_CheckMark, (50, 150, 250))  # Checkmark color
-
 # Bind the rounded button theme globally
 dpg.bind_theme("rounded_widget_theme")
-
-# Create themes for specific buttons
-with dpg.theme(tag="rtss_running_theme"):
-    with dpg.theme_component(dpg.mvButton):
-        dpg.add_theme_color(dpg.mvThemeCol_Button, (0, 100, 0))
-        dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, (0, 120, 0))
-        dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, (0, 140, 0))
-
-with dpg.theme(tag="rtss_not_running_theme"):
-    with dpg.theme_component(dpg.mvButton):
-        dpg.add_theme_color(dpg.mvThemeCol_Button, (170, 70, 70)) #Reds
-        dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, (190, 90, 90))
-        dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, (190, 90, 90))
-
-with dpg.theme(tag="detect_gpu_theme"):
-    with dpg.theme_component(dpg.mvButton):
-        dpg.add_theme_color(dpg.mvThemeCol_Button, (51, 51, 55))  # Defualt grey button background
-        dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, (15, 86, 135))
-        dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, (15, 86, 135))
-
-with dpg.theme(tag="revert_gpu_theme"):
-    with dpg.theme_component(dpg.mvButton):
-        dpg.add_theme_color(dpg.mvThemeCol_Button, (15, 86, 135))  # Blue color botton background
-        dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, (6, 96, 158))
-        dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, (0, 105, 176))
-
-with dpg.theme(tag="button_right"):
-    with dpg.theme_component(dpg.mvButton):
-        dpg.add_theme_style(dpg.mvStyleVar_ButtonTextAlign, 1.00, category=dpg.mvThemeCat_Core)
-        dpg.add_theme_color(dpg.mvThemeCol_Button, background_colour, category=dpg.mvThemeCat_Core)
-        dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, background_colour, category=dpg.mvThemeCat_Core)
-        dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, background_colour, category=dpg.mvThemeCat_Core)
 
 #The actual GUI starts here
 with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
@@ -1178,12 +1128,6 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                 dpg.add_spacer(height=2)
                 dpg.add_input_text(tag="LogText", multiline=True, readonly=True, width=-1, height=200)
 
-                with dpg.theme(tag="transparent_input_theme"):
-                    with dpg.theme_component(dpg.mvInputText):
-                        dpg.add_theme_style(dpg.mvStyleVar_FrameBorderSize, 0)
-                        dpg.add_theme_style(dpg.mvStyleVar_FramePadding, 0, category=dpg.mvThemeCat_Core)
-                        dpg.add_theme_color(dpg.mvThemeCol_FrameBg, (0, 0, 0, 0), category=dpg.mvThemeCat_Core)
-
                 dpg.bind_item_theme("LogText", "transparent_input_theme")
 
         with dpg.tab(label="FAQs", tag="tab4"):
@@ -1198,12 +1142,6 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
     # Third Row: Plot Section
     dpg.add_spacer(height=1)
     with dpg.child_window(width=-1, height=Plot_height):
-        with dpg.theme(tag="plot_theme") as item_theme:
-            with dpg.theme_component(dpg.mvAll):
-                dpg.add_theme_color(dpg.mvPlotCol_Line, (128, 128, 128), category = dpg.mvThemeCat_Plots)
-        with dpg.theme(tag="fps_cap_theme") as item_theme:
-            with dpg.theme_component(dpg.mvAll):
-                dpg.add_theme_color(dpg.mvPlotCol_Line, (128, 128, 128, 150), category = dpg.mvThemeCat_Plots)
 
         with dpg.plot(height=200, width=-1, tag="plot"):
             dpg.add_plot_axis(dpg.mvXAxis, label="Time (s)", tag="x_axis")
@@ -1230,8 +1168,8 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
             dpg.set_axis_limits("y_axis_right", min_ft, max_ft)  # FPS range
             
             # apply theme to series
-            dpg.bind_item_theme("line1", "plot_theme")
-            dpg.bind_item_theme("line2", "plot_theme")
+            dpg.bind_item_theme("line1", "fixed_greyline_theme")
+            dpg.bind_item_theme("line2", "fixed_greyline_theme")
             dpg.bind_item_theme("cap_series", "fps_cap_theme")
 
 dpg.create_viewport(title="Dynamic FPS Limiter", width=Viewport_width, height=Viewport_height, resizable=False)
