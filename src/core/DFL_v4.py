@@ -1087,7 +1087,9 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                     dpg.add_radio_button(
                         items=["Ratio", "Step", "Custom"], 
                         horizontal=True,
-                        callback=current_method_callback)
+                        callback=current_method_callback,
+                        tag="radio_method")
+                    dpg.bind_item_theme("radio_method", "radio_theme")
                     dpg.add_checkbox(label="Define custom FPS limits", tag="checkbox_enablecustomfpslimits", 
                                     default_value=bool(settings["enablecustomfpslimits"]),
                                     callback=sync_checkbox_to_int)

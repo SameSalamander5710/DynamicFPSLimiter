@@ -18,6 +18,11 @@ def create_themes(background_colour=(37, 37, 38)):
         with dpg.theme_component(dpg.mvCheckbox):
             dpg.add_theme_color(dpg.mvThemeCol_CheckMark, (50, 150, 250))
 
+    with dpg.theme(tag="radio_theme"):
+        with dpg.theme_component(dpg.mvRadioButton):
+            dpg.add_theme_color(dpg.mvThemeCol_CheckMark, (200, 200, 200))  # White selection circle
+            dpg.add_theme_color(dpg.mvThemeCol_FrameBgHovered, (120, 120, 120))  # Grey hover highlight
+
     # RTSS running theme
     with dpg.theme(tag="rtss_running_theme"):
         with dpg.theme_component(dpg.mvButton):
