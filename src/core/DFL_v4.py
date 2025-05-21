@@ -207,9 +207,12 @@ def current_stepped_limits():
     step = int(dpg.get_value("input_capstep"))
     ratio = int(dpg.get_value("input_capratio"))
 
-    use_custom  = dpg.get_value("checkbox_enablecustomfpslimits")
+    use_custom  = dpg.get_value("radio_method")
+    #logger.add_log(f"Stepped limits: {make_stepped_values(maximum, minimum, step)}")
+    #logger.add_log(f"Ratio limits: {make_ratioed_values(maximum, minimum, ratio)}")
+    #logger.add_log(f"Method selection: {use_custom}")
 
-    if use_custom:
+    if use_custom == "Custom":
         custom_limits = dpg.get_value("input_customfpslimits")
         if custom_limits:
             try:
@@ -218,12 +221,32 @@ def current_stepped_limits():
                 return sorted(custom_limits)
             except Exception:
                 logger.add_log("Error parsing custom FPS limits, using default stepped limits.")
+    elif use_custom == "Step":
+        return make_stepped_values(maximum, minimum, step)
+    elif use_custom == "Ratio":
+        return make_ratioed_values(maximum, minimum, ratio)
     #logger.add_log(f"Default stepped limits: {maximum}, {minimum}, {step}")
     #logger.add_log(f"Stepped limits: {make_stepped_values(maximum, minimum, step)}")
-    return make_stepped_values(maximum, minimum, step)
 
 def make_stepped_values(maximum, minimum, step):
     values = list(range(maximum, minimum - 1, -step))
+    if minimum not in values:
+        values.append(minimum)
+    return sorted(set(values))
+
+def make_ratioed_values(maximum, minimum, ratio):
+    values = []
+    current = maximum
+    ratio_factor = 1 - (ratio / 100.0)
+    if ratio_factor <= 0 or ratio_factor >= 1:
+        # Invalid ratio, fallback to just max and min
+        return sorted(set([maximum, minimum]))
+    while current >= minimum:
+        values.append(int(round(current)))
+        current = current * ratio_factor
+        if int(round(current)) == values[-1]:
+            # Prevent infinite loop if rounding causes no change
+            break
     if minimum not in values:
         values.append(minimum)
     return sorted(set(values))
@@ -235,7 +258,8 @@ def update_fps_cap_visualization():
     global last_fps_limits
     
     fps_limits = current_stepped_limits()
-    
+    #logger.add_log(f"FPS limits: {fps_limits}")
+
     # Check if fps_limits has changed
     if fps_limits == last_fps_limits:
         return  # Exit if no change
@@ -1121,7 +1145,9 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                 items=["Ratio", "Step", "Custom"], 
                 horizontal=True,
                 callback=current_method_callback,
-                tag="radio_method")
+                default_value="Ratio",#settings["method"],
+                tag="radio_method"
+                )
             dpg.bind_item_theme("radio_method", "radio_theme")
             dpg.add_checkbox(label="Define custom FPS limits", tag="checkbox_enablecustomfpslimits", 
                             default_value=bool(settings["enablecustomfpslimits"]),
