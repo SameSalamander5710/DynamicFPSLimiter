@@ -315,6 +315,12 @@ def generate_adaptive_fps_limits():
     fps_limits_str = ", ".join(str(int(round(x))) for x in fps_limits)
     dpg.set_value("input_customfpslimits", fps_limits_str)
 
+def current_method_callback(sender, app_data, user_data):
+    """
+    Logs the currently selected radio button value for the method selection.
+    """
+    logger.add_log(f"Method selection changed: {app_data}")
+
 # Function to get values with correct types
 def get_setting(key, value_type=None):
     """Get setting from appropriate config section based on key type."""
@@ -1078,7 +1084,10 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                 dpg.add_spacer(height=1)
                 with dpg.group(horizontal=True, width=150):
                     dpg.add_text("Method:")
-                    dpg.add_radio_button(items=["Ratio", "Step", "Custom"], horizontal=True)#, callback=set_radio)
+                    dpg.add_radio_button(
+                        items=["Ratio", "Step", "Custom"], 
+                        horizontal=True,
+                        callback=current_method_callback)
                     dpg.add_checkbox(label="Define custom FPS limits", tag="checkbox_enablecustomfpslimits", 
                                     default_value=bool(settings["enablecustomfpslimits"]),
                                     callback=sync_checkbox_to_int)
