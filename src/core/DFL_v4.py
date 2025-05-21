@@ -373,7 +373,7 @@ for key in settings_config["GlobalSettings"]:
 
 # Default viewport size
 Viewport_width = 605
-Viewport_height = 745
+Viewport_height = 765
 Plot_height = 220
 
 def save_to_profile():
@@ -1036,7 +1036,7 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
         dpg.add_input_text(tag="LastProcess", multiline=False, readonly=True, width=-1)    
     
     #Tabs
-    tab_height = 240
+    tab_height = 135
     dpg.add_spacer(height=1)
     with dpg.tab_bar():
         with dpg.tab(label="Profile Settings", tag="tab1"):
@@ -1081,44 +1081,6 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                             dpg.add_spacer(height=3)
                             dpg.add_button(tag="SaveToProfile", label="Save Settings to Profile", callback=save_to_profile)
 
-                dpg.add_spacer(height=1)
-                with dpg.group(horizontal=True, width=150):
-                    dpg.add_text("Method:")
-                    dpg.add_radio_button(
-                        items=["Ratio", "Step", "Custom"], 
-                        horizontal=True,
-                        callback=current_method_callback,
-                        tag="radio_method")
-                    dpg.bind_item_theme("radio_method", "radio_theme")
-                    dpg.add_checkbox(label="Define custom FPS limits", tag="checkbox_enablecustomfpslimits", 
-                                    default_value=bool(settings["enablecustomfpslimits"]),
-                                    callback=sync_checkbox_to_int)
-                    dpg.add_input_int(tag="input_enablecustomfpslimits", 
-                                    default_value=int(settings["enablecustomfpslimits"]), show=False,
-                                    width=0)
-
-                draw_height = 40
-                layer1_height = 30
-                layer2_height = 30
-                draw_width = Viewport_width - 60
-                margin = 10
-                with dpg.drawlist(width= draw_width + 5, height=draw_height, tag="fps_cap_drawlist"):
-                    with dpg.draw_layer(tag="Baseline"):
-                        dpg.draw_line((margin, layer1_height // 2), (draw_width, layer1_height // 2), color=(200, 200, 200), thickness=2)
-                    with dpg.draw_layer(tag="Foreground"):
-                        dpg.draw_line((margin, layer2_height // 2), (draw_width, layer2_height // 2), color=(200, 200, 200), thickness=2)
-                
-                with dpg.group(horizontal=True):
-                    dpg.add_input_text(
-                        tag="input_customfpslimits",
-                        default_value=", ".join(str(x) for x in sorted(settings["customfpslimits"])),#", ".join(map(str, sorted(self.selected_fps_caps))),
-                        width=draw_width - 170,
-                        #pos=(10, 140),  # Center the input horizontally
-                        callback=sort_customfpslimits_callback,
-                        on_enter=True)
-                    dpg.add_button(label="Reset", tag="rest_fps_cap_button", width=80, callback=reset_customFPSLimits)
-                    dpg.add_button(label="Optimize", tag="autofill_fps_caps", width=80, callback=generate_adaptive_fps_limits)
-
     
         with dpg.tab(label="Preferences", tag="tab2"):
             with dpg.child_window(height=tab_height):
@@ -1137,7 +1099,7 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
             with dpg.child_window(tag="LogWindow", autosize_x=True, height=tab_height, border=True):
                 #dpg.add_text("", tag="LogText", tracked = True, track_offset = 1.0)
                 dpg.add_spacer(height=2)
-                dpg.add_input_text(tag="LogText", multiline=True, readonly=True, width=-1, height=200)
+                dpg.add_input_text(tag="LogText", multiline=True, readonly=True, width=-1, height=110)
 
                 dpg.bind_item_theme("LogText", "transparent_input_theme")
 
@@ -1149,8 +1111,48 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                     dpg.add_text(question, tag=key, bullet=True)
                     with dpg.tooltip(parent=key, delay=0.5):
                         dpg.add_text(answer, wrap=300)
-    
-    # Third Row: Plot Section
+
+    # Third Row: FPS lists and methods
+    dpg.add_spacer(height=1)
+    with dpg.child_window(width=-1, height=115):
+        with dpg.group(horizontal=True, width=-1):
+            dpg.add_text("Method:")
+            dpg.add_radio_button(
+                items=["Ratio", "Step", "Custom"], 
+                horizontal=True,
+                callback=current_method_callback,
+                tag="radio_method")
+            dpg.bind_item_theme("radio_method", "radio_theme")
+            dpg.add_checkbox(label="Define custom FPS limits", tag="checkbox_enablecustomfpslimits", 
+                            default_value=bool(settings["enablecustomfpslimits"]),
+                            callback=sync_checkbox_to_int)
+            dpg.add_input_int(tag="input_enablecustomfpslimits", 
+                            default_value=int(settings["enablecustomfpslimits"]), show=False,
+                            width=0)
+
+        draw_height = 40
+        layer1_height = 30
+        layer2_height = 30
+        draw_width = Viewport_width - 60
+        margin = 10
+        with dpg.drawlist(width= draw_width + 5, height=draw_height, tag="fps_cap_drawlist"):
+            with dpg.draw_layer(tag="Baseline"):
+                dpg.draw_line((margin, layer1_height // 2), (draw_width, layer1_height // 2), color=(200, 200, 200), thickness=2)
+            with dpg.draw_layer(tag="Foreground"):
+                dpg.draw_line((margin, layer2_height // 2), (draw_width, layer2_height // 2), color=(200, 200, 200), thickness=2)
+        
+        with dpg.group(horizontal=True):
+            dpg.add_input_text(
+                tag="input_customfpslimits",
+                default_value=", ".join(str(x) for x in sorted(settings["customfpslimits"])),#", ".join(map(str, sorted(self.selected_fps_caps))),
+                width=draw_width - 170,
+                #pos=(10, 140),  # Center the input horizontally
+                callback=sort_customfpslimits_callback,
+                on_enter=True)
+            dpg.add_button(label="Reset", tag="rest_fps_cap_button", width=80, callback=reset_customFPSLimits)
+            dpg.add_button(label="Optimize", tag="autofill_fps_caps", width=80, callback=generate_adaptive_fps_limits)
+
+    # Fourth Row: Plot Section
     dpg.add_spacer(height=1)
     with dpg.child_window(width=-1, height=Plot_height):
 
