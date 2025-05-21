@@ -366,7 +366,7 @@ for key in settings_config["GlobalSettings"]:
 
 # Default viewport size
 Viewport_width = 605
-Viewport_height = 710
+Viewport_height = 745
 Plot_height = 220
 
 def save_to_profile():
@@ -1080,7 +1080,7 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
         dpg.add_input_text(tag="LastProcess", multiline=False, readonly=True, width=-1)    
     
     #Tabs
-    tab_height = 205
+    tab_height = 240
     dpg.add_spacer(height=1)
     with dpg.tab_bar():
         with dpg.tab(label="Profile Settings", tag="tab1"):
@@ -1095,21 +1095,11 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                                             ("Framerate ratio:", "capratio"),
                                             ("Framerate step:", "capstep")]:
                                 with dpg.table_row():
-                                    if key == "capratio" or key == "capstep":
-                                        dpg.add_radio_button(items=[label], user_data=label, horizontal=True)#, callback=set_radio)
-                                    else:
-                                        dpg.add_text(label)
+                                    dpg.add_text(label)
                                     dpg.add_input_int(tag=f"input_{key}", default_value=int(settings[key]), 
                                                       width=90, step=1, step_fast=10, 
                                                       min_clamped=True, min_value=1)
-                        dpg.add_spacer(height=1)
-                        dpg.add_checkbox(label="Define custom FPS limits", tag="checkbox_enablecustomfpslimits", 
-                                         default_value=bool(settings["enablecustomfpslimits"]),
-                                         callback=sync_checkbox_to_int)
-                        dpg.add_input_int(tag="input_enablecustomfpslimits", 
-                                          default_value=int(settings["enablecustomfpslimits"]), show=False,
-                                          width=0)
-                    
+                   
                     dpg.add_spacer(width=1)
                     with dpg.group(width=160):
                         with dpg.table(header_row=False, resizable=False, policy=dpg.mvTable_SizingFixedFit):
@@ -1134,7 +1124,18 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                             dpg.add_button(tag="Reset_Default", label="Reset Settings to Default", callback=reset_to_program_default)
                             dpg.add_spacer(height=3)
                             dpg.add_button(tag="SaveToProfile", label="Save Settings to Profile", callback=save_to_profile)
-                
+
+                dpg.add_spacer(height=1)
+                with dpg.group(horizontal=True, width=150):
+                    dpg.add_text("Method:")
+                    dpg.add_radio_button(items=["Ratio", "Step", "Custom"], horizontal=True)#, callback=set_radio)
+                    dpg.add_checkbox(label="Define custom FPS limits", tag="checkbox_enablecustomfpslimits", 
+                                    default_value=bool(settings["enablecustomfpslimits"]),
+                                    callback=sync_checkbox_to_int)
+                    dpg.add_input_int(tag="input_enablecustomfpslimits", 
+                                    default_value=int(settings["enablecustomfpslimits"]), show=False,
+                                    width=0)
+
                 draw_height = 40
                 layer1_height = 30
                 layer2_height = 30
@@ -1175,7 +1176,7 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
             with dpg.child_window(tag="LogWindow", autosize_x=True, height=tab_height, border=True):
                 #dpg.add_text("", tag="LogText", tracked = True, track_offset = 1.0)
                 dpg.add_spacer(height=2)
-                dpg.add_input_text(tag="LogText", multiline=True, readonly=True, width=-1, height=110)
+                dpg.add_input_text(tag="LogText", multiline=True, readonly=True, width=-1, height=200)
 
                 with dpg.theme(tag="transparent_input_theme"):
                     with dpg.theme_component(dpg.mvInputText):
