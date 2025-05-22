@@ -625,13 +625,13 @@ def update_tooltip_setting(sender, app_data, user_data):
 
 
 def exit_gui():
-    global running, gui_running, rtss_manager, monitoring_thread, plotting_thread, globallimitonexit_fps, GlobalLimitonExit
+    global running, gui_running, rtss_manager, monitoring_thread, plotting_thread, GlobalLimitonExit
     
     gui_running = False
     running = False 
 
     if GlobalLimitonExit:
-        rtss_cli.set_property("Global", "FramerateLimit", int(globallimitonexit_fps))
+        rtss_cli.set_property("Global", "FramerateLimit", int(config_manager.globallimitonexit_fps))
 
     if rtss_manager:
         rtss_manager.stop_monitor_thread()
@@ -784,7 +784,7 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                 with dpg.group(horizontal=True):
                     dpg.add_text("Framerate limit:")
                     dpg.add_input_int(tag="exit_fps_input",
-                                    default_value=globallimitonexit_fps, callback=config_manager.update_exit_fps_value,
+                                    default_value=config_manager.globallimitonexit_fps, callback=config_manager.update_exit_fps_value,
                                     width=100, step=1, step_fast=10)
 
         with dpg.tab(label="Log", tag="tab3"):
@@ -860,8 +860,8 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                 dpg.add_line_series([], [], label="GPU: --", parent=y_axis_left, tag="gpu_usage_series")
                 dpg.add_line_series([], [], label="CPU: --", parent=y_axis_left, tag="cpu_usage_series")
                 # Add static horizontal dashed lines
-                dpg.add_line_series([], [gpucutofffordecrease, gpucutofffordecrease], parent=y_axis_left, tag="line1")
-                dpg.add_line_series([], [gpucutoffforincrease, gpucutoffforincrease], parent=y_axis_left, tag="line2")
+                dpg.add_line_series([], [config_manager.gpucutofffordecrease, config_manager.gpucutofffordecrease], parent=y_axis_left, tag="line1")
+                dpg.add_line_series([], [config_manager.gpucutoffforincrease, config_manager.gpucutoffforincrease], parent=y_axis_left, tag="line2")
             
             # Right Y-axis for FPS
             with dpg.plot_axis(dpg.mvYAxis, label="FPS", tag="y_axis_right", no_gridlines=True) as y_axis_right:
@@ -870,8 +870,8 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                 
             # Set axis limits
             dpg.set_axis_limits("y_axis_left", 0, 100)  # GPU usage range
-            min_ft = mincap - capstep
-            max_ft = maxcap + capstep
+            min_ft = config_manager.mincap - config_manager.capstep
+            max_ft = config_manager.maxcap + config_manager.capstep
             dpg.set_axis_limits("y_axis_right", min_ft, max_ft)  # FPS range
             
             # apply theme to series
@@ -893,13 +893,13 @@ config_manager.update_profile_dropdown(select_first=True)
 
 logger.add_log("Initializing...")
 
-gpu_monitor = GPUUsageMonitor(lambda: luid, lambda: running, logger, dpg, interval=(gpupollinginterval/1000), max_samples=gpupollingsamples, percentile=gpupercentile)
+gpu_monitor = GPUUsageMonitor(lambda: luid, lambda: running, logger, dpg, interval=(config_manager.gpupollinginterval/1000), max_samples=config_manager.gpupollingsamples, percentile=config_manager.gpupercentile)
 #logger.add_log(f"Current highed GPU core load: {gpu_monitor.gpu_percentile}%")
 
 #usage, luid = gpu_monitor.get_gpu_usage(engine_type="engtype_3D")
 #logger.add_log(f"Current Top LUID: {luid}, 3D engine usage: {usage}%")
 
-cpu_monitor = CPUUsageMonitor(lambda: running, logger, dpg, interval=(cpupollinginterval/1000), max_samples=cpupollingsamples, percentile=cpupercentile)
+cpu_monitor = CPUUsageMonitor(lambda: running, logger, dpg, interval=(config_manager.cpupollinginterval/1000), max_samples=config_manager.cpupollingsamples, percentile=config_manager.cpupercentile)
 #logger.add_log(f"Current highed CPU core load: {cpu_monitor.cpu_percentile}%")
 
 # Assuming logger and dpg are initialized, and rtss_dll_path is defined

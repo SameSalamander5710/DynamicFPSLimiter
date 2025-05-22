@@ -283,16 +283,21 @@ class ConfigManager:
                 # If value is a string, parse it to a set of ints
                 if isinstance(value, set):
                     globals()[key] = value
+                    setattr(self, key, value)
                 else:
                     try:
                         values = [int(x.strip()) for x in str(value).split(",") if x.strip().isdigit()]
                         globals()[key] = set(values)
+                        setattr(self, key, set(values))
                     except Exception:
                         globals()[key] = set()
+                        setattr(self, key, set())
             elif str(value).isdigit():
                 globals()[key] = int(value)
+                setattr(self, key, int(value))
             else:
                 globals()[key] = value
+                setattr(self, key, int(value))
 
     # Read values from UI input fields without modifying `settings`
     def apply_current_input_values(self):
@@ -330,16 +335,15 @@ class ConfigManager:
         self.logger.add_log(f"Global Limit on Exit set to: {self.GlobalLimitonExit}")
 
     def update_exit_fps_value(self, sender, app_data, user_data):
-        global globallimitonexit_fps
 
         new_value = app_data
 
         if isinstance(new_value, int) and new_value > 0:
-            globallimitonexit_fps = new_value
+            self.globallimitonexit_fps = new_value
             self.settings_config["GlobalSettings"]["globallimitonexit_fps"] = str(new_value)
             with open(self.settings_path, 'w') as f:
                 self.settings_config.write(f)
-            self.logger.add_log(f"Global Limit on Exit FPS value set to: {globallimitonexit_fps}")
+            self.logger.add_log(f"Global Limit on Exit FPS value set to: {self.globallimitonexit_fps}")
         else:
             self.logger.add_log(f"Invalid value entered for Global Limit on Exit FPS: {app_data}. Reverting.")
-            dpg.set_value(sender, globallimitonexit_fps)
+            dpg.set_value(sender, self.globallimitonexit_fps)
