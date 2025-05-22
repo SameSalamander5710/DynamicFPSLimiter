@@ -6,7 +6,6 @@ ctypes.windll.shcore.SetProcessDpiAwareness(2)
 
 import dearpygui.dearpygui as dpg
 import threading
-import configparser
 import time
 import math
 import os
@@ -25,18 +24,16 @@ from core.rtss_cli import RTSSCLI
 from core.cpu_monitor import CPUUsageMonitor
 from core.gpu_monitor import GPUUsageMonitor
 from core.themes import create_themes
+from core.config_manager import ConfigManager
 
 # Always get absolute path to EXE or script location
 Base_dir = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
+config_manager = ConfigManager(logger, dpg, Base_dir)
 
 # Ensure the config folder exists in the parent directory of Base_dir
-config_dir = os.path.join(os.path.dirname(Base_dir), "config")
 parent_dir = os.path.dirname(Base_dir)
-os.makedirs(config_dir, exist_ok=True)
 
 # Paths to configuration files
-settings_path = os.path.join(config_dir, "settings.ini")
-profiles_path = os.path.join(config_dir, "profiles.ini")
 rtss_dll_path = os.path.join(Base_dir, "assets/rtss.dll")
 error_log_file = os.path.join(parent_dir, "error_log.txt")
 icon_path = os.path.join(Base_dir, 'assets/DynamicFPSLimiter.ico')
@@ -45,105 +42,6 @@ faq_path = os.path.join(Base_dir, "assets/faqs.csv")
 
 logger.init_logging(error_log_file)
 rtss_manager = None
-
-profiles_config = configparser.ConfigParser()
-settings_config = configparser.ConfigParser()
-
-# Check if the settings and profiles files exist, if not create them with default values
-if os.path.exists(settings_path):
-    settings_config.read(settings_path)
-else:
-    # Initialize Preferences section
-    settings_config["Preferences"] = {
-        'ShowTooltip': 'True',
-        'GlobalLimitOnExit': 'True',
-    }
-    # Add GlobalSettings section
-    settings_config["GlobalSettings"] = {
-        'delaybeforedecrease': '2',
-        'delaybeforeincrease': '3',
-        'minvalidgpu': '20',
-        'minvalidfps': '20',
-        'globallimitonexit_fps': '98',
-        'cpupercentile': '70',
-        'cpupollinginterval': '100',
-        'cpupollingsamples': '20',
-        'gpupercentile': '70',
-        'gpupollinginterval': '100',
-        'gpupollingsamples': '20',
-    }
-    with open(settings_path, 'w') as f:
-        settings_config.write(f)
-
-if os.path.exists(profiles_path):
-    profiles_config.read(profiles_path)
-else:
-    profiles_config["Global"] = {
-        'maxcap': '60',
-        'mincap': '30',
-        'capratio': '20',
-        'capstep': '5',
-        'gpucutofffordecrease': '85',
-        'gpucutoffforincrease': '65',
-        'cpucutofffordecrease': '95',
-        'cpucutoffforincrease': '85',
-        'enablecustomfpslimits': '1',
-        'customfpslimits': '30, 35, 42, 50, 60',
-    }
-    with open(profiles_path, 'w') as f:
-        profiles_config.write(f)
-
-Default_settings_original = {
-    "maxcap": 60,
-    "mincap": 30,
-    "capratio": 20,
-    "capstep": 5,
-    "gpucutofffordecrease": 85,
-    "gpucutoffforincrease": 65,
-    'cpucutofffordecrease': 95,
-    'cpucutoffforincrease': 85,
-    "delaybeforedecrease": 2,
-    "delaybeforeincrease": 3,
-    "enablecustomfpslimits": 1,
-    "customfpslimits": {30, 35, 42, 50, 60},
-    "minvalidgpu": 20,
-    "minvalidfps": 20,
-    "globallimitonexit_fps": 98,
-    'cpupercentile': 70,
-    'cpupollinginterval': 100,
-    'cpupollingsamples': 20,
-    'gpupercentile': 70,
-    'gpupollinginterval': 100,
-    'gpupollingsamples': 20
-}
-
-input_field_keys = ["maxcap", "mincap", "capstep", "capratio",
-                "gpucutofffordecrease", "gpucutoffforincrease", "cpucutofffordecrease", "cpucutoffforincrease",
-                "enablecustomfpslimits", "customfpslimits"]
-
-key_type_map = {
-    "maxcap": int,
-    "mincap": int,
-    "capratio": int,
-    "capstep": int,
-    "gpucutofffordecrease": int,
-    "gpucutoffforincrease": int,
-    "cpucutofffordecrease": int,
-    "cpucutoffforincrease": int,
-    "enablecustomfpslimits": int,
-    "customfpslimits": set,
-    "delaybeforedecrease": int,
-    "delaybeforeincrease": int,
-    "minvalidgpu": int,
-    "minvalidfps": int,
-    "globallimitonexit_fps": int,
-    "cpupercentile": int,
-    "cpupollinginterval": int,
-    "cpupollingsamples": int,
-    "gpupercentile": int,
-    "gpupollinginterval": int,
-    "gpupollingsamples": int
-}
 
 questions = []
 FAQs = {}
@@ -154,33 +52,6 @@ with open(faq_path, newline='', encoding='utf-8') as csvfile:
         key = f"faq_{idx}"
         questions.append(row["question"])
         FAQs[key] = row["answer"]
-def parse_input_value(key, value):
-    value_type = key_type_map.get(key, int)
-    if value_type is set:
-        if isinstance(value, set):
-            return value
-        # Remove curly braces if present
-        if isinstance(value, str):
-            value = value.strip()
-            if value.startswith("{") and value.endswith("}"):
-                value = value[1:-1]
-        try:
-            return set(int(x.strip()) for x in str(value).split(",") if x.strip().isdigit())
-        except Exception:
-            return set()
-    else:
-        try:
-            return value_type(value)
-        except Exception:
-            return value
-
-def format_output_value(key, value):
-    value_type = key_type_map.get(key, int)
-    if value_type is set:
-        if isinstance(value, set):
-            return ", ".join(str(x) for x in sorted(value))
-        return str(value)
-    return value
 
 def sync_checkbox_to_int(sender, app_data, user_data):
     # app_data is True/False from checkbox
@@ -345,53 +216,12 @@ def current_method_callback(sender, app_data, user_data):
     """
     logger.add_log(f"Method selection changed: {app_data}")
 
-# Function to get values with correct types
-def get_setting(key, value_type=None):
-    """Get setting from appropriate config section based on key type."""
-    if value_type is None:
-        value_type = key_type_map.get(key, str)
-    # Get the raw value from the appropriate config section
-    if key in settings_config["GlobalSettings"]:
-        raw_value = settings_config["GlobalSettings"].get(key, Default_settings_original[key])
-    else:
-        raw_value = profiles_config["Global"].get(key, Default_settings_original[key])
+ShowTooltip = str(config_manager.settings_config["Preferences"].get("ShowTooltip", "True")).strip().lower() == "true"
+GlobalLimitonExit = str(config_manager.settings_config["Preferences"].get("GlobalLimitOnExit", "True")).strip().lower() == "true"
 
-    # Convert to the correct type
-    if value_type is set:
-        try:
-            values = []
-            for x in str(raw_value).split(","):
-                x = x.strip()
-                if x.isdigit():
-                    values.append(int(x))
-                else:
-                    logger.add_log(f"Warning: Skipped non-integer value '{x}' in key '{key}'")
-            return set(values)
-        except Exception:
-            logger.add_log(f"Error parsing set for key '{key}', using default.")
-            values = []
-            for x in str(Default_settings_original[key]).split(","):
-                x = x.strip()
-                if x.isdigit():
-                    values.append(int(x))
-            return set(values)
-    
-    try:
-        return value_type(raw_value)
-    except Exception:
-        try:
-            return value_type(Default_settings_original[key])
-        except Exception:
-            return Default_settings_original[key]
-
-Default_settings = {key: get_setting(key, set if isinstance(Default_settings_original[key], set) else int) for key in Default_settings_original}
-
-ShowTooltip = str(settings_config["Preferences"].get("ShowTooltip", "True")).strip().lower() == "true"
-GlobalLimitonExit = str(settings_config["Preferences"].get("GlobalLimitOnExit", "True")).strip().lower() == "true"
-
-for key in settings_config["GlobalSettings"]:
-    value_type = key_type_map.get(key, str)
-    value = get_setting(key, value_type)
+for key in config_manager.settings_config["GlobalSettings"]:
+    value_type = config_manager.key_type_map.get(key, str)
+    value = config_manager.get_setting(key, value_type)
     if value is not None:
         globals()[key] = value
 
@@ -400,140 +230,18 @@ Viewport_width = 605
 Viewport_height = 765
 Plot_height = 220
 
-def save_to_profile():
-    selected_profile = dpg.get_value("profile_dropdown")
-
-    if selected_profile:
-        # Update profile-specific settings
-        for key in input_field_keys:
-            value = dpg.get_value(f"input_{key}")
-            parsed_value = parse_input_value(key, value)
-            # Store as string for config file
-            profiles_config[selected_profile][key] = str(format_output_value(key, parsed_value))
-        
-        with open(profiles_path, "w") as configfile:
-            profiles_config.write(configfile)
-
-        logger.add_log(f"Settings saved to profile: {selected_profile}")
-
-settings = Default_settings.copy()
-
-def update_profile_dropdown(select_first=False):
-    profiles = profiles_config.sections()
-    dpg.configure_item("profile_dropdown", items=profiles)
-
-    if select_first and profiles:
-        dpg.set_value("profile_dropdown", profiles[0])  # Set combo selection
-
-current_profile = "Global"
-
-def load_profile_callback(sender, app_data, user_data):
-    global current_profile
-    current_profile = app_data
-    profile_name = app_data
-
-    if profile_name not in profiles_config:
-        return
-    for key in input_field_keys:
-        value = profiles_config[profile_name].get(key, Default_settings_original[key])
-        parsed_value = parse_input_value(key, value)
-        dpg.set_value(f"input_{key}", format_output_value(key, parsed_value))
-    update_global_variables()
-    dpg.set_value("new_profile_input", "")
-    dpg.set_value("checkbox_enablecustomfpslimits", bool(dpg.get_value("input_enablecustomfpslimits")))
-
-def save_profile(profile_name):
-    profiles_config[profile_name] = {}
-    # Save input fields
-    for key in input_field_keys:
-        value = dpg.get_value(f"input_{key}")
-        parsed_value = parse_input_value(key, value)
-        profiles_config[profile_name][key] = str(format_output_value(key, parsed_value))
-    with open(profiles_path, 'w') as f:
-        profiles_config.write(f)
-    update_profile_dropdown()
-
-def add_new_profile_callback():
-    new_name = dpg.get_value("new_profile_input")
-    if new_name and new_name not in profiles_config:
-        save_profile(new_name)
-        dpg.set_value("new_profile_input", "")
-        logger.add_log(f"New profile created: {new_name}")
-    else:
-        logger.add_log("Profile name is empty or already exists.")
-
-def add_process_profile_callback():
-    new_name = dpg.get_value("LastProcess")
-    if new_name and new_name not in profiles_config:
-        save_profile(new_name)
-        logger.add_log(f"New profile created: {new_name}")
-    else:
-        logger.add_log("Profile name is empty or already exists.")
-
-def delete_selected_profile_callback():
-    global current_profile
-
-    profile_to_delete = dpg.get_value("profile_dropdown")
-    if profile_to_delete == "Global":
-        logger.add_log("Cannot delete the default 'Global' profile.")
-        return
-    if profile_to_delete in profiles_config:
-        profiles_config.remove_section(profile_to_delete)
-        with open(profiles_path, 'w') as f:
-            profiles_config.write(f)
-        update_profile_dropdown(select_first=True)
-
-        # Reset input fields to the "Global" profile values
-        if "Global" in profiles_config:
-            for key in profiles_config["Global"]:
-                try:
-                    value = profiles_config["Global"][key]
-                    parsed_value = parse_input_value(key, value)
-                    dpg.set_value(f"input_{key}", format_output_value(key, parsed_value))
-                except Exception as e:
-                    logger.add_log(f"Error: Unable to convert value for key '{key}': {e}")
-            update_global_variables()  # Ensure global variables are updated
-            dpg.set_value("checkbox_enablecustomfpslimits", bool(dpg.get_value("input_enablecustomfpslimits")))
-        else:
-            logger.add_log("Error: 'Global' profile not found in configuration.")
-
-        logger.add_log(f"Deleted profile: {profile_to_delete}")
-        current_profile = "Global"
-
 running = False  # Flag to control the monitoring loop
 
-# Function to sync settings with variables
-def update_global_variables():
-    for key, value in settings.items():
-        value_type = key_type_map.get(key, type(value))
-        if value_type is set:
-            # If value is a string, parse it to a set of ints
-            if isinstance(value, set):
-                globals()[key] = value
-            else:
-                try:
-                    values = [int(x.strip()) for x in str(value).split(",") if x.strip().isdigit()]
-                    globals()[key] = set(values)
-                except Exception:
-                    globals()[key] = set()
-        elif str(value).isdigit():
-            globals()[key] = int(value)
-        else:
-            globals()[key] = value
+config_manager.update_global_variables()
 
-update_global_variables()
+def start_stop_callback(sender, app_data, user_data):
 
-# Read values from UI input fields without modifying `settings`
-def apply_current_input_values():
-    for key in input_field_keys:
-        value = dpg.get_value(f"input_{key}")
-        globals()[key] = parse_input_value(key, value)
+    config_manager = user_data
 
-def start_stop_callback():
-    global running, current_profile
+    global running
     running = not running
     dpg.configure_item("start_stop_button", label="Stop" if running else "Start")
-    apply_current_input_values()
+    config_manager.apply_current_input_values()
     
     # Reset variables to zero or their default state
     global fps_values, CurrentFPSOffset, fps_mean, gpu_values, cpu_values
@@ -545,7 +253,7 @@ def start_stop_callback():
 
     # Freeze input fields
 
-    for key in input_field_keys:
+    for key in config_manager.input_field_keys:
         dpg.configure_item(f"input_{key}", enabled=not running)
     dpg.configure_item("checkbox_enablecustomfpslimits", enabled=not running)
 
@@ -577,21 +285,7 @@ def start_stop_callback():
         
         logger.add_log("Monitoring stopped")
     logger.add_log(f"Custom FPS limits: {current_stepped_limits()}")
-    rtss_cli.set_property(current_profile, "FramerateLimit", int(max(current_stepped_limits())))
-
-def quick_save_settings():
-    for key in input_field_keys:
-        value = dpg.get_value(f"input_{key}")
-        settings[key] = parse_input_value(key, value)
-    update_global_variables()
-    logger.add_log("Settings quick saved")
-
-def quick_load_settings():
-    for key in input_field_keys:
-        dpg.set_value(f"input_{key}", format_output_value(key, settings[key]))
-    update_global_variables()
-    dpg.set_value("checkbox_enablecustomfpslimits", bool(dpg.get_value("input_enablecustomfpslimits")))
-    logger.add_log("Settings quick loaded")
+    rtss_cli.set_property(config_manager.current_profile, "FramerateLimit", int(max(current_stepped_limits())))
 
 def reset_stats():
     
@@ -607,14 +301,6 @@ def reset_stats():
     cap_series.clear()
     global elapsed_time
     elapsed_time = 0
-
-def reset_to_program_default():
-    
-    global Default_settings_original
-    for key in input_field_keys:
-        dpg.set_value(f"input_{key}", format_output_value(key, Default_settings_original[key]))
-    dpg.set_value("checkbox_enablecustomfpslimits", bool(dpg.get_value("input_enablecustomfpslimits")))
-    logger.add_log("Settings reset to program default")  
 
 def reset_customFPSLimits():
 
@@ -723,7 +409,7 @@ CurrentFPSOffset = 0
 fps_mean = 0
 
 def monitoring_loop():
-    global running, fps_values, CurrentFPSOffset, fps_mean, gpu_values, current_profile, cpu_values
+    global running, fps_values, CurrentFPSOffset, fps_mean, gpu_values, cpu_values
     global mincap, maxcap, capstep, gpucutofffordecrease, delaybeforedecrease, gpucutoffforincrease, delaybeforeincrease, minvalidgpu, minvalidfps, cpucutofffordecrease, cpucutoffforincrease
     global max_points, minvalidgpu, minvalidfps, luid_selected, luid
 
@@ -739,6 +425,7 @@ def monitoring_loop():
     max_ft = current_maxcap + round((current_maxcap - current_mincap) * 0.1)
 
     while running:
+        current_profile = config_manager.current_profile
         fps, process_name = rtss_manager.get_fps_for_active_window()
         #logger.add_log(f"Current highed CPU core load: {cpu_monitor.cpu_percentile}%")
         
@@ -890,7 +577,7 @@ def add_tooltip(key):
     """
     if key in tooltips:
         # Determine the actual widget ID
-        widget_id = f"input_{key}" if key in input_field_keys else key
+        widget_id = f"input_{key}" if key in config_manager.input_field_keys else key
         
         # Only create tooltip if widget exists
         if dpg.does_item_exist(widget_id):
@@ -907,17 +594,17 @@ def apply_all_tooltips():
             logger.add_log(f"Failed to add tooltip for {key}: {e}")
 
 def update_tooltip_setting(sender, app_data, user_data):
-    global ShowTooltip, input_field_keys, tooltips
+    global ShowTooltip, tooltips
     ShowTooltip = app_data
-    settings_config["Preferences"]["ShowTooltip"] = str(app_data)
-    with open(settings_path, 'w') as f:
-        settings_config.write(f)
+    config_manager.settings_config["Preferences"]["ShowTooltip"] = str(app_data)
+    with open(config_manager.settings_path, 'w') as f:
+        config_manager.settings_config.write(f)
     logger.add_log(f"Tooltip visibility set to: {ShowTooltip}")
 
     for key in tooltips.keys():
         parent_tag = ""
         # Determine the parent tag first
-        if key in input_field_keys:
+        if key in config_manager.input_field_keys:
             parent_tag = f"input_{key}"
         else:
             parent_tag = key # Assume key matches parent tag for others
@@ -934,27 +621,8 @@ def update_tooltip_setting(sender, app_data, user_data):
                 # This error is less likely now but kept for safety
                 logger.add_log(f"Minor issue configuring tooltip '{tooltip_specific_tag}' for key '{key}': {e}")
 
-def update_limit_on_exit_setting(sender, app_data, user_data):
-    global GlobalLimitonExit
-    GlobalLimitonExit = app_data
-    settings_config["Preferences"]["GlobalLimitOnExit"] = str(app_data)
-    with open(settings_path, 'w') as f:
-        settings_config.write(f)
-    logger.add_log(f"Global Limit on Exit set to: {GlobalLimitonExit}")
 
-def update_exit_fps_value(sender, app_data, user_data):
-    global globallimitonexit_fps 
-    new_value = app_data
 
-    if isinstance(new_value, int) and new_value > 0:
-        globallimitonexit_fps = new_value
-        settings_config["GlobalSettings"]["globallimitonexit_fps"] = str(new_value)
-        with open(settings_path, 'w') as f:
-            settings_config.write(f)
-        logger.add_log(f"Global Limit on Exit FPS value set to: {globallimitonexit_fps}")
-    else:
-        logger.add_log(f"Invalid value entered for Global Limit on Exit FPS: {app_data}. Reverting.")
-        dpg.set_value(sender, globallimitonexit_fps)
 
 def exit_gui():
     global running, gui_running, rtss_manager, monitoring_thread, plotting_thread, globallimitonexit_fps, GlobalLimitonExit
@@ -1028,7 +696,7 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
         dpg.add_button(label="Detect Render GPU", callback=toggle_luid_selection, tag="luid_button", width=150)
 
         dpg.add_spacer(width=30)
-        dpg.add_button(label="Start", tag="start_stop_button", callback=start_stop_callback, width=50)
+        dpg.add_button(label="Start", tag="start_stop_button", callback=start_stop_callback, width=50, user_data=config_manager)
 
         dpg.add_button(label="Exit", callback=exit_gui, width=50)  # Exit button
 
@@ -1042,20 +710,20 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
             # First row
             with dpg.table_row():
                 dpg.add_text("Select Profile:")
-                dpg.add_combo(tag="profile_dropdown", callback=load_profile_callback, width=260, default_value="Global")
-                dpg.add_button(label="Delete Profile", callback=delete_selected_profile_callback, width=120)
+                dpg.add_combo(tag="profile_dropdown", callback=config_manager.load_profile_callback, width=260, default_value="Global")
+                dpg.add_button(label="Delete Profile", callback=config_manager.delete_selected_profile_callback, width=120)
 
             # Second row
             with dpg.table_row():
                 dpg.add_text("New RTSS Profile:")
                 dpg.add_input_text(tag="new_profile_input", width=260)
-                dpg.add_button(label="Add Profile", callback=add_new_profile_callback, width=120)
+                dpg.add_button(label="Add Profile", callback=config_manager.add_new_profile_callback, width=120)
 
         dpg.add_spacer(height=3)        
         with dpg.group(horizontal=True):
             dpg.add_text("Last active process:")
             dpg.add_spacer(width=260)
-            dpg.add_button(label="Add process to Profiles", callback=add_process_profile_callback)
+            dpg.add_button(label="Add process to Profiles", callback=config_manager.add_process_profile_callback)
         dpg.add_spacer(height=1)
         dpg.add_input_text(tag="LastProcess", multiline=False, readonly=True, width=-1)    
     
@@ -1076,7 +744,7 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                                             ("Framerate step:", "capstep")]:
                                 with dpg.table_row():
                                     dpg.add_text(label)
-                                    dpg.add_input_int(tag=f"input_{key}", default_value=int(settings[key]), 
+                                    dpg.add_input_int(tag=f"input_{key}", default_value=int(config_manager.settings[key]), 
                                                       width=90, step=1, step_fast=10, 
                                                       min_clamped=True, min_value=1)
                    
@@ -1092,18 +760,18 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                                 with dpg.table_row():
                                     dpg.add_button(label=label, tag=f"button_{key}", width=110)
                                     dpg.bind_item_theme(f"button_{key}", "button_right")
-                                    dpg.add_input_text(tag=f"input_{key}", default_value=str(settings[key]), width=40)
+                                    dpg.add_input_text(tag=f"input_{key}", default_value=str(config_manager.settings[key]), width=40)
                     
                     dpg.add_spacer(width=1)
                     with dpg.group(width=160):
                         #dpg.add_spacer(height=3)
                         with dpg.group(horizontal=False):
                             with dpg.group(tag="quick_save_load"):
-                                dpg.add_button(label="Quick Save", callback=quick_save_settings)
-                                dpg.add_button(label="Quick Load", callback=quick_load_settings)
-                            dpg.add_button(tag="Reset_Default", label="Reset Settings to Default", callback=reset_to_program_default)
+                                dpg.add_button(label="Quick Save", callback=config_manager.quick_save_settings)
+                                dpg.add_button(label="Quick Load", callback=config_manager.quick_load_settings)
+                            dpg.add_button(tag="Reset_Default", label="Reset Settings to Default", callback=config_manager.reset_to_program_default)
                             dpg.add_spacer(height=3)
-                            dpg.add_button(tag="SaveToProfile", label="Save Settings to Profile", callback=save_to_profile)
+                            dpg.add_button(tag="SaveToProfile", label="Save Settings to Profile", callback=config_manager.save_to_profile)
 
     
         with dpg.tab(label="Preferences", tag="tab2"):
@@ -1111,12 +779,12 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                 dpg.add_checkbox(label="Show Tooltips", tag="tooltip_checkbox",
                                  default_value=ShowTooltip, callback=update_tooltip_setting)
                 dpg.add_checkbox(label="Reset Global RTSS Framerate Limit on Exit", tag="limit_on_exit_checkbox",
-                                 default_value=GlobalLimitonExit, callback=update_limit_on_exit_setting)
+                                 default_value=GlobalLimitonExit, callback=config_manager.update_limit_on_exit_setting)
                 dpg.add_spacer(height=3)
                 with dpg.group(horizontal=True):
                     dpg.add_text("Framerate limit:")
                     dpg.add_input_int(tag="exit_fps_input",
-                                    default_value=globallimitonexit_fps, callback=update_exit_fps_value,
+                                    default_value=globallimitonexit_fps, callback=config_manager.update_exit_fps_value,
                                     width=100, step=1, step_fast=10)
 
         with dpg.tab(label="Log", tag="tab3"):
@@ -1150,10 +818,10 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                 )
             dpg.bind_item_theme("radio_method", "radio_theme")
             dpg.add_checkbox(label="Define custom FPS limits", tag="checkbox_enablecustomfpslimits", 
-                            default_value=bool(settings["enablecustomfpslimits"]),
+                            default_value=bool(config_manager.settings["enablecustomfpslimits"]),
                             callback=sync_checkbox_to_int)
             dpg.add_input_int(tag="input_enablecustomfpslimits", 
-                            default_value=int(settings["enablecustomfpslimits"]), show=False,
+                            default_value=int(config_manager.settings["enablecustomfpslimits"]), show=False,
                             width=0)
 
         draw_height = 40
@@ -1170,7 +838,7 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
         with dpg.group(horizontal=True):
             dpg.add_input_text(
                 tag="input_customfpslimits",
-                default_value=", ".join(str(x) for x in sorted(settings["customfpslimits"])),#", ".join(map(str, sorted(self.selected_fps_caps))),
+                default_value=", ".join(str(x) for x in sorted(config_manager.settings["customfpslimits"])),#", ".join(map(str, sorted(self.selected_fps_caps))),
                 width=draw_width - 170,
                 #pos=(10, 140),  # Center the input horizontally
                 callback=sort_customfpslimits_callback,
@@ -1221,7 +889,7 @@ dpg.show_viewport()
 dpg.set_primary_window("Primary Window", True)
 
 # Setup and Run GUI
-update_profile_dropdown(select_first=True)
+config_manager.update_profile_dropdown(select_first=True)
 
 logger.add_log("Initializing...")
 
