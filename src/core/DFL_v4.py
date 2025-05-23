@@ -234,7 +234,6 @@ for key in cm.settings_config["GlobalSettings"]:
 # Default viewport size
 Viewport_width = 605
 Viewport_height = 765
-Plot_height = 220
 
 running = False  # Flag to control the monitoring loop
 
@@ -606,9 +605,6 @@ with dpg.font_registry():
         logger.add_log(f"Failed to load system font: {e}")
         # Will use DearPyGui's default font as fallback
 
-# Bind the rounded button theme globally
-dpg.bind_theme("rounded_widget_theme")
-
 #The actual GUI starts here
 with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
     
@@ -655,7 +651,7 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
     dpg.add_spacer(height=1)
     with dpg.tab_bar():
         with dpg.tab(label="Profile Settings", tag="tab1"):
-            with dpg.child_window(height=tab_height):
+            with dpg.child_window(height=tab_height, border=False):
                 with dpg.group(horizontal=True):
                     with dpg.group(width=200):
                         with dpg.table(header_row=False, resizable=False, policy=dpg.mvTable_SizingFixedFit):
@@ -728,8 +724,10 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                         dpg.add_text(answer, wrap=300)
 
     # Third Row: FPS lists and methods
-    dpg.add_spacer(height=1)
-    with dpg.child_window(width=-1, height=115):
+    dpg.add_spacer(height=5)
+    dpg.add_separator()
+    dpg.add_spacer(height=5)
+    with dpg.child_window(width=-1, height=105, border=False):
         with dpg.group(horizontal=True, width=-1):
             dpg.add_text("Method:")
             dpg.add_radio_button(
@@ -770,8 +768,10 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
             dpg.add_button(label="Optimize", tag="autofill_fps_caps", width=80, callback=generate_adaptive_fps_limits)
 
     # Fourth Row: Plot Section
-    dpg.add_spacer(height=1)
-    with dpg.child_window(width=-1, height=Plot_height):
+    #dpg.add_spacer(height=1)
+    dpg.add_separator()
+    dpg.add_spacer(height=5)
+    with dpg.child_window(width=-1, height=200, border=True):
 
         with dpg.plot(height=200, width=-1, tag="plot"):
             dpg.add_plot_axis(dpg.mvXAxis, label="Time (s)", tag="x_axis")
@@ -839,8 +839,15 @@ gui_update_thread.start()
 
 apply_all_tooltips(dpg, tooltips, ShowTooltip, cm, logger)
 
-logger.add_log("Initialized successfully.")
+# Bind themes to the GUI elements
+dpg.bind_theme("rounded_widget_theme")
+dpg.bind_item_theme("Primary Window", "border_theme")
+dpg.bind_theme("separator_theme")
+dpg.bind_theme("child_window_theme")
+dpg.bind_item_theme("plot", "plot_bg_theme")
 
+logger.add_log("Initialized successfully.")
+dpg.show_style_editor()
 #Always make sure the corresponding GUI element exists before trying to get/set its value
 dpg.start_dearpygui()
 
