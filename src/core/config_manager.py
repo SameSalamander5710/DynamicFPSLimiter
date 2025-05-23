@@ -282,28 +282,29 @@ class ConfigManager:
             if value_type is set:
                 # If value is a string, parse it to a set of ints
                 if isinstance(value, set):
-                    globals()[key] = value
+                    #globals()[key] = value
                     setattr(self, key, value)
                 else:
                     try:
                         values = [int(x.strip()) for x in str(value).split(",") if x.strip().isdigit()]
-                        globals()[key] = set(values)
+                        #globals()[key] = set(values)
                         setattr(self, key, set(values))
                     except Exception:
-                        globals()[key] = set()
+                        #globals()[key] = set()
                         setattr(self, key, set())
             elif str(value).isdigit():
-                globals()[key] = int(value)
+                #globals()[key] = int(value)
                 setattr(self, key, int(value))
             else:
-                globals()[key] = value
+                #globals()[key] = value
                 setattr(self, key, int(value))
 
     # Read values from UI input fields without modifying `settings`
     def apply_current_input_values(self):
         for key in self.input_field_keys:
             value = dpg.get_value(f"input_{key}")
-            globals()[key] = self.parse_input_value(key, value)
+            #globals()[key] = self.parse_input_value(key, value)
+            setattr(self, key, self.parse_input_value(key, value))
 
     def quick_save_settings(self):
         for key in self.input_field_keys:
