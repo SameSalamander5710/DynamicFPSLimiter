@@ -25,10 +25,12 @@ from core.cpu_monitor import CPUUsageMonitor
 from core.gpu_monitor import GPUUsageMonitor
 from core.themes import create_themes
 from core.config_manager import ConfigManager
+from core.tooltips import get_tooltips, add_tooltip, apply_all_tooltips, update_tooltip_setting
 
 # Always get absolute path to EXE or script location
 Base_dir = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
 cm = ConfigManager(logger, dpg, Base_dir)
+tooltips = get_tooltips()
 
 # Ensure the config folder exists in the parent directory of Base_dir
 parent_dir = os.path.dirname(Base_dir)
@@ -215,6 +217,9 @@ def current_method_callback(sender, app_data, user_data):
     Logs the currently selected radio button value for the method selection.
     """
     logger.add_log(f"Method selection changed: {app_data}")
+
+def tooltip_checkbox_callback(sender, app_data, user_data):
+    update_tooltip_setting(dpg, sender, app_data, user_data, tooltips, cm, logger)
 
 ShowTooltip = str(cm.settings_config["Preferences"].get("ShowTooltip", "True")).strip().lower() == "true"
 GlobalLimitonExit = str(cm.settings_config["Preferences"].get("GlobalLimitOnExit", "True")).strip().lower() == "true"
@@ -570,60 +575,6 @@ def gui_update_loop():
                     logger.add_log(f"Error in GUI update loop: {e}")
         time.sleep(0.1)
 
-def add_tooltip(key):
-    """
-    Adds a tooltip to a widget using consistent naming convention.
-    key: The key used in the tooltips dictionary
-    """
-    if key in tooltips:
-        # Determine the actual widget ID
-        widget_id = f"input_{key}" if key in cm.input_field_keys else key
-        
-        # Only create tooltip if widget exists
-        if dpg.does_item_exist(widget_id):
-            tooltip_tag = f"{widget_id}_tooltip"
-            with dpg.tooltip(parent=widget_id, tag=tooltip_tag, show=ShowTooltip, delay=1):
-                dpg.add_text(tooltips[key], wrap=200)
-
-def apply_all_tooltips():
-    """Automatically adds tooltips to all widgets that have entries in the tooltips dictionary"""
-    for key in tooltips:
-        try:
-            add_tooltip(key)
-        except Exception as e:
-            logger.add_log(f"Failed to add tooltip for {key}: {e}")
-
-def update_tooltip_setting(sender, app_data, user_data):
-    global ShowTooltip, tooltips
-    ShowTooltip = app_data
-    cm.settings_config["Preferences"]["ShowTooltip"] = str(app_data)
-    with open(cm.settings_path, 'w') as f:
-        cm.settings_config.write(f)
-    logger.add_log(f"Tooltip visibility set to: {ShowTooltip}")
-
-    for key in tooltips.keys():
-        parent_tag = ""
-        # Determine the parent tag first
-        if key in cm.input_field_keys:
-            parent_tag = f"input_{key}"
-        else:
-            parent_tag = key # Assume key matches parent tag for others
-
-        # Construct the specific TOOLTIP tag
-        tooltip_specific_tag = f"{parent_tag}_tooltip"
-
-        # Check if the TOOLTIP item exists and configure it
-        if dpg.does_item_exist(tooltip_specific_tag):
-            try:
-                # Configure the tooltip item itself using its specific tag
-                dpg.configure_item(tooltip_specific_tag, show=ShowTooltip)
-            except SystemError as e:
-                # This error is less likely now but kept for safety
-                logger.add_log(f"Minor issue configuring tooltip '{tooltip_specific_tag}' for key '{key}': {e}")
-
-
-
-
 def exit_gui():
     global running, gui_running, rtss_manager, monitoring_thread, plotting_thread, GlobalLimitonExit
     
@@ -642,34 +593,6 @@ def exit_gui():
     if dpg.is_dearpygui_running():
         dpg.destroy_context()
             
-# Define keys used for input fields (used to construct tooltip tags)
-
-tooltips = {
-    "maxcap": "Defines the maximum FPS limit for the game. Hold CTRL for steps of 10.",
-    "mincap": "Specifies the minimum FPS limit that may be reached. For optimal performance, set this to the lowest value you're comfortable with. Hold CTRL for steps of 10.",
-    "capratio": "Generate FPS limits based on given ratio. The FPS cap will be set to the maximum FPS limit multiplied by this ratio.",
-    "capstep": "Indicates the increment size for adjusting the FPS cap. Smaller step sizes provide finer control. Hold CTRL for steps of 10.",
-    "gpucutofffordecrease": "Sets the upper threshold for GPU usage. If GPU usage exceeds this value, the FPS cap will be lowered to maintain system performance.",
-    "delaybeforedecrease": "Specifies how many times in a row GPU usage must exceed the upper threshold before the FPS cap begins to drop.",
-    "gpucutoffforincrease": "Defines the lower threshold for GPU usage. If GPU usage falls below this value, the FPS cap will increase to improve performance.",
-    "delaybeforeincrease": "Specifies how many times in a row GPU usage must fall below the lower threshold before the FPS cap begins to rise.",
-    "cpucutofffordecrease": "Sets the upper threshold for CPU usage. If CPU usage exceeds this value, the FPS cap will be lowered to maintain system performance.",
-    "cpucutoffforincrease": "Defines the lower threshold for CPU usage. If CPU usage falls below this value, the FPS cap will increase to improve performance.",
-    "minvalidgpu": "Sets the minimum valid GPU usage percentage required for adjusting the FPS. If the GPU usage is below this threshold, the FPS cap will not change. This helps prevent FPS fluctuations during loading screens.",
-    "minvalidfps": "Defines the minimum valid FPS required for adjusting the FPS. If the FPS falls below this value, the FPS cap will not change. This helps prevent FPS fluctuations during loading screens.",
-    "quick_save_load": "Saves and loads input values from memory. This is temporary storage, useful for testing and fine-tuning configurations.",
-    "start_stop_button": "Starts maintaining the FPS cap dynamically based on GPU/CPU utilization. Green = RTSS running. Red = RTSS not running.",
-    "luid_button": "Detects the render GPU based on highest 3D engine utilization, and sets it as the target GPU for FPS limiting. Click again to deselect.",
-    "exit_fps_input": "The specific FPS limit to apply globally when the application exits, if 'Set Global FPS Limit on Exit' is checked.",
-    "SaveToProfile": "Saves the current settings to the selected profile. This allows you to quickly switch between different configurations.",
-    "Reset_Default": "Resets all settings to the program's default values. This is useful if you want to start fresh or if you encounter issues.",
-    "Reset_CustomFPSLimits": "Resets the custom FPS limits to 'max FPS limit' and 'min FPS limit'.",
-    "DeleteProfile": "Deletes the selected profile. Be cautious, as this action cannot be undone.",
-    "checkbox_enablecustomfpslimits": "Enables or disables the use of custom FPS limits. When enabled, the FPS limits will be applied based on the specified list.",
-    "checkbox_globallimitonexit": "Enables or disables the application of a global FPS limit when exiting the program. When enabled, the specified FPS limit will be applied to all processes.",
-    "autofill_fps_caps": "Generates FPS limits from `max FPS limit` down to `min FPS limit` such that each step reduces expected GPU usage from `upper limit` to just above `lower limit` when triggered.",
-}
-
 # GUI setup: Main Window
 dpg.create_context()
 create_themes(background_colour=(37, 37, 38))
@@ -777,7 +700,7 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
         with dpg.tab(label="Preferences", tag="tab2"):
             with dpg.child_window(height=tab_height):
                 dpg.add_checkbox(label="Show Tooltips", tag="tooltip_checkbox",
-                                 default_value=ShowTooltip, callback=update_tooltip_setting)
+                                 default_value=ShowTooltip, callback=tooltip_checkbox_callback)
                 dpg.add_checkbox(label="Reset Global RTSS Framerate Limit on Exit", tag="limit_on_exit_checkbox",
                                  default_value=GlobalLimitonExit, callback=cm.update_limit_on_exit_setting)
                 dpg.add_spacer(height=3)
@@ -914,7 +837,7 @@ if rtss_manager:
 gui_update_thread = threading.Thread(target=gui_update_loop, daemon=True)
 gui_update_thread.start()
 
-apply_all_tooltips()
+apply_all_tooltips(dpg, tooltips, ShowTooltip, cm, logger)
 
 logger.add_log("Initialized successfully.")
 
