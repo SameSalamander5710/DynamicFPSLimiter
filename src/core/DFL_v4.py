@@ -28,7 +28,7 @@ from core.config_manager import ConfigManager
 
 # Always get absolute path to EXE or script location
 Base_dir = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
-config_manager = ConfigManager(logger, dpg, Base_dir)
+cm = ConfigManager(logger, dpg, Base_dir)
 
 # Ensure the config folder exists in the parent directory of Base_dir
 parent_dir = os.path.dirname(Base_dir)
@@ -216,12 +216,13 @@ def current_method_callback(sender, app_data, user_data):
     """
     logger.add_log(f"Method selection changed: {app_data}")
 
-ShowTooltip = str(config_manager.settings_config["Preferences"].get("ShowTooltip", "True")).strip().lower() == "true"
-GlobalLimitonExit = str(config_manager.settings_config["Preferences"].get("GlobalLimitOnExit", "True")).strip().lower() == "true"
+ShowTooltip = str(cm.settings_config["Preferences"].get("ShowTooltip", "True")).strip().lower() == "true"
+GlobalLimitonExit = str(cm.settings_config["Preferences"].get("GlobalLimitOnExit", "True")).strip().lower() == "true"
 
-for key in config_manager.settings_config["GlobalSettings"]:
-    value_type = config_manager.key_type_map.get(key, str)
-    value = config_manager.get_setting(key, value_type)
+#Check: Do I need this after setattr?
+for key in cm.settings_config["GlobalSettings"]:
+    value_type = cm.key_type_map.get(key, str)
+    value = cm.get_setting(key, value_type)
     if value is not None:
         globals()[key] = value
 
@@ -232,16 +233,16 @@ Plot_height = 220
 
 running = False  # Flag to control the monitoring loop
 
-config_manager.update_global_variables()
+cm.update_global_variables()
 
 def start_stop_callback(sender, app_data, user_data):
 
-    config_manager = user_data
+    cm = user_data
 
     global running
     running = not running
     dpg.configure_item("start_stop_button", label="Stop" if running else "Start")
-    config_manager.apply_current_input_values()
+    cm.apply_current_input_values()
     
     # Reset variables to zero or their default state
     global fps_values, CurrentFPSOffset, fps_mean, gpu_values, cpu_values
@@ -253,7 +254,7 @@ def start_stop_callback(sender, app_data, user_data):
 
     # Freeze input fields
 
-    for key in config_manager.input_field_keys:
+    for key in cm.input_field_keys:
         dpg.configure_item(f"input_{key}", enabled=not running)
     dpg.configure_item("checkbox_enablecustomfpslimits", enabled=not running)
 
@@ -285,7 +286,7 @@ def start_stop_callback(sender, app_data, user_data):
         
         logger.add_log("Monitoring stopped")
     logger.add_log(f"Custom FPS limits: {current_stepped_limits()}")
-    rtss_cli.set_property(config_manager.current_profile, "FramerateLimit", int(max(current_stepped_limits())))
+    rtss_cli.set_property(cm.current_profile, "FramerateLimit", int(max(current_stepped_limits())))
 
 def reset_stats():
     
@@ -320,7 +321,7 @@ elapsed_time = 0 # Global time updated by plotting_loop
 def update_plot_FPS(fps_val, cap_val):
 # Uses fps_time_series    
     global fps_time_series, fps_series, cap_series, elapsed_time
-    global max_points, mincap, maxcap, capstep
+    global max_points
 
     while len(fps_time_series) >= max_points:
         fps_time_series.pop(0)
@@ -347,7 +348,7 @@ def update_plot_FPS(fps_val, cap_val):
 def update_plot_usage(time_val, gpu_val, cpu_val):
    
     global time_series, gpu_usage_series, cpu_usage_series
-    global max_points, gpucutofffordecrease, gpucutoffforincrease # Add needed globals
+    global max_points# Add needed globals
     
     while len(time_series) >= max_points:
         time_series.pop(0)
@@ -373,8 +374,8 @@ def update_plot_usage(time_val, gpu_val, cpu_val):
         
         # Update static lines to extend across the current X range of the main time_series
         # Ensure gpucutoff... variables are up-to-date globals
-        dpg.set_value("line1", [[start_x, end_x + 1], [gpucutofffordecrease, gpucutofffordecrease]])
-        dpg.set_value("line2", [[start_x, end_x + 1], [gpucutoffforincrease, gpucutoffforincrease]])
+        dpg.set_value("line1", [[start_x, end_x + 1], [cm.gpucutofffordecrease, cm.gpucutofffordecrease]])
+        dpg.set_value("line2", [[start_x, end_x + 1], [cm.gpucutoffforincrease, cm.gpucutoffforincrease]])
     else:
         dpg.set_axis_limits_auto("x_axis")
 
@@ -410,8 +411,7 @@ fps_mean = 0
 
 def monitoring_loop():
     global running, fps_values, CurrentFPSOffset, fps_mean, gpu_values, cpu_values
-    global mincap, maxcap, capstep, gpucutofffordecrease, delaybeforedecrease, gpucutoffforincrease, delaybeforeincrease, minvalidgpu, minvalidfps, cpucutofffordecrease, cpucutoffforincrease
-    global max_points, minvalidgpu, minvalidfps, luid_selected, luid
+    global max_points, luid_selected, luid
 
     last_process_name = None
     
@@ -425,7 +425,7 @@ def monitoring_loop():
     max_ft = current_maxcap + round((current_maxcap - current_mincap) * 0.1)
 
     while running:
-        current_profile = config_manager.current_profile
+        current_profile = cm.current_profile
         fps, process_name = rtss_manager.get_fps_for_active_window()
         #logger.add_log(f"Current highed CPU core load: {cpu_monitor.cpu_percentile}%")
         
@@ -443,24 +443,24 @@ def monitoring_loop():
             fps_mean = sum(fps_values) / len(fps_values)
         
         gpuUsage = gpu_monitor.gpu_percentile
-        if len(gpu_values) > (max(delaybeforedecrease, delaybeforeincrease)+1):
+        if len(gpu_values) > (max(cm.delaybeforedecrease, cm.delaybeforeincrease)+1):
             gpu_values.pop(0)
         gpu_values.append(gpuUsage)
 
         cpuUsage = cpu_monitor.cpu_percentile
-        if len(cpu_values) > (max(delaybeforedecrease, delaybeforeincrease)+1):
+        if len(cpu_values) > (max(cm.delaybeforedecrease, cm.delaybeforeincrease)+1):
             cpu_values.pop(0)
         cpu_values.append(cpuUsage)
 
         # To prevent loading screens from affecting the fps cap
         if gpuUsage and process_name not in {"DynamicFPSLimiter.exe"}:
-            if gpuUsage > minvalidgpu and fps_mean > minvalidfps: 
+            if gpuUsage > cm.minvalidgpu and fps_mean > cm.minvalidfps: 
 
                 should_decrease = False
-                gpu_decrease_condition = (len(gpu_values) >= delaybeforedecrease and
-                                          all(value >= gpucutofffordecrease for value in gpu_values[-delaybeforedecrease:]))
-                cpu_decrease_condition = (len(cpu_values) >= delaybeforedecrease and
-                                          all(value >= cpucutofffordecrease for value in cpu_values[-delaybeforedecrease:]))
+                gpu_decrease_condition = (len(gpu_values) >= cm.delaybeforedecrease and
+                                          all(value >= cm.gpucutofffordecrease for value in gpu_values[-cm.delaybeforedecrease:]))
+                cpu_decrease_condition = (len(cpu_values) >= cm.delaybeforedecrease and
+                                          all(value >= cm.cpucutofffordecrease for value in cpu_values[-cm.delaybeforedecrease:]))
                 if gpu_decrease_condition or cpu_decrease_condition:
                     should_decrease = True
                 
@@ -493,10 +493,10 @@ def monitoring_loop():
                             rtss_cli.set_property(current_profile, "FramerateLimit", next_fps)
 
                 should_increase = False
-                gpu_increase_condition = (len(gpu_values) >= delaybeforeincrease and
-                                          all(value <= gpucutoffforincrease for value in gpu_values[-delaybeforeincrease:]))
-                cpu_increase_condition = (len(cpu_values) >= delaybeforeincrease and
-                                          all(value <= cpucutoffforincrease for value in cpu_values[-delaybeforeincrease:]))
+                gpu_increase_condition = (len(gpu_values) >= cm.delaybeforeincrease and
+                                          all(value <= cm.gpucutoffforincrease for value in gpu_values[-cm.delaybeforeincrease:]))
+                cpu_increase_condition = (len(cpu_values) >= cm.delaybeforeincrease and
+                                          all(value <= cm.cpucutoffforincrease for value in cpu_values[-cm.delaybeforeincrease:]))
                 if gpu_increase_condition and cpu_increase_condition:
                      should_increase = True
 
@@ -541,7 +541,7 @@ def monitoring_loop():
         time.sleep(1) # This loop runs every 1 second
 
 def plotting_loop():
-    global running, elapsed_time, gpupollinginterval, cpupollinginterval# Make sure elapsed_time is global
+    global running, elapsed_time # Make sure elapsed_time is global
 
     start_time = time.time()
     while running:
@@ -554,7 +554,7 @@ def plotting_loop():
         # CALL update_plot_usage with the current time and usage values
         update_plot_usage(elapsed_time, gpuUsage, cpuUsage)
 
-        time.sleep(math.lcm(gpupollinginterval, cpupollinginterval) / 1000.0)  # Convert to seconds
+        time.sleep(math.lcm(cm.gpupollinginterval, cm.cpupollinginterval) / 1000.0)  # Convert to seconds
 
 gui_running = True
 
@@ -577,7 +577,7 @@ def add_tooltip(key):
     """
     if key in tooltips:
         # Determine the actual widget ID
-        widget_id = f"input_{key}" if key in config_manager.input_field_keys else key
+        widget_id = f"input_{key}" if key in cm.input_field_keys else key
         
         # Only create tooltip if widget exists
         if dpg.does_item_exist(widget_id):
@@ -596,15 +596,15 @@ def apply_all_tooltips():
 def update_tooltip_setting(sender, app_data, user_data):
     global ShowTooltip, tooltips
     ShowTooltip = app_data
-    config_manager.settings_config["Preferences"]["ShowTooltip"] = str(app_data)
-    with open(config_manager.settings_path, 'w') as f:
-        config_manager.settings_config.write(f)
+    cm.settings_config["Preferences"]["ShowTooltip"] = str(app_data)
+    with open(cm.settings_path, 'w') as f:
+        cm.settings_config.write(f)
     logger.add_log(f"Tooltip visibility set to: {ShowTooltip}")
 
     for key in tooltips.keys():
         parent_tag = ""
         # Determine the parent tag first
-        if key in config_manager.input_field_keys:
+        if key in cm.input_field_keys:
             parent_tag = f"input_{key}"
         else:
             parent_tag = key # Assume key matches parent tag for others
@@ -631,7 +631,7 @@ def exit_gui():
     running = False 
 
     if GlobalLimitonExit:
-        rtss_cli.set_property("Global", "FramerateLimit", int(config_manager.globallimitonexit_fps))
+        rtss_cli.set_property("Global", "FramerateLimit", int(cm.globallimitonexit_fps))
 
     if rtss_manager:
         rtss_manager.stop_monitor_thread()
@@ -696,7 +696,7 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
         dpg.add_button(label="Detect Render GPU", callback=toggle_luid_selection, tag="luid_button", width=150)
 
         dpg.add_spacer(width=30)
-        dpg.add_button(label="Start", tag="start_stop_button", callback=start_stop_callback, width=50, user_data=config_manager)
+        dpg.add_button(label="Start", tag="start_stop_button", callback=start_stop_callback, width=50, user_data=cm)
 
         dpg.add_button(label="Exit", callback=exit_gui, width=50)  # Exit button
 
@@ -710,20 +710,20 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
             # First row
             with dpg.table_row():
                 dpg.add_text("Select Profile:")
-                dpg.add_combo(tag="profile_dropdown", callback=config_manager.load_profile_callback, width=260, default_value="Global")
-                dpg.add_button(label="Delete Profile", callback=config_manager.delete_selected_profile_callback, width=120)
+                dpg.add_combo(tag="profile_dropdown", callback=cm.load_profile_callback, width=260, default_value="Global")
+                dpg.add_button(label="Delete Profile", callback=cm.delete_selected_profile_callback, width=120)
 
             # Second row
             with dpg.table_row():
                 dpg.add_text("New RTSS Profile:")
                 dpg.add_input_text(tag="new_profile_input", width=260)
-                dpg.add_button(label="Add Profile", callback=config_manager.add_new_profile_callback, width=120)
+                dpg.add_button(label="Add Profile", callback=cm.add_new_profile_callback, width=120)
 
         dpg.add_spacer(height=3)        
         with dpg.group(horizontal=True):
             dpg.add_text("Last active process:")
             dpg.add_spacer(width=260)
-            dpg.add_button(label="Add process to Profiles", callback=config_manager.add_process_profile_callback)
+            dpg.add_button(label="Add process to Profiles", callback=cm.add_process_profile_callback)
         dpg.add_spacer(height=1)
         dpg.add_input_text(tag="LastProcess", multiline=False, readonly=True, width=-1)    
     
@@ -744,7 +744,7 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                                             ("Framerate step:", "capstep")]:
                                 with dpg.table_row():
                                     dpg.add_text(label)
-                                    dpg.add_input_int(tag=f"input_{key}", default_value=int(config_manager.settings[key]), 
+                                    dpg.add_input_int(tag=f"input_{key}", default_value=int(cm.settings[key]), 
                                                       width=90, step=1, step_fast=10, 
                                                       min_clamped=True, min_value=1)
                    
@@ -760,18 +760,18 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                                 with dpg.table_row():
                                     dpg.add_button(label=label, tag=f"button_{key}", width=110)
                                     dpg.bind_item_theme(f"button_{key}", "button_right")
-                                    dpg.add_input_text(tag=f"input_{key}", default_value=str(config_manager.settings[key]), width=40)
+                                    dpg.add_input_text(tag=f"input_{key}", default_value=str(cm.settings[key]), width=40)
                     
                     dpg.add_spacer(width=1)
                     with dpg.group(width=160):
                         #dpg.add_spacer(height=3)
                         with dpg.group(horizontal=False):
                             with dpg.group(tag="quick_save_load"):
-                                dpg.add_button(label="Quick Save", callback=config_manager.quick_save_settings)
-                                dpg.add_button(label="Quick Load", callback=config_manager.quick_load_settings)
-                            dpg.add_button(tag="Reset_Default", label="Reset Settings to Default", callback=config_manager.reset_to_program_default)
+                                dpg.add_button(label="Quick Save", callback=cm.quick_save_settings)
+                                dpg.add_button(label="Quick Load", callback=cm.quick_load_settings)
+                            dpg.add_button(tag="Reset_Default", label="Reset Settings to Default", callback=cm.reset_to_program_default)
                             dpg.add_spacer(height=3)
-                            dpg.add_button(tag="SaveToProfile", label="Save Settings to Profile", callback=config_manager.save_to_profile)
+                            dpg.add_button(tag="SaveToProfile", label="Save Settings to Profile", callback=cm.save_to_profile)
 
     
         with dpg.tab(label="Preferences", tag="tab2"):
@@ -779,12 +779,12 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                 dpg.add_checkbox(label="Show Tooltips", tag="tooltip_checkbox",
                                  default_value=ShowTooltip, callback=update_tooltip_setting)
                 dpg.add_checkbox(label="Reset Global RTSS Framerate Limit on Exit", tag="limit_on_exit_checkbox",
-                                 default_value=GlobalLimitonExit, callback=config_manager.update_limit_on_exit_setting)
+                                 default_value=GlobalLimitonExit, callback=cm.update_limit_on_exit_setting)
                 dpg.add_spacer(height=3)
                 with dpg.group(horizontal=True):
                     dpg.add_text("Framerate limit:")
                     dpg.add_input_int(tag="exit_fps_input",
-                                    default_value=config_manager.globallimitonexit_fps, callback=config_manager.update_exit_fps_value,
+                                    default_value=cm.globallimitonexit_fps, callback=cm.update_exit_fps_value,
                                     width=100, step=1, step_fast=10)
 
         with dpg.tab(label="Log", tag="tab3"):
@@ -818,10 +818,10 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                 )
             dpg.bind_item_theme("radio_method", "radio_theme")
             dpg.add_checkbox(label="Define custom FPS limits", tag="checkbox_enablecustomfpslimits", 
-                            default_value=bool(config_manager.settings["enablecustomfpslimits"]),
+                            default_value=bool(cm.settings["enablecustomfpslimits"]),
                             callback=sync_checkbox_to_int)
             dpg.add_input_int(tag="input_enablecustomfpslimits", 
-                            default_value=int(config_manager.settings["enablecustomfpslimits"]), show=False,
+                            default_value=int(cm.settings["enablecustomfpslimits"]), show=False,
                             width=0)
 
         draw_height = 40
@@ -838,7 +838,7 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
         with dpg.group(horizontal=True):
             dpg.add_input_text(
                 tag="input_customfpslimits",
-                default_value=", ".join(str(x) for x in sorted(config_manager.settings["customfpslimits"])),#", ".join(map(str, sorted(self.selected_fps_caps))),
+                default_value=", ".join(str(x) for x in sorted(cm.settings["customfpslimits"])),#", ".join(map(str, sorted(self.selected_fps_caps))),
                 width=draw_width - 170,
                 #pos=(10, 140),  # Center the input horizontally
                 callback=sort_customfpslimits_callback,
@@ -860,8 +860,8 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                 dpg.add_line_series([], [], label="GPU: --", parent=y_axis_left, tag="gpu_usage_series")
                 dpg.add_line_series([], [], label="CPU: --", parent=y_axis_left, tag="cpu_usage_series")
                 # Add static horizontal dashed lines
-                dpg.add_line_series([], [config_manager.gpucutofffordecrease, config_manager.gpucutofffordecrease], parent=y_axis_left, tag="line1")
-                dpg.add_line_series([], [config_manager.gpucutoffforincrease, config_manager.gpucutoffforincrease], parent=y_axis_left, tag="line2")
+                dpg.add_line_series([], [cm.gpucutofffordecrease, cm.gpucutofffordecrease], parent=y_axis_left, tag="line1")
+                dpg.add_line_series([], [cm.gpucutoffforincrease, cm.gpucutoffforincrease], parent=y_axis_left, tag="line2")
             
             # Right Y-axis for FPS
             with dpg.plot_axis(dpg.mvYAxis, label="FPS", tag="y_axis_right", no_gridlines=True) as y_axis_right:
@@ -870,8 +870,8 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                 
             # Set axis limits
             dpg.set_axis_limits("y_axis_left", 0, 100)  # GPU usage range
-            min_ft = config_manager.mincap - config_manager.capstep
-            max_ft = config_manager.maxcap + config_manager.capstep
+            min_ft = cm.mincap - cm.capstep
+            max_ft = cm.maxcap + cm.capstep
             dpg.set_axis_limits("y_axis_right", min_ft, max_ft)  # FPS range
             
             # apply theme to series
@@ -889,17 +889,17 @@ dpg.show_viewport()
 dpg.set_primary_window("Primary Window", True)
 
 # Setup and Run GUI
-config_manager.update_profile_dropdown(select_first=True)
+cm.update_profile_dropdown(select_first=True)
 
 logger.add_log("Initializing...")
 
-gpu_monitor = GPUUsageMonitor(lambda: luid, lambda: running, logger, dpg, interval=(config_manager.gpupollinginterval/1000), max_samples=config_manager.gpupollingsamples, percentile=config_manager.gpupercentile)
+gpu_monitor = GPUUsageMonitor(lambda: luid, lambda: running, logger, dpg, interval=(cm.gpupollinginterval/1000), max_samples=cm.gpupollingsamples, percentile=cm.gpupercentile)
 #logger.add_log(f"Current highed GPU core load: {gpu_monitor.gpu_percentile}%")
 
 #usage, luid = gpu_monitor.get_gpu_usage(engine_type="engtype_3D")
 #logger.add_log(f"Current Top LUID: {luid}, 3D engine usage: {usage}%")
 
-cpu_monitor = CPUUsageMonitor(lambda: running, logger, dpg, interval=(config_manager.cpupollinginterval/1000), max_samples=config_manager.cpupollingsamples, percentile=config_manager.cpupercentile)
+cpu_monitor = CPUUsageMonitor(lambda: running, logger, dpg, interval=(cm.cpupollinginterval/1000), max_samples=cm.cpupollingsamples, percentile=cm.cpupercentile)
 #logger.add_log(f"Current highed CPU core load: {cpu_monitor.cpu_percentile}%")
 
 # Assuming logger and dpg are initialized, and rtss_dll_path is defined
