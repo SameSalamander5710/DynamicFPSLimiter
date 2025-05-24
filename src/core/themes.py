@@ -14,7 +14,7 @@ def create_themes(background_colour=(37, 37, 38, 0)):
             dpg.add_theme_style(dpg.mvStyleVar_TabBarBorderSize, 1) #Check this again
             dpg.add_theme_style(dpg.mvStyleVar_TabRounding, 3)
             dpg.add_theme_style(dpg.mvStyleVar_ChildRounding, 3)
-            dpg.add_theme_style(dpg.mvStyleVar_FramePadding, 6, 2)
+            dpg.add_theme_style(dpg.mvStyleVar_FramePadding, 6, 3)
             dpg.add_theme_style(dpg.mvStyleVar_ItemSpacing, 8, 4)
 
             dpg.add_theme_color(dpg.mvThemeCol_Border, (255, 0, 0, 0))
@@ -104,10 +104,6 @@ def create_themes(background_colour=(37, 37, 38, 0)):
             dpg.add_theme_style(dpg.mvStyleVar_FrameBorderSize, 0)
             dpg.add_theme_style(dpg.mvStyleVar_FramePadding, 0, category=dpg.mvThemeCat_Core)
             dpg.add_theme_color(dpg.mvThemeCol_FrameBg, (0, 0, 0, 0), category=dpg.mvThemeCat_Core)
-
-    with dpg.theme(tag="border_theme"):
-        with dpg.theme_component(dpg.mvWindowAppItem):
-            dpg.add_theme_color(dpg.mvThemeCol_Border, (255, 0, 0, 255))
 
     with dpg.theme(tag="plot_bg_theme"):
         with dpg.theme_component(dpg.mvAll):
