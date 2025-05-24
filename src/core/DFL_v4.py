@@ -81,12 +81,12 @@ def current_stepped_limits():
     step = int(dpg.get_value("input_capstep"))
     ratio = int(dpg.get_value("input_capratio"))
 
-    use_custom  = dpg.get_value("radio_method")
+    use_custom  = dpg.get_value("input_capmethod")
     #logger.add_log(f"Stepped limits: {make_stepped_values(maximum, minimum, step)}")
     #logger.add_log(f"Ratio limits: {make_ratioed_values(maximum, minimum, ratio)}")
     #logger.add_log(f"Method selection: {use_custom}")
 
-    if use_custom == "Custom":
+    if use_custom == "custom":
         custom_limits = dpg.get_value("input_customfpslimits")
         if custom_limits:
             try:
@@ -95,9 +95,9 @@ def current_stepped_limits():
                 return sorted(custom_limits)
             except Exception:
                 logger.add_log("Error parsing custom FPS limits, using default stepped limits.")
-    elif use_custom == "Step":
+    elif use_custom == "step":
         return make_stepped_values(maximum, minimum, step)
-    elif use_custom == "Ratio":
+    elif use_custom == "ratio":
         return make_ratioed_values(maximum, minimum, ratio)
     #logger.add_log(f"Default stepped limits: {maximum}, {minimum}, {step}")
     #logger.add_log(f"Stepped limits: {make_stepped_values(maximum, minimum, step)}")
@@ -735,13 +735,13 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
         with dpg.group(horizontal=True, width=-1):
             dpg.add_text("Method:")
             dpg.add_radio_button(
-                items=["Ratio", "Step", "Custom"], 
+                items=["ratio", "step", "custom"], 
                 horizontal=True,
                 callback=current_method_callback,
-                default_value="Ratio",#settings["method"],
-                tag="radio_method"
+                default_value="ratio",#settings["method"],
+                tag="input_capmethod"
                 )
-            dpg.bind_item_theme("radio_method", "radio_theme")
+            dpg.bind_item_theme("input_capmethod", "radio_theme")
             dpg.add_checkbox(label="Define custom FPS limits", tag="checkbox_enablecustomfpslimits", 
                             default_value=bool(cm.settings["enablecustomfpslimits"]),
                             callback=sync_checkbox_to_int)

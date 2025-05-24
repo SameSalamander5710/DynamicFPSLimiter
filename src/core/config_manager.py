@@ -22,6 +22,7 @@ class ConfigManager:
             "delaybeforedecrease": 2,
             "delaybeforeincrease": 3,
             "enablecustomfpslimits": 1,
+            "capmethod": "ratio",
             "customfpslimits": {30, 35, 42, 50, 60},
             "minvalidgpu": 20,
             "minvalidfps": 20,
@@ -76,6 +77,7 @@ class ConfigManager:
                 'cpucutofffordecrease': '95',
                 'cpucutoffforincrease': '85',
                 'enablecustomfpslimits': '1',
+                'capmethod': 'ratio',
                 'customfpslimits': '30, 35, 42, 50, 60',
             }
             with open(self.profiles_path, 'w') as f:
@@ -83,7 +85,7 @@ class ConfigManager:
         
         self.input_field_keys = ["maxcap", "mincap", "capstep", "capratio",
                 "gpucutofffordecrease", "gpucutoffforincrease", "cpucutofffordecrease", "cpucutoffforincrease",
-                "enablecustomfpslimits", "customfpslimits"]
+                "enablecustomfpslimits", "capmethod", "customfpslimits"]
 
         self.key_type_map = {
             "maxcap": int,
@@ -95,6 +97,7 @@ class ConfigManager:
             "cpucutofffordecrease": int,
             "cpucutoffforincrease": int,
             "enablecustomfpslimits": int,
+            "capmethod": str,
             "customfpslimits": set,
             "delaybeforedecrease": int,
             "delaybeforeincrease": int,
@@ -110,7 +113,10 @@ class ConfigManager:
         }
 
         self.current_profile = "Global"
-        self.Default_settings = {key: self.get_setting(key, set if isinstance(self.Default_settings_original[key], set) else int) for key in self.Default_settings_original}
+        self.Default_settings = {
+            key: self.get_setting(key, self.key_type_map.get(key, int))
+            for key in self.Default_settings_original
+        }
         self.settings = self.Default_settings.copy()
 
 
@@ -297,7 +303,7 @@ class ConfigManager:
                 setattr(self, key, int(value))
             else:
                 #globals()[key] = value
-                setattr(self, key, int(value))
+                setattr(self, key, value)
 
     # Read values from UI input fields without modifying `settings`
     def apply_current_input_values(self):
