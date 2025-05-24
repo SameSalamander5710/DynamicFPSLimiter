@@ -45,9 +45,9 @@ class ConfigManager:
             self.settings_config.read(self.settings_path)
         else:
             self.settings_config["Preferences"] = {
-                'ShowTooltip': 'true',
-                'globallimitonexit': 'true',
-                'profileonstartup': 'true',
+                'ShowTooltip': 'True',
+                'globallimitonexit': 'True',
+                'profileonstartup': 'True',
             }
             self.settings_config["GlobalSettings"] = {
                 'delaybeforedecrease': '2',
@@ -373,3 +373,14 @@ class ConfigManager:
             self.settings_config.write(f)
         self.logger.add_log(f"Profile on Startup set to: {self.profileonstartup_name}")
 
+    def startup_profile_selection(self):
+
+        profile_name = self.settings_config["GlobalSettings"].get("profileonstartup_name", "Global")
+        if self.profileonstartup:
+            if profile_name in self.profiles_config:
+                dpg.set_value("profile_dropdown", profile_name)
+                self.load_profile_callback(None, profile_name, None)
+            else:
+                self.logger.add_log(f"Profile '{profile_name}' not found. Defaulting to 'Global'.")
+                dpg.set_value("profile_dropdown", "Global")
+                self.load_profile_callback(None, "Global", None)

@@ -705,7 +705,7 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                 
                 with dpg.group(horizontal=True):
                     dpg.add_checkbox(label="Set", tag="profile_on_startup_checkbox",
-                                    default_value=cm.profileonstartup)#, callback=cm.update_profile_on_startup_setting)
+                                    default_value=cm.profileonstartup, callback=cm.update_profile_on_startup_setting)
                     dpg.add_button(label="Current Profile", tag="select_profile_button",
                                     callback=cm.select_default_profile_callback, width=100)
                     dpg.add_text("as default on startup: currently set to")
@@ -813,9 +813,12 @@ dpg.show_viewport()
 dpg.set_primary_window("Primary Window", True)
 
 # Setup and Run GUI
-cm.update_profile_dropdown(select_first=True)
-
 logger.add_log("Initializing...")
+
+cm.update_profile_dropdown(select_first=True)
+cm.startup_profile_selection()
+
+
 
 gpu_monitor = GPUUsageMonitor(lambda: luid, lambda: running, logger, dpg, interval=(cm.gpupollinginterval/1000), max_samples=cm.gpupollingsamples, percentile=cm.gpupercentile)
 #logger.add_log(f"Current highed GPU core load: {gpu_monitor.gpu_percentile}%")
