@@ -93,7 +93,8 @@ def create_themes(background_colour=(37, 37, 38, 0)):
     # Plot themes
     with dpg.theme(tag="fixed_greyline_theme"):
         with dpg.theme_component(dpg.mvAll):
-            dpg.add_theme_color(dpg.mvPlotCol_Line, (128, 128, 128), category=dpg.mvThemeCat_Plots)
+            dpg.add_theme_color(dpg.mvPlotCol_Line, (160, 160, 200, 255), category=dpg.mvThemeCat_Plots)
+
     with dpg.theme(tag="fps_cap_theme"):
         with dpg.theme_component(dpg.mvAll):
             dpg.add_theme_color(dpg.mvPlotCol_Line, (128, 128, 128, 150), category=dpg.mvThemeCat_Plots)
@@ -112,4 +113,7 @@ def create_themes(background_colour=(37, 37, 38, 0)):
             dpg.add_theme_color(dpg.mvThemeCol_ChildBg, (0, 200, 255, 0))
             dpg.add_theme_color(dpg.mvThemeCol_PopupBg, (0, 200, 255, 0))
             dpg.add_theme_color(dpg.mvThemeCol_FrameBg, (0, 200, 255, 0))
-            dpg.add_theme_color(dpg.mvThemeCol_Text, (160, 160, 200, 255))
+            dpg.add_theme_color(dpg.mvThemeCol_Button, (0, 200, 255, 0))
+            dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, (0, 200, 255, 0))
+            dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, (0, 200, 255, 0))
+            dpg.add_theme_color(dpg.mvThemeCol_Text, (200, 200, 230, 255))
