@@ -621,31 +621,31 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
 
     # Profiles
     dpg.add_spacer(height=1)
-    with dpg.child_window(width=-1, height=145):
+    with dpg.child_window(width=-1, height=100):
         with dpg.table(header_row=False):
-            dpg.add_table_column(init_width_or_weight=55)
-            dpg.add_table_column(init_width_or_weight=140)
+            dpg.add_table_column(init_width_or_weight=45)
+            dpg.add_table_column(init_width_or_weight=100)
             dpg.add_table_column(init_width_or_weight=60)
 
             # First row
             with dpg.table_row():
                 dpg.add_text("Select Profile:")
                 dpg.add_combo(tag="profile_dropdown", callback=cm.load_profile_callback, width=260, default_value="Global")
-                dpg.add_button(label="Delete Profile", callback=cm.delete_selected_profile_callback, width=120)
+                dpg.add_button(label="Delete Profile", callback=cm.delete_selected_profile_callback, width=160)
 
             # Second row
             with dpg.table_row():
                 dpg.add_text("New RTSS Profile:")
                 dpg.add_input_text(tag="new_profile_input", width=260)
-                dpg.add_button(label="Add Profile", callback=cm.add_new_profile_callback, width=120)
+                dpg.add_button(label="Add Profile", callback=cm.add_new_profile_callback, width=160)
 
-        dpg.add_spacer(height=3)        
-        with dpg.group(horizontal=True):
-            dpg.add_text("Last active process:")
-            dpg.add_spacer(width=260)
-            dpg.add_button(label="Add process to Profiles", callback=cm.add_process_profile_callback)
-        dpg.add_spacer(height=1)
-        dpg.add_input_text(tag="LastProcess", multiline=False, readonly=True, width=-1)    
+            # Third row
+            with dpg.table_row():
+                dpg.add_text("Last active process:")
+                dpg.add_input_text(tag="LastProcess", multiline=False, readonly=True, width=260)
+                dpg.add_button(label="Add process to Profiles", callback=cm.add_process_profile_callback, width=160)
+                
+ 
     
     #Tabs
     tab_height = 130
@@ -848,7 +848,7 @@ dpg.bind_theme("main_theme")
 dpg.bind_item_theme("plot_childwindow", "plot_bg_theme")
 
 logger.add_log("Initialized successfully.")
-dpg.show_style_editor()
+#dpg.show_style_editor()
 #Always make sure the corresponding GUI element exists before trying to get/set its value
 dpg.start_dearpygui()
 
