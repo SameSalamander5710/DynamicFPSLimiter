@@ -708,9 +708,10 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                                     default_value=cm.profileonstartup, callback=cm.update_profile_on_startup_setting)
                     dpg.add_button(label="Current Profile", tag="select_profile_button",
                                     callback=cm.select_default_profile_callback, width=100)
-                    dpg.add_text("as default on startup: currently set to")
+                    dpg.add_text("as default on startup. Currently set to:")
                     dpg.add_input_text(tag="profileonstartup_name", multiline=False, readonly=True, width=100,
                                        default_value=cm.profileonstartup_name)
+                    dpg.bind_item_theme("profileonstartup_name", "transparent_input_theme_2")
 
         with dpg.tab(label="Log", tag="tab3"):
             with dpg.child_window(tag="LogWindow", autosize_x=True, height=tab_height, border=True):
@@ -766,7 +767,7 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                 callback=sort_customfpslimits_callback,
                 on_enter=True)
             dpg.add_button(label="Reset", tag="rest_fps_cap_button", width=80, callback=reset_customFPSLimits)
-            dpg.add_button(label="Optimize", tag="autofill_fps_caps", width=80, callback=generate_adaptive_fps_limits)
+            dpg.add_button(label="Fix this!", tag="autofill_fps_caps", width=80, callback=generate_adaptive_fps_limits)
 
     # Fourth Row: Plot Section
     #dpg.add_spacer(height=5)
