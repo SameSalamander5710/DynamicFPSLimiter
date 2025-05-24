@@ -217,7 +217,7 @@ def tooltip_checkbox_callback(sender, app_data, user_data):
     update_tooltip_setting(dpg, sender, app_data, user_data, tooltips, cm, logger)
 
 ShowTooltip = str(cm.settings_config["Preferences"].get("ShowTooltip", "True")).strip().lower() == "true"
-GlobalLimitonExit = str(cm.settings_config["Preferences"].get("GlobalLimitOnExit", "True")).strip().lower() == "true"
+cm.globallimitonexit = str(cm.settings_config["Preferences"].get("globallimitonexit", "True")).strip().lower() == "true"
 
 #Check: Do I need this after setattr?
 for key in cm.settings_config["GlobalSettings"]:
@@ -569,12 +569,12 @@ def gui_update_loop():
         time.sleep(0.1)
 
 def exit_gui():
-    global running, gui_running, rtss_manager, monitoring_thread, plotting_thread, GlobalLimitonExit
+    global running, gui_running, rtss_manager, monitoring_thread, plotting_thread
     
     gui_running = False
     running = False 
 
-    if GlobalLimitonExit:
+    if cm.globallimitonexit:
         rtss_cli.set_property("Global", "FramerateLimit", int(cm.globallimitonexit_fps))
 
     if rtss_manager:
@@ -694,11 +694,10 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
             with dpg.child_window(height=tab_height):
                 dpg.add_checkbox(label="Show Tooltips", tag="tooltip_checkbox",
                                  default_value=ShowTooltip, callback=tooltip_checkbox_callback)
-                dpg.add_checkbox(label="Reset Global RTSS Framerate Limit on Exit", tag="limit_on_exit_checkbox",
-                                 default_value=GlobalLimitonExit, callback=cm.update_limit_on_exit_setting)
                 #2 dpg.add_spacer(height=3)
                 with dpg.group(horizontal=True):
-                    dpg.add_text("Framerate limit:")
+                    dpg.add_checkbox(label="Reset RTSS Global Limit on Exit: ", tag="limit_on_exit_checkbox",
+                                    default_value=cm.globallimitonexit, callback=cm.update_limit_on_exit_setting)
                     dpg.add_input_int(tag="exit_fps_input",
                                     default_value=cm.globallimitonexit_fps, callback=cm.update_exit_fps_value,
                                     width=100, step=1, step_fast=10)

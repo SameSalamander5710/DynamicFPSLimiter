@@ -45,7 +45,7 @@ class ConfigManager:
         else:
             self.settings_config["Preferences"] = {
                 'ShowTooltip': 'True',
-                'GlobalLimitOnExit': 'True',
+                'globallimitonexit': 'True',
             }
             self.settings_config["GlobalSettings"] = {
                 'delaybeforedecrease': '2',
@@ -330,11 +330,11 @@ class ConfigManager:
 
     def update_limit_on_exit_setting(self, sender, app_data, user_data):
 
-        self.GlobalLimitonExit = app_data
-        self.settings_config["Preferences"]["GlobalLimitOnExit"] = str(app_data)
+        self.globallimitonexit = app_data
+        self.settings_config["Preferences"]["globallimitonexit"] = str(app_data)
         with open(self.settings_path, 'w') as f:
             self.settings_config.write(f)
-        self.logger.add_log(f"Global Limit on Exit set to: {self.GlobalLimitonExit}")
+        self.logger.add_log(f"Global Limit on Exit set to: {self.globallimitonexit}")
 
     def update_exit_fps_value(self, sender, app_data, user_data):
 
