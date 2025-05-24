@@ -106,6 +106,13 @@ def create_themes(background_colour=(37, 37, 38, 0)):
             dpg.add_theme_style(dpg.mvStyleVar_FramePadding, 0, category=dpg.mvThemeCat_Core)
             dpg.add_theme_color(dpg.mvThemeCol_FrameBg, (0, 0, 0, 0), category=dpg.mvThemeCat_Core)
 
+    # Transparent input theme (for dynamic text display)
+    with dpg.theme(tag="transparent_input_theme_2"):
+        with dpg.theme_component(dpg.mvInputText):
+            #dpg.add_theme_style(dpg.mvStyleVar_FrameBorderSize, 0)
+            #dpg.add_theme_style(dpg.mvStyleVar_FramePadding, 0, category=dpg.mvThemeCat_Core)
+            dpg.add_theme_color(dpg.mvThemeCol_FrameBg, (0, 0, 0, 0), category=dpg.mvThemeCat_Core)
+
     with dpg.theme(tag="plot_bg_theme"):
         with dpg.theme_component(dpg.mvAll):
             dpg.add_theme_color(dpg.mvPlotCol_PlotBg, (0, 200, 255, 255))  # Example: cyan
