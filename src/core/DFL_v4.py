@@ -778,7 +778,7 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
     #dpg.add_spacer(height=5)
     with dpg.child_window(tag = "plot_childwindow", width=-1, height=190, border=False):
 
-        with dpg.plot(height=190, width=-1, tag="plot"):
+        with dpg.plot(height=190, width=-1, tag="plot", no_menus=True, no_box_select=True, no_inputs=True):
             dpg.add_plot_axis(dpg.mvXAxis, label="Time (s)", tag="x_axis")
             dpg.add_plot_legend(location=dpg.mvPlot_Location_North, horizontal=True, 
                               no_highlight_item=True, no_highlight_axis=True, outside=True)
