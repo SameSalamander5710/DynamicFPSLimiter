@@ -2,10 +2,15 @@ import dearpygui.dearpygui as dpg
 
 def create_themes(background_colour=(37, 37, 38)):
     # Rounded widget theme
-    with dpg.theme(tag="rounded_widget_theme"):
+    with dpg.theme(tag="main_theme"):
         with dpg.theme_component(dpg.mvAll):
+            dpg.add_theme_color(dpg.mvThemeCol_Separator, (0, 200, 255, 255))  # Cyan, RGBA
             dpg.add_theme_style(dpg.mvStyleVar_FrameRounding, 3.0)
             dpg.add_theme_color(dpg.mvThemeCol_Button, (51, 51, 55))
+
+        with dpg.theme_component(dpg.mvChildWindow):
+            dpg.add_theme_color(dpg.mvThemeCol_ChildBg, (30, 30, 60, 255))  # Example: dark blue
+
             #dpg.add_theme_style(dpg.mvStyleVar_FramePadding, 0.0, 1.0, category=dpg.mvThemeCat_Core)
             #dpg.add_theme_color(dpg.mvThemeCol_Button, (50, 150, 250))  # Button color
             #dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, (70, 170, 255))  # Hover color
@@ -77,15 +82,6 @@ def create_themes(background_colour=(37, 37, 38)):
     with dpg.theme(tag="border_theme"):
         with dpg.theme_component(dpg.mvWindowAppItem):
             dpg.add_theme_color(dpg.mvThemeCol_Border, (255, 0, 0, 255))
-            
-    with dpg.theme(tag="separator_theme"):
-        with dpg.theme_component(dpg.mvAll):
-            dpg.add_theme_color(dpg.mvThemeCol_Separator, (0, 200, 255, 255))  # Cyan, RGBA
-
-    # Create a theme for child windows
-    with dpg.theme(tag="child_window_theme"):
-        with dpg.theme_component(dpg.mvChildWindow):
-            dpg.add_theme_color(dpg.mvThemeCol_ChildBg, (30, 30, 60, 255))  # Example: dark blue
 
     with dpg.theme(tag="plot_bg_theme"):
         with dpg.theme_component(dpg.mvPlot):
