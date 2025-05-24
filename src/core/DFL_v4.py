@@ -620,6 +620,7 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
         dpg.add_button(label="Exit", callback=exit_gui, width=50)  # Exit button
 
     # Profiles
+    dpg.add_spacer(height=1)
     with dpg.child_window(width=-1, height=145):
         with dpg.table(header_row=False):
             dpg.add_table_column(init_width_or_weight=55)
@@ -648,7 +649,7 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
     
     #Tabs
     tab_height = 135
-    dpg.add_spacer(height=5)
+    dpg.add_spacer(height=2)
     with dpg.tab_bar():
         with dpg.tab(label="Profile Settings", tag="tab1"):
             with dpg.child_window(height=tab_height, border=True):

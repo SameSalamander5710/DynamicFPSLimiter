@@ -13,6 +13,7 @@ def create_themes(background_colour=(37, 37, 38, 0)):
             dpg.add_theme_style(dpg.mvStyleVar_ItemSpacing, 8, 4)
             dpg.add_theme_style(dpg.mvStyleVar_TabBarBorderSize, 1) #Check this again
             dpg.add_theme_style(dpg.mvStyleVar_TabRounding, 3)
+            dpg.add_theme_style(dpg.mvStyleVar_ChildRounding, 3)
             dpg.add_theme_style(dpg.mvStyleVar_FramePadding, 6, 2)
             dpg.add_theme_style(dpg.mvStyleVar_ItemSpacing, 8, 4)
 
