@@ -21,7 +21,6 @@ class ConfigManager:
             'cpucutoffforincrease': 85,
             "delaybeforedecrease": 2,
             "delaybeforeincrease": 3,
-            "enablecustomfpslimits": 1,
             "capmethod": "ratio",
             "customfpslimits": {30, 35, 42, 50, 60},
             "minvalidgpu": 20,
@@ -76,7 +75,6 @@ class ConfigManager:
                 'gpucutoffforincrease': '65',
                 'cpucutofffordecrease': '95',
                 'cpucutoffforincrease': '85',
-                'enablecustomfpslimits': '1',
                 'capmethod': 'ratio',
                 'customfpslimits': '30, 35, 42, 50, 60',
             }
@@ -85,7 +83,7 @@ class ConfigManager:
         
         self.input_field_keys = ["maxcap", "mincap", "capstep", "capratio",
                 "gpucutofffordecrease", "gpucutoffforincrease", "cpucutofffordecrease", "cpucutoffforincrease",
-                "enablecustomfpslimits", "capmethod", "customfpslimits"]
+                "capmethod", "customfpslimits"]
 
         self.key_type_map = {
             "maxcap": int,
@@ -96,7 +94,6 @@ class ConfigManager:
             "gpucutoffforincrease": int,
             "cpucutofffordecrease": int,
             "cpucutoffforincrease": int,
-            "enablecustomfpslimits": int,
             "capmethod": str,
             "customfpslimits": set,
             "delaybeforedecrease": int,
@@ -222,7 +219,6 @@ class ConfigManager:
             dpg.set_value(f"input_{key}", self.format_output_value(key, parsed_value))
         self.update_global_variables()
         dpg.set_value("new_profile_input", "")
-        dpg.set_value("checkbox_enablecustomfpslimits", bool(dpg.get_value("input_enablecustomfpslimits")))
 
     def save_profile(self, profile_name):
         self.profiles_config[profile_name] = {}
@@ -274,7 +270,6 @@ class ConfigManager:
                     except Exception as e:
                         self.logger.add_log(f"Error: Unable to convert value for key '{key}': {e}")
                 self.update_global_variables()  # Ensure global variables are updated
-                dpg.set_value("checkbox_enablecustomfpslimits", bool(dpg.get_value("input_enablecustomfpslimits")))
             else:
                 self.logger.add_log("Error: 'Global' profile not found in configuration.")
 
@@ -323,14 +318,12 @@ class ConfigManager:
         for key in self.input_field_keys:
             dpg.set_value(f"input_{key}", self.format_output_value(key, self.settings[key]))
         self.update_global_variables()
-        dpg.set_value("checkbox_enablecustomfpslimits", bool(dpg.get_value("input_enablecustomfpslimits")))
         self.logger.add_log("Settings quick loaded")
 
     def reset_to_program_default(self):
         
         for key in self.input_field_keys:
             dpg.set_value(f"input_{key}", self.format_output_value(key, self.Default_settings_original[key]))
-        dpg.set_value("checkbox_enablecustomfpslimits", bool(dpg.get_value("input_enablecustomfpslimits")))
         self.logger.add_log("Settings reset to program default")
 
     def update_limit_on_exit_setting(self, sender, app_data, user_data):

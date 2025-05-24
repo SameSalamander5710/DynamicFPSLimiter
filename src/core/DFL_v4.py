@@ -56,12 +56,6 @@ with open(faq_path, newline='', encoding='utf-8') as csvfile:
         questions.append(row["question"])
         FAQs[key] = row["answer"]
 
-def sync_checkbox_to_int(sender, app_data, user_data):
-    # app_data is True/False from checkbox
-    #logger.add_log(f"Checkbox state changed: {app_data}")
-    dpg.set_value("input_enablecustomfpslimits", int(app_data))
-    #logger.add_log(f"Checkbox state synced to int value: {int(app_data)}")
-
 def sort_customfpslimits_callback(sender, app_data, user_data):
     # Get the current value from the input field
     value = dpg.get_value("input_customfpslimits")
@@ -261,7 +255,6 @@ def start_stop_callback(sender, app_data, user_data):
 
     for key in cm.input_field_keys:
         dpg.configure_item(f"input_{key}", enabled=not running)
-    dpg.configure_item("checkbox_enablecustomfpslimits", enabled=not running)
 
     if running:
         # Initialize RTSS
@@ -742,12 +735,6 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                 tag="input_capmethod"
                 )
             dpg.bind_item_theme("input_capmethod", "radio_theme")
-            dpg.add_checkbox(label="Define custom FPS limits", tag="checkbox_enablecustomfpslimits", 
-                            default_value=bool(cm.settings["enablecustomfpslimits"]),
-                            callback=sync_checkbox_to_int)
-            dpg.add_input_int(tag="input_enablecustomfpslimits", 
-                            default_value=int(cm.settings["enablecustomfpslimits"]), show=False,
-                            width=0)
         dpg.add_spacer(height=1)
 
         draw_height = 40
