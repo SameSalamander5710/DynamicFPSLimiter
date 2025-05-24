@@ -31,7 +31,8 @@ class ConfigManager:
             'cpupollingsamples': 20,
             'gpupercentile': 70,
             'gpupollinginterval': 100,
-            'gpupollingsamples': 20
+            'gpupollingsamples': 20,
+            'profileonstartup_name': 'Global',
         }
         self.settings_config = configparser.ConfigParser()
         self.profiles_config = configparser.ConfigParser()
@@ -44,8 +45,9 @@ class ConfigManager:
             self.settings_config.read(self.settings_path)
         else:
             self.settings_config["Preferences"] = {
-                'ShowTooltip': 'True',
-                'globallimitonexit': 'True',
+                'ShowTooltip': 'true',
+                'globallimitonexit': 'true',
+                'profileonstartup': 'true',
             }
             self.settings_config["GlobalSettings"] = {
                 'delaybeforedecrease': '2',
@@ -59,6 +61,7 @@ class ConfigManager:
                 'gpupercentile': '70',
                 'gpupollinginterval': '100',
                 'gpupollingsamples': '20',
+                'profileonstartup_name': 'Global',
             }
             with open(self.settings_path, 'w') as f:
                 self.settings_config.write(f)
@@ -106,7 +109,11 @@ class ConfigManager:
             "cpupollingsamples": int,
             "gpupercentile": int,
             "gpupollinginterval": int,
-            "gpupollingsamples": int
+            "gpupollingsamples": int,
+            'ShowTooltip': bool,
+            'globallimitonexit': bool,
+            'profileonstartup': bool,
+            'profileonstartup_name': str
         }
 
         self.current_profile = "Global"
@@ -349,3 +356,20 @@ class ConfigManager:
         else:
             self.logger.add_log(f"Invalid value entered for Global Limit on Exit FPS: {app_data}. Reverting.")
             dpg.set_value(sender, self.globallimitonexit_fps)
+
+    def update_profile_on_startup_setting(self, sender, app_data, user_data):
+        self.profileonstartup = app_data
+        self.settings_config["Preferences"]["profileonstartup"] = str(app_data)
+        with open(self.settings_path, 'w') as f:
+            self.settings_config.write(f)
+        self.logger.add_log(f"Profile on Startup set to: {self.profileonstartup}")
+
+    def select_default_profile_callback(self, sender, app_data, user_data):
+
+        current_profile = dpg.get_value("profile_dropdown")
+        dpg.set_value("profileonstartup_name", current_profile)
+        self.settings_config["GlobalSettings"]["profileonstartup_name"] = current_profile
+        with open(self.settings_path, 'w') as f:
+            self.settings_config.write(f)
+        self.logger.add_log(f"Profile on Startup set to: {self.profileonstartup_name}")
+
