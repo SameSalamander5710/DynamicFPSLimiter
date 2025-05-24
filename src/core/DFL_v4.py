@@ -233,7 +233,7 @@ for key in cm.settings_config["GlobalSettings"]:
 
 # Default viewport size
 Viewport_width = 625
-Viewport_height = 760
+Viewport_height = 700
 
 running = False  # Flag to control the monitoring loop
 
@@ -775,9 +775,9 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
     #dpg.add_spacer(height=5)
     #dpg.add_separator()
     #dpg.add_spacer(height=5)
-    with dpg.child_window(tag = "plot_childwindow", width=-1, height=200, border=False):
+    with dpg.child_window(tag = "plot_childwindow", width=-1, height=190, border=False):
 
-        with dpg.plot(height=200, width=-1, tag="plot"):
+        with dpg.plot(height=190, width=-1, tag="plot"):
             dpg.add_plot_axis(dpg.mvXAxis, label="Time (s)", tag="x_axis")
             dpg.add_plot_legend(location=dpg.mvPlot_Location_North, horizontal=True, 
                               no_highlight_item=True, no_highlight_axis=True, outside=True)
