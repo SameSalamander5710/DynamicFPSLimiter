@@ -232,7 +232,7 @@ for key in cm.settings_config["GlobalSettings"]:
         globals()[key] = value
 
 # Default viewport size
-Viewport_width = 605
+Viewport_width = 625
 Viewport_height = 765
 
 running = False  # Flag to control the monitoring loop
@@ -648,10 +648,10 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
     
     #Tabs
     tab_height = 135
-    dpg.add_spacer(height=1)
+    dpg.add_spacer(height=5)
     with dpg.tab_bar():
         with dpg.tab(label="Profile Settings", tag="tab1"):
-            with dpg.child_window(height=tab_height, border=False):
+            with dpg.child_window(height=tab_height, border=True):
                 with dpg.group(horizontal=True):
                     with dpg.group(width=200):
                         with dpg.table(header_row=False, resizable=False, policy=dpg.mvTable_SizingFixedFit):
@@ -667,7 +667,7 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                                                       width=90, step=1, step_fast=10, 
                                                       min_clamped=True, min_value=1)
                    
-                    dpg.add_spacer(width=1)
+                    #2 dpg.add_spacer(width=1)
                     with dpg.group(width=160):
                         with dpg.table(header_row=False, resizable=False, policy=dpg.mvTable_SizingFixedFit):
                             dpg.add_table_column(width_fixed=True)
@@ -681,7 +681,7 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                                     dpg.bind_item_theme(f"button_{key}", "button_right")
                                     dpg.add_input_text(tag=f"input_{key}", default_value=str(cm.settings[key]), width=40)
                     
-                    dpg.add_spacer(width=1)
+                    #2 dpg.add_spacer(width=1)
                     with dpg.group(width=160):
                         #dpg.add_spacer(height=3)
                         with dpg.group(horizontal=False):
@@ -699,7 +699,7 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                                  default_value=ShowTooltip, callback=tooltip_checkbox_callback)
                 dpg.add_checkbox(label="Reset Global RTSS Framerate Limit on Exit", tag="limit_on_exit_checkbox",
                                  default_value=GlobalLimitonExit, callback=cm.update_limit_on_exit_setting)
-                dpg.add_spacer(height=3)
+                #2 dpg.add_spacer(height=3)
                 with dpg.group(horizontal=True):
                     dpg.add_text("Framerate limit:")
                     dpg.add_input_int(tag="exit_fps_input",
@@ -709,7 +709,7 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
         with dpg.tab(label="Log", tag="tab3"):
             with dpg.child_window(tag="LogWindow", autosize_x=True, height=tab_height, border=True):
                 #dpg.add_text("", tag="LogText", tracked = True, track_offset = 1.0)
-                dpg.add_spacer(height=2)
+                #2 dpg.add_spacer(height=2)
                 dpg.add_input_text(tag="LogText", multiline=True, readonly=True, width=-1, height=110)
 
                 dpg.bind_item_theme("LogText", "transparent_input_theme")
@@ -717,17 +717,17 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
         with dpg.tab(label="FAQs", tag="tab4"):
             with dpg.child_window(height=tab_height):
                 dpg.add_text("Frequently Asked Questions (FAQs): Hover for answers")
-                dpg.add_spacer(height=3)
+                #2 dpg.add_spacer(height=3)
                 for question, (key, answer) in zip(questions, FAQs.items()):
                     dpg.add_text(question, tag=key, bullet=True)
                     with dpg.tooltip(parent=key, delay=0.5):
                         dpg.add_text(answer, wrap=300)
 
     # Third Row: FPS lists and methods
+    #dpg.add_spacer(height=5)
+    #dpg.add_separator()
     dpg.add_spacer(height=5)
-    dpg.add_separator()
-    dpg.add_spacer(height=5)
-    with dpg.child_window(width=-1, height=105, border=False):
+    with dpg.child_window(width=-1, height=115, border=True):
         with dpg.group(horizontal=True, width=-1):
             dpg.add_text("Method:")
             dpg.add_radio_button(
@@ -768,10 +768,10 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
             dpg.add_button(label="Optimize", tag="autofill_fps_caps", width=80, callback=generate_adaptive_fps_limits)
 
     # Fourth Row: Plot Section
-    #dpg.add_spacer(height=1)
-    dpg.add_separator()
+    #dpg.add_spacer(height=5)
+    #dpg.add_separator()
     dpg.add_spacer(height=5)
-    with dpg.child_window(width=-1, height=200, border=True):
+    with dpg.child_window(tag = "plot_childwindow", width=-1, height=200, border=False):
 
         with dpg.plot(height=200, width=-1, tag="plot"):
             dpg.add_plot_axis(dpg.mvXAxis, label="Time (s)", tag="x_axis")
@@ -841,8 +841,8 @@ apply_all_tooltips(dpg, tooltips, ShowTooltip, cm, logger)
 
 # Bind themes to the GUI elements
 dpg.bind_theme("main_theme")
-dpg.bind_item_theme("Primary Window", "border_theme")
-dpg.bind_item_theme("plot", "plot_bg_theme")
+#dpg.bind_item_theme("Primary Window", "border_theme")
+dpg.bind_item_theme("plot_childwindow", "plot_bg_theme")
 
 logger.add_log("Initialized successfully.")
 #dpg.show_style_editor()

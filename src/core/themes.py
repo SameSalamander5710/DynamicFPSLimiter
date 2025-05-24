@@ -7,9 +7,34 @@ def create_themes(background_colour=(37, 37, 38)):
             dpg.add_theme_color(dpg.mvThemeCol_Separator, (0, 200, 255, 255))  # Cyan, RGBA
             dpg.add_theme_style(dpg.mvStyleVar_FrameRounding, 3.0)
             dpg.add_theme_color(dpg.mvThemeCol_Button, (51, 51, 55))
+            dpg.add_theme_style(dpg.mvStyleVar_WindowBorderSize, 0)
+            dpg.add_theme_style(dpg.mvStyleVar_ChildBorderSize, 1)
+            dpg.add_theme_style(dpg.mvStyleVar_WindowPadding, 10, 8)
+            dpg.add_theme_style(dpg.mvStyleVar_ItemSpacing, 8, 4)
+            dpg.add_theme_style(dpg.mvStyleVar_TabBarBorderSize, 1) #Check this again
+            dpg.add_theme_style(dpg.mvStyleVar_TabRounding, 3)
+            dpg.add_theme_style(dpg.mvStyleVar_FramePadding, 6, 2)
+            dpg.add_theme_style(dpg.mvStyleVar_ItemSpacing, 8, 4)
 
-        with dpg.theme_component(dpg.mvChildWindow):
-            dpg.add_theme_color(dpg.mvThemeCol_ChildBg, (30, 30, 60, 255))  # Example: dark blue
+            dpg.add_theme_color(dpg.mvThemeCol_Border, (255, 0, 0, 0))
+            dpg.add_theme_color(dpg.mvThemeCol_WindowBg, (23, 23, 28, 255))
+            dpg.add_theme_color(dpg.mvThemeCol_ChildBg, (38, 38, 46, 255))
+            dpg.add_theme_color(dpg.mvThemeCol_FrameBg, (57, 57, 76, 255))
+            dpg.add_theme_color(dpg.mvThemeCol_FrameBgHovered, (74, 74, 102, 255))
+            dpg.add_theme_color(dpg.mvThemeCol_Button, (57, 57, 76, 255))
+            dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, (74, 74, 102, 255))
+
+            # Plot-specific styles
+            dpg.add_theme_style(dpg.mvPlotStyleVar_PlotBorderSize, 0, category=dpg.mvThemeCat_Plots)
+            dpg.add_theme_style(dpg.mvPlotStyleVar_MinorAlpha, 0.20, category=dpg.mvThemeCat_Plots)
+            dpg.add_theme_style(dpg.mvPlotStyleVar_MajorTickLen, 5, 5, category=dpg.mvThemeCat_Plots)
+            dpg.add_theme_style(dpg.mvPlotStyleVar_LabelPadding, 5, 2, category=dpg.mvThemeCat_Plots)
+        
+
+
+
+        #with dpg.theme_component(dpg.mvChildWindow):
+            #dpg.add_theme_color(dpg.mvThemeCol_ChildBg, (30, 30, 60, 255))  # Example: dark blue
 
             #dpg.add_theme_style(dpg.mvStyleVar_FramePadding, 0.0, 1.0, category=dpg.mvThemeCat_Core)
             #dpg.add_theme_color(dpg.mvThemeCol_Button, (50, 150, 250))  # Button color
@@ -84,6 +109,10 @@ def create_themes(background_colour=(37, 37, 38)):
             dpg.add_theme_color(dpg.mvThemeCol_Border, (255, 0, 0, 255))
 
     with dpg.theme(tag="plot_bg_theme"):
-        with dpg.theme_component(dpg.mvPlot):
+        with dpg.theme_component(dpg.mvAll):
             dpg.add_theme_color(dpg.mvPlotCol_PlotBg, (0, 200, 255, 255))  # Example: cyan
-            dpg.add_theme_color(dpg.mvPlotCol_FrameBg, (255, 200, 0, 255))  # Example: yellow
+            #dpg.add_theme_color(dpg.mvPlotCol_FrameBg, (255, 200, 0, 255))  # Example: yellow
+            dpg.add_theme_color(dpg.mvThemeCol_ChildBg, (0, 200, 255, 0))
+            dpg.add_theme_color(dpg.mvThemeCol_PopupBg, (0, 200, 255, 0))
+            dpg.add_theme_color(dpg.mvThemeCol_FrameBg, (0, 200, 255, 0))
+            dpg.add_theme_color(dpg.mvThemeCol_Text, (160, 160, 200, 255))
