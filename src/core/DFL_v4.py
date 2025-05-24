@@ -802,10 +802,10 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
             dpg.bind_item_theme("line2", "fixed_greyline_theme")
             dpg.bind_item_theme("cap_series", "fps_cap_theme")
 
-dpg.create_viewport(title="Dynamic FPS Limiter", width=Viewport_width, height=Viewport_height, resizable=False)
-dpg.set_viewport_resizable(False)
-dpg.set_viewport_max_width(Viewport_width)
-dpg.set_viewport_max_height(Viewport_height)
+dpg.create_viewport(title="Dynamic FPS Limiter", width=Viewport_width, height=Viewport_height, resizable=True)
+dpg.set_viewport_resizable(True)
+dpg.set_viewport_max_width(Viewport_width*3)
+dpg.set_viewport_max_height(Viewport_height*3)
 dpg.set_viewport_small_icon(icon_path)
 dpg.setup_dearpygui()
 dpg.show_viewport()
@@ -840,14 +840,12 @@ gui_update_thread.start()
 apply_all_tooltips(dpg, tooltips, ShowTooltip, cm, logger)
 
 # Bind themes to the GUI elements
-dpg.bind_theme("rounded_widget_theme")
+dpg.bind_theme("main_theme")
 dpg.bind_item_theme("Primary Window", "border_theme")
-dpg.bind_theme("separator_theme")
-dpg.bind_theme("child_window_theme")
 dpg.bind_item_theme("plot", "plot_bg_theme")
 
 logger.add_log("Initialized successfully.")
-dpg.show_style_editor()
+#dpg.show_style_editor()
 #Always make sure the corresponding GUI element exists before trying to get/set its value
 dpg.start_dearpygui()
 
