@@ -1,6 +1,6 @@
 import dearpygui.dearpygui as dpg
 
-def create_themes(background_colour=(37, 37, 38)):
+def create_themes(background_colour=(37, 37, 38, 0)):
     # Rounded widget theme
     with dpg.theme(tag="main_theme"):
         with dpg.theme_component(dpg.mvAll):

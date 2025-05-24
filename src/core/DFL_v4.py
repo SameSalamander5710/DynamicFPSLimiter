@@ -233,7 +233,7 @@ for key in cm.settings_config["GlobalSettings"]:
 
 # Default viewport size
 Viewport_width = 625
-Viewport_height = 765
+Viewport_height = 760
 
 running = False  # Flag to control the monitoring loop
 
@@ -594,7 +594,7 @@ def exit_gui():
             
 # GUI setup: Main Window
 dpg.create_context()
-create_themes(background_colour=(37, 37, 38))
+create_themes(background_colour=(37, 37, 38, 0))
 
 with dpg.font_registry():
     try:
@@ -727,7 +727,7 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
     #dpg.add_spacer(height=5)
     #dpg.add_separator()
     dpg.add_spacer(height=5)
-    with dpg.child_window(width=-1, height=115, border=True):
+    with dpg.child_window(width=-1, height=125, border=True):
         with dpg.group(horizontal=True, width=-1):
             dpg.add_text("Method:")
             dpg.add_radio_button(
@@ -744,6 +744,7 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
             dpg.add_input_int(tag="input_enablecustomfpslimits", 
                             default_value=int(cm.settings["enablecustomfpslimits"]), show=False,
                             width=0)
+        dpg.add_spacer(height=1)
 
         draw_height = 40
         layer1_height = 30
@@ -755,12 +756,12 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                 dpg.draw_line((margin, layer1_height // 2), (draw_width, layer1_height // 2), color=(200, 200, 200), thickness=2)
             with dpg.draw_layer(tag="Foreground"):
                 dpg.draw_line((margin, layer2_height // 2), (draw_width, layer2_height // 2), color=(200, 200, 200), thickness=2)
-        
+        dpg.add_spacer(height=1)
         with dpg.group(horizontal=True):
             dpg.add_input_text(
                 tag="input_customfpslimits",
                 default_value=", ".join(str(x) for x in sorted(cm.settings["customfpslimits"])),#", ".join(map(str, sorted(self.selected_fps_caps))),
-                width=draw_width - 170,
+                width=draw_width - 180,
                 #pos=(10, 140),  # Center the input horizontally
                 callback=sort_customfpslimits_callback,
                 on_enter=True)
@@ -770,7 +771,7 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
     # Fourth Row: Plot Section
     #dpg.add_spacer(height=5)
     #dpg.add_separator()
-    dpg.add_spacer(height=5)
+    #dpg.add_spacer(height=5)
     with dpg.child_window(tag = "plot_childwindow", width=-1, height=200, border=False):
 
         with dpg.plot(height=200, width=-1, tag="plot"):
