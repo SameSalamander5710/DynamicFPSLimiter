@@ -11,7 +11,7 @@ def create_themes(background_colour=(37, 37, 38, 0)):
             dpg.add_theme_style(dpg.mvStyleVar_ChildBorderSize, 1)
             dpg.add_theme_style(dpg.mvStyleVar_WindowPadding, 10, 8)
             dpg.add_theme_style(dpg.mvStyleVar_ItemSpacing, 8, 4)
-            dpg.add_theme_style(dpg.mvStyleVar_TabBarBorderSize, 1) #Check this again
+            dpg.add_theme_style(dpg.mvStyleVar_TabBarBorderSize, 1)
             dpg.add_theme_style(dpg.mvStyleVar_TabRounding, 3)
             dpg.add_theme_style(dpg.mvStyleVar_ChildRounding, 3)
             dpg.add_theme_style(dpg.mvStyleVar_FramePadding, 6, 3)
@@ -109,7 +109,6 @@ def create_themes(background_colour=(37, 37, 38, 0)):
     with dpg.theme(tag="plot_bg_theme"):
         with dpg.theme_component(dpg.mvAll):
             dpg.add_theme_color(dpg.mvPlotCol_PlotBg, (0, 200, 255, 255))  # Example: cyan
-            #dpg.add_theme_color(dpg.mvPlotCol_FrameBg, (255, 200, 0, 255))  # Example: yellow
             dpg.add_theme_color(dpg.mvThemeCol_ChildBg, (0, 200, 255, 0))
             dpg.add_theme_color(dpg.mvThemeCol_PopupBg, (0, 200, 255, 0))
             dpg.add_theme_color(dpg.mvThemeCol_FrameBg, (0, 200, 255, 0))

@@ -230,6 +230,8 @@ class ConfigManager:
         with open(self.profiles_path, 'w') as f:
             self.profiles_config.write(f)
         self.update_profile_dropdown()
+        dpg.set_value("profile_dropdown", profile_name)
+        self.load_profile_callback(None, profile_name, None)
 
     def add_new_profile_callback(self):
         new_name = dpg.get_value("new_profile_input")
