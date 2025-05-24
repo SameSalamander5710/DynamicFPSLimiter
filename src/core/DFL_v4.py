@@ -648,7 +648,7 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
         dpg.add_input_text(tag="LastProcess", multiline=False, readonly=True, width=-1)    
     
     #Tabs
-    tab_height = 135
+    tab_height = 130
     dpg.add_spacer(height=2)
     with dpg.tab_bar():
         with dpg.tab(label="Profile Settings", tag="tab1"):
@@ -682,17 +682,19 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                                     dpg.bind_item_theme(f"button_{key}", "button_right")
                                     dpg.add_input_text(tag=f"input_{key}", default_value=str(cm.settings[key]), width=40)
                     
-                    #2 dpg.add_spacer(width=1)
-                    with dpg.group(width=160):
-                        #dpg.add_spacer(height=3)
-                        with dpg.group(horizontal=False):
-                            with dpg.group(tag="quick_save_load"):
-                                dpg.add_button(label="Quick Save", callback=cm.quick_save_settings)
-                                dpg.add_button(label="Quick Load", callback=cm.quick_load_settings)
-                            dpg.add_button(tag="Reset_Default", label="Reset Settings to Default", callback=cm.reset_to_program_default)
-                            dpg.add_spacer(height=3)
-                            dpg.add_button(tag="SaveToProfile", label="Save Settings to Profile", callback=cm.save_to_profile)
-
+                    #dpg.add_spacer(width=1)
+                    tab1_group3_width = 170
+                    with dpg.group(width=180):
+                        with dpg.table(header_row=False, resizable=False, policy=dpg.mvTable_SizingFixedFit):
+                            dpg.add_table_column(width_fixed=True)
+                            with dpg.table_row():
+                                dpg.add_button(label="Quick Save", callback=cm.quick_save_settings, width=tab1_group3_width)
+                            with dpg.table_row():
+                                dpg.add_button(label="Quick Load", callback=cm.quick_load_settings, width=tab1_group3_width)
+                            with dpg.table_row():
+                                dpg.add_button(tag="Reset_Default", label="Reset Settings to Default", callback=cm.reset_to_program_default, width=tab1_group3_width)
+                            with dpg.table_row():
+                                dpg.add_button(tag="SaveToProfile", label="Save Settings to Profile", callback=cm.save_to_profile, width=tab1_group3_width)
     
         with dpg.tab(label="Preferences", tag="tab2"):
             with dpg.child_window(height=tab_height):
@@ -843,11 +845,10 @@ apply_all_tooltips(dpg, tooltips, ShowTooltip, cm, logger)
 
 # Bind themes to the GUI elements
 dpg.bind_theme("main_theme")
-#dpg.bind_item_theme("Primary Window", "border_theme")
 dpg.bind_item_theme("plot_childwindow", "plot_bg_theme")
 
 logger.add_log("Initialized successfully.")
-#dpg.show_style_editor()
+dpg.show_style_editor()
 #Always make sure the corresponding GUI element exists before trying to get/set its value
 dpg.start_dearpygui()
 
