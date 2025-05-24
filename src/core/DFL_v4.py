@@ -218,6 +218,7 @@ def tooltip_checkbox_callback(sender, app_data, user_data):
 
 ShowTooltip = str(cm.settings_config["Preferences"].get("ShowTooltip", "True")).strip().lower() == "true"
 cm.globallimitonexit = str(cm.settings_config["Preferences"].get("globallimitonexit", "True")).strip().lower() == "true"
+cm.profileonstartup = str(cm.settings_config["Preferences"].get("profileonstartup", "True")).strip().lower() == "true"
 
 #Check: Do I need this after setattr?
 for key in cm.settings_config["GlobalSettings"]:
@@ -701,6 +702,15 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                     dpg.add_input_int(tag="exit_fps_input",
                                     default_value=cm.globallimitonexit_fps, callback=cm.update_exit_fps_value,
                                     width=100, step=1, step_fast=10)
+                
+                with dpg.group(horizontal=True):
+                    dpg.add_checkbox(label="Set", tag="profile_on_startup_checkbox",
+                                    default_value=cm.profileonstartup)#, callback=cm.update_profile_on_startup_setting)
+                    dpg.add_button(label="Current Profile", tag="select_profile_button",
+                                    callback=cm.select_default_profile_callback, width=100)
+                    dpg.add_text("as default on startup: currently set to")
+                    dpg.add_input_text(tag="profileonstartup_name", multiline=False, readonly=True, width=100,
+                                       default_value=cm.profileonstartup_name)
 
         with dpg.tab(label="Log", tag="tab3"):
             with dpg.child_window(tag="LogWindow", autosize_x=True, height=tab_height, border=True):
