@@ -11,6 +11,7 @@ import math
 import os
 import sys
 import csv
+import pywinstyles
 
 # tweak path so "src/" (or wherever your modules live) is on sys.path
 _this_dir = os.path.abspath(os.path.dirname(__file__))
@@ -846,6 +847,7 @@ apply_all_tooltips(dpg, tooltips, ShowTooltip, cm, logger)
 # Bind themes to the GUI elements
 dpg.bind_theme("main_theme")
 dpg.bind_item_theme("plot_childwindow", "plot_bg_theme")
+pywinstyles.apply_style(None, "acrylic")
 
 logger.add_log("Initialized successfully.")
 #dpg.show_style_editor()
