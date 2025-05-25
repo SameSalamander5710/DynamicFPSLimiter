@@ -5,7 +5,10 @@ bg_colour_2_child = (27, 31, 37, 255)
 bg_colour_3_button = (35, 39, 47, 255)
 bg_colour_4_buttonhover = (32, 60, 68, 255)
 bg_colour_5_buttonactive = (30, 85, 205, 255)
-bg_colour_6_text_faded = (150, 152, 161, 255)
+bg_colour_6_buttonstateactive = (200, 88, 45, 255) 
+bg_colour_7_text_faded = (150, 152, 161, 255)
+bg_colour_8_text_stateactive = (238, 230, 224, 255)
+
 
 def create_themes(background_colour=(37, 37, 38, 0)):
     # Rounded widget theme
@@ -84,16 +87,18 @@ def create_themes(background_colour=(37, 37, 38, 0)):
     # Detect GPU theme
     with dpg.theme(tag="detect_gpu_theme"):
         with dpg.theme_component(dpg.mvButton):
-            dpg.add_theme_color(dpg.mvThemeCol_Button, (51, 51, 55))
-            dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, (15, 86, 135))
-            dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, (15, 86, 135))
+            dpg.add_theme_color(dpg.mvThemeCol_Button, bg_colour_3_button)
+            dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, bg_colour_4_buttonhover)
+            dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, bg_colour_5_buttonactive)
 
     # Revert GPU theme
     with dpg.theme(tag="revert_gpu_theme"):
         with dpg.theme_component(dpg.mvButton):
-            dpg.add_theme_color(dpg.mvThemeCol_Button, (15, 86, 135))
-            dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, (6, 96, 158))
-            dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, (0, 105, 176))
+            dpg.add_theme_color(dpg.mvThemeCol_Button, bg_colour_6_buttonstateactive)
+            dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, bg_colour_4_buttonhover)
+            dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, bg_colour_5_buttonactive)
+        #with dpg.theme_component(dpg.mvAll):
+            #dpg.add_theme_color(dpg.mvThemeCol_Text, bg_colour_8_text_stateactive)
 
     # Button right theme
     with dpg.theme(tag="button_right"):
@@ -135,4 +140,4 @@ def create_themes(background_colour=(37, 37, 38, 0)):
             dpg.add_theme_color(dpg.mvThemeCol_Button, (0, 200, 255, 0))
             dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, (0, 200, 255, 0))
             dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, (0, 200, 255, 0))
-            dpg.add_theme_color(dpg.mvThemeCol_Text, bg_colour_6_text_faded)
+            dpg.add_theme_color(dpg.mvThemeCol_Text, bg_colour_7_text_faded)
