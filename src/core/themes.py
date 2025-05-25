@@ -66,11 +66,15 @@ def create_themes(background_colour=(37, 37, 38, 0)):
         #with dpg.theme_component(dpg.mvInputText):
         with dpg.theme_component(dpg.mvCheckbox):
             dpg.add_theme_color(dpg.mvThemeCol_CheckMark, (50, 150, 250))
+        
+        with dpg.theme_component(dpg.mvTab):
+            dpg.add_theme_style(dpg.mvStyleVar_FramePadding, 8, 3)
 
     with dpg.theme(tag="radio_theme"):
         with dpg.theme_component(dpg.mvRadioButton):
             dpg.add_theme_color(dpg.mvThemeCol_CheckMark, (200, 200, 200))  # White selection circle
-            #dpg.add_theme_color(dpg.mvThemeCol_FrameBgHovered, (120, 120, 120))  # Grey hover highlight
+            dpg.add_theme_style(dpg.mvStyleVar_ItemSpacing, 18, 4)  # Spacing between radio buttons
+            dpg.add_theme_style(dpg.mvStyleVar_ItemInnerSpacing, 5, 4)  # Spacing within the radio button
 
     # RTSS running theme
     with dpg.theme(tag="rtss_running_theme"):
