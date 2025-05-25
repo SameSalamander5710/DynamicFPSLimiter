@@ -6,8 +6,9 @@ bg_colour_3_button = (35, 39, 47, 255)
 bg_colour_4_buttonhover = (32, 60, 68, 255)
 bg_colour_5_buttonactive = (30, 85, 205, 255)
 bg_colour_6_buttonstateactive = (200, 88, 45, 255) 
-bg_colour_7_text_faded = (150, 152, 161, 255)
-bg_colour_8_text_stateactive = (238, 230, 224, 255)
+bg_colour_7_text_faded = (150, 152, 161, 255) # Faded text for plot
+bg_colour_8_text_enabled = (255, 255, 255, 255)
+bg_colour_9_text_disabled = (150, 152, 161, 150) 
 
 
 def create_themes(background_colour=(37, 37, 38, 0)):
@@ -159,3 +160,11 @@ def create_themes(background_colour=(37, 37, 38, 0)):
             dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, (0, 200, 255, 0))
             dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, (0, 200, 255, 0))
             dpg.add_theme_color(dpg.mvThemeCol_Text, bg_colour_7_text_faded)
+
+    with dpg.theme(tag="disabled_text_theme"):
+        with dpg.theme_component(dpg.mvAll):
+            dpg.add_theme_color(dpg.mvThemeCol_Text, bg_colour_9_text_disabled)
+
+    with dpg.theme(tag="enabled_text_theme"):
+        with dpg.theme_component(dpg.mvAll):
+            dpg.add_theme_color(dpg.mvThemeCol_Text, bg_colour_8_text_enabled)
