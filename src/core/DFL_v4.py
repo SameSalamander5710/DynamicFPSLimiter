@@ -88,7 +88,7 @@ def current_stepped_limits():
             try:
                 custom_limits = set(int(x.strip()) for x in custom_limits.split(",") if x.strip().isdigit())
                 custom_limits = sorted(x for x in custom_limits if x > 0)
-                return sorted(custom_limits)
+                return custom_limits
             except Exception:
                 logger.add_log("Error parsing custom FPS limits, using default stepped limits.")
     elif use_custom == "step":
@@ -104,23 +104,31 @@ def make_stepped_values(maximum, minimum, step):
         values.append(minimum)
     return sorted(set(values))
 
-# TODO: Set values to steps of 1 if consecutive values are too close
 def make_ratioed_values(maximum, minimum, ratio):
     values = []
     current = maximum
     ratio_factor = 1 - (ratio / 100.0)
     if ratio_factor <= 0 or ratio_factor >= 1:
-        # Invalid ratio, fallback to just max and min
         return sorted(set([maximum, minimum]))
+    prev_diff = None
+    values.append(int(round(current)))
+
     while current >= minimum:
-        values.append(int(round(current)))
         current = current * ratio_factor
-        if int(round(current)) == values[-1]:
-            # Prevent infinite loop if rounding causes no change
-            break
+        rounded_current = int(round(current))
+        if len(values) >= 3:
+            prev_diff = abs(values[-1] - values[-2])
+        if prev_diff is not None and abs(rounded_current - values[-1]) > prev_diff:
+            rounded_current = values[-1] - prev_diff
+        values.append(rounded_current)
+        current = rounded_current
+
     if minimum not in values:
         values.append(minimum)
-    return sorted(set(values))
+
+    custom_limits = sorted(x for x in set(values) if x >= minimum)
+    
+    return custom_limits
 
 last_fps_limits = []
 
