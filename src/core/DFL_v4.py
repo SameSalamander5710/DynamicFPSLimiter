@@ -649,7 +649,7 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
         with dpg.tab(label="Profile Settings", tag="tab1"):
             with dpg.child_window(height=tab_height, border=True):
                 with dpg.group(horizontal=True):
-                    with dpg.group(width=200):
+                    with dpg.group(width=205):
                         with dpg.table(header_row=False, resizable=False, policy=dpg.mvTable_SizingFixedFit):
                             dpg.add_table_column(width_fixed=True)  # Column for labels
                             dpg.add_table_column(width_fixed=True)  # Column for input boxes
@@ -664,7 +664,7 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                                                       min_clamped=True, min_value=1)
                    
                     #2 dpg.add_spacer(width=1)
-                    with dpg.group(width=160):
+                    with dpg.group(width=175):
                         with dpg.table(header_row=False, resizable=False, policy=dpg.mvTable_SizingFixedFit):
                             dpg.add_table_column(width_fixed=True)
                             dpg.add_table_column(width_fixed=True)
@@ -673,7 +673,7 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                                             ("CPU: Upper limit", "cpucutofffordecrease"),
                                             ("Lower limit", "cpucutoffforincrease")]:
                                 with dpg.table_row():
-                                    dpg.add_button(label=label, tag=f"button_{key}", width=110)
+                                    dpg.add_button(label=label, tag=f"button_{key}", width=115)
                                     dpg.bind_item_theme(f"button_{key}", "button_right")
                                     dpg.add_input_text(tag=f"input_{key}", default_value=str(cm.settings[key]), width=40)
                     
