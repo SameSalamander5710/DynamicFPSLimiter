@@ -34,7 +34,6 @@ def create_themes(background_colour=(37, 37, 38, 0)):
             dpg.add_theme_color(dpg.mvThemeCol_FrameBg, bg_colour_3_button)
             dpg.add_theme_color(dpg.mvThemeCol_FrameBgHovered, bg_colour_4_buttonhover)
             dpg.add_theme_color(dpg.mvThemeCol_FrameBgActive, bg_colour_5_buttonactive)
-            dpg.add_theme_color(dpg.mvThemeCol_BorderShadow, (255, 255, 255, 11)) # Example: light shadow for 3D effect
             dpg.add_theme_color(dpg.mvThemeCol_Button, bg_colour_3_button)
             dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, bg_colour_4_buttonhover)
             dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, bg_colour_5_buttonactive)
@@ -44,6 +43,7 @@ def create_themes(background_colour=(37, 37, 38, 0)):
             dpg.add_theme_color(dpg.mvThemeCol_PopupBg, bg_colour)
             dpg.add_theme_color(dpg.mvThemeCol_HeaderHovered, bg_colour_4_buttonhover)
             dpg.add_theme_color(dpg.mvThemeCol_HeaderActive, bg_colour_5_buttonactive)
+            dpg.add_theme_color(dpg.mvThemeCol_BorderShadow, (255, 255, 255, 11)) # Example: light shadow for 3D effect
             #dpg.add_theme_color(dpg.mvThemeCol_PopupActive, (30, 144, 255, 255))
 
             # Plot-specific styles
@@ -52,6 +52,16 @@ def create_themes(background_colour=(37, 37, 38, 0)):
             dpg.add_theme_style(dpg.mvPlotStyleVar_MajorTickLen, 5, 5, category=dpg.mvThemeCat_Plots)
             dpg.add_theme_style(dpg.mvPlotStyleVar_LabelPadding, 5, 2, category=dpg.mvThemeCat_Plots)
         
+        with dpg.theme_component(dpg.mvInputInt):
+            dpg.add_theme_color(dpg.mvThemeCol_Border, (0, 0, 0, 11))
+            dpg.add_theme_color(dpg.mvThemeCol_BorderShadow, (0, 0, 0, 11)) 
+            dpg.add_theme_color(dpg.mvThemeCol_FrameBg, bg_colour)
+
+        with dpg.theme_component(dpg.mvInputText):
+            dpg.add_theme_color(dpg.mvThemeCol_Border, (0, 0, 0, 11))
+            dpg.add_theme_color(dpg.mvThemeCol_BorderShadow, (0, 0, 0, 11))
+            dpg.add_theme_color(dpg.mvThemeCol_FrameBg, bg_colour)
+
         #with dpg.theme_component(dpg.mvChildWindow):
             #dpg.add_theme_color(dpg.mvThemeCol_ChildBg, (30, 30, 60, 255))  # Example: dark blue
 
