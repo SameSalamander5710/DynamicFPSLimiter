@@ -41,6 +41,7 @@ rtss_dll_path = os.path.join(Base_dir, "assets/rtss.dll")
 error_log_file = os.path.join(parent_dir, "error_log.txt")
 icon_path = os.path.join(Base_dir, 'assets/DynamicFPSLimiter.ico')
 font_path = os.path.join(os.environ["WINDIR"], "Fonts", "segoeui.ttf") #segoeui, Verdana, Tahoma, Calibri, micross
+bold_font_path = os.path.join(os.environ["WINDIR"], "Fonts", "segoeuib.ttf")
 faq_path = os.path.join(Base_dir, "assets/faqs.csv")
 
 logger.init_logging(error_log_file)
@@ -591,6 +592,7 @@ create_themes(background_colour=(37, 37, 38, 0))
 with dpg.font_registry():
     try:
         default_font = dpg.add_font(font_path, 18)
+        bold_font = dpg.add_font(bold_font_path, 18)
         if default_font:
             dpg.bind_font(default_font)
     except Exception as e:
@@ -602,7 +604,8 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
     
     # Title and Start/Stop Button
     with dpg.group(horizontal=True):
-        dpg.add_text("Dynamic FPS Limiter v4.1.0")
+        dpg.add_text("Dynamic FPS Limiter v4.1.0", tag="app_title")
+        dpg.bind_item_font("app_title", bold_font)
         dpg.add_spacer(width=30)
         dpg.add_button(label="Detect Render GPU", callback=toggle_luid_selection, tag="luid_button", width=150)
 
@@ -705,7 +708,7 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                     dpg.add_checkbox(label="Set", tag="profile_on_startup_checkbox",
                                     default_value=cm.profileonstartup, callback=cm.update_profile_on_startup_setting)
                     dpg.add_button(label="Current Profile", tag="select_profile_button",
-                                    callback=cm.select_default_profile_callback, width=100)
+                                    callback=cm.select_default_profile_callback, width=105)
                     dpg.add_text("as default on startup. Currently set to:")
                     dpg.add_input_text(tag="profileonstartup_name", multiline=False, readonly=True, width=100,
                                        default_value=cm.profileonstartup_name)
