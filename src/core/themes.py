@@ -1,5 +1,11 @@
 import dearpygui.dearpygui as dpg
 
+bg_colour = (23, 23, 28, 255)
+bg_colour_2_child = (38, 38, 46, 255)
+bg_colour_3_button = (57, 57, 76, 255)
+bg_colour_4_buttonhover = (74, 74, 102, 255)
+bg_colour_5_buttonactive = (100, 100, 150, 255)
+
 def create_themes(background_colour=(37, 37, 38, 0)):
     # Rounded widget theme
     with dpg.theme(tag="main_theme"):
@@ -18,15 +24,19 @@ def create_themes(background_colour=(37, 37, 38, 0)):
             dpg.add_theme_style(dpg.mvStyleVar_ItemSpacing, 8, 4)
 
             dpg.add_theme_color(dpg.mvThemeCol_Border, (255, 0, 0, 0))
-            dpg.add_theme_color(dpg.mvThemeCol_WindowBg, (23, 23, 28, 255))
-            dpg.add_theme_color(dpg.mvThemeCol_ChildBg, (38, 38, 46, 255))
-            dpg.add_theme_color(dpg.mvThemeCol_FrameBg, (57, 57, 76, 255))
-            dpg.add_theme_color(dpg.mvThemeCol_FrameBgHovered, (74, 74, 102, 255))
-            dpg.add_theme_color(dpg.mvThemeCol_Button, (57, 57, 76, 255))
-            dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, (74, 74, 102, 255))
-            dpg.add_theme_color(dpg.mvThemeCol_Tab, (38, 38, 46, 255))
-            dpg.add_theme_color(dpg.mvThemeCol_TabActive, (57, 57, 76, 255))
-            dpg.add_theme_color(dpg.mvThemeCol_TabHovered, (74, 74, 102, 255))
+            dpg.add_theme_color(dpg.mvThemeCol_WindowBg, bg_colour)
+            dpg.add_theme_color(dpg.mvThemeCol_ChildBg, bg_colour_2_child)
+            dpg.add_theme_color(dpg.mvThemeCol_FrameBg, bg_colour_3_button)
+            dpg.add_theme_color(dpg.mvThemeCol_FrameBgHovered, bg_colour_4_buttonhover)
+            dpg.add_theme_color(dpg.mvThemeCol_FrameBgActive, bg_colour_5_buttonactive)
+            dpg.add_theme_color(dpg.mvThemeCol_Button, bg_colour_3_button)
+            dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, bg_colour_4_buttonhover)
+            dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, bg_colour_5_buttonactive)
+            dpg.add_theme_color(dpg.mvThemeCol_Tab, bg_colour_2_child)
+            dpg.add_theme_color(dpg.mvThemeCol_TabActive, bg_colour_3_button)
+            dpg.add_theme_color(dpg.mvThemeCol_TabHovered, bg_colour_4_buttonhover)
+            dpg.add_theme_color(dpg.mvThemeCol_PopupBg, bg_colour)
+            #dpg.add_theme_color(dpg.mvThemeCol_PopupActive, (30, 144, 255, 255))
 
             # Plot-specific styles
             dpg.add_theme_style(dpg.mvPlotStyleVar_PlotBorderSize, 0, category=dpg.mvThemeCat_Plots)
