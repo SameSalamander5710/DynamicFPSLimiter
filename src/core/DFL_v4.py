@@ -744,6 +744,7 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                 default_value="ratio",#settings["method"],
                 tag="input_capmethod"
                 )
+            # TODO: Add faded text theme to relevent source items
             dpg.bind_item_theme("input_capmethod", "radio_theme")
         dpg.add_spacer(height=1)
 
