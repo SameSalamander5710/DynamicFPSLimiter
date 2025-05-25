@@ -773,6 +773,7 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                 on_enter=True)
             dpg.add_button(label="Reset", tag="rest_fps_cap_button", width=80, callback=reset_customFPSLimits)
             dpg.add_button(label="Fix this!", tag="autofill_fps_caps", width=80, callback=generate_adaptive_fps_limits)
+            # TODO: Add replicate limit button
 
     # Fourth Row: Plot Section
     #dpg.add_spacer(height=5)
@@ -856,6 +857,6 @@ pywinstyles.apply_style(None, "acrylic")
 
 logger.add_log("Initialized successfully.")
 #dpg.show_style_editor()
-#Always make sure the corresponding GUI element exists before trying to get/set its value
+
 dpg.start_dearpygui()
 
