@@ -36,6 +36,8 @@ def create_themes(background_colour=(37, 37, 38, 0)):
             dpg.add_theme_color(dpg.mvThemeCol_TabActive, bg_colour_3_button)
             dpg.add_theme_color(dpg.mvThemeCol_TabHovered, bg_colour_4_buttonhover)
             dpg.add_theme_color(dpg.mvThemeCol_PopupBg, bg_colour)
+            dpg.add_theme_color(dpg.mvThemeCol_HeaderHovered, bg_colour_4_buttonhover)
+            dpg.add_theme_color(dpg.mvThemeCol_HeaderActive, bg_colour_5_buttonactive)
             #dpg.add_theme_color(dpg.mvThemeCol_PopupActive, (30, 144, 255, 255))
 
             # Plot-specific styles
