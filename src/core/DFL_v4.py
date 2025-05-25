@@ -214,7 +214,10 @@ def current_method_callback(sender, app_data, user_data):
     Logs the currently selected radio button value for the method selection.
     """
     # TODO: Use this function to change method text shade
-    logger.add_log(f"Method selection changed: {app_data}")
+
+    for method in dpg.get_item_configuration("input_capmethod")["items"]:
+        if app_data == method:
+            logger.add_log(f"Method selection changed: {app_data}")
 
 def tooltip_checkbox_callback(sender, app_data, user_data):
     update_tooltip_setting(dpg, sender, app_data, user_data, tooltips, cm, logger)
