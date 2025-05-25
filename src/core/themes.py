@@ -19,6 +19,7 @@ def create_themes(background_colour=(37, 37, 38, 0)):
             dpg.add_theme_color(dpg.mvThemeCol_Button, (51, 51, 55))
             dpg.add_theme_style(dpg.mvStyleVar_WindowBorderSize, 0)
             dpg.add_theme_style(dpg.mvStyleVar_ChildBorderSize, 1)
+            dpg.add_theme_style(dpg.mvStyleVar_FrameBorderSize, 1)
             dpg.add_theme_style(dpg.mvStyleVar_WindowPadding, 10, 8)
             dpg.add_theme_style(dpg.mvStyleVar_ItemSpacing, 8, 4)
             dpg.add_theme_style(dpg.mvStyleVar_TabBarBorderSize, 1)
@@ -33,6 +34,7 @@ def create_themes(background_colour=(37, 37, 38, 0)):
             dpg.add_theme_color(dpg.mvThemeCol_FrameBg, bg_colour_3_button)
             dpg.add_theme_color(dpg.mvThemeCol_FrameBgHovered, bg_colour_4_buttonhover)
             dpg.add_theme_color(dpg.mvThemeCol_FrameBgActive, bg_colour_5_buttonactive)
+            dpg.add_theme_color(dpg.mvThemeCol_BorderShadow, (255, 255, 255, 11)) # Example: light shadow for 3D effect
             dpg.add_theme_color(dpg.mvThemeCol_Button, bg_colour_3_button)
             dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, bg_colour_4_buttonhover)
             dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, bg_colour_5_buttonactive)
@@ -68,7 +70,7 @@ def create_themes(background_colour=(37, 37, 38, 0)):
     with dpg.theme(tag="radio_theme"):
         with dpg.theme_component(dpg.mvRadioButton):
             dpg.add_theme_color(dpg.mvThemeCol_CheckMark, (200, 200, 200))  # White selection circle
-            dpg.add_theme_color(dpg.mvThemeCol_FrameBgHovered, (120, 120, 120))  # Grey hover highlight
+            #dpg.add_theme_color(dpg.mvThemeCol_FrameBgHovered, (120, 120, 120))  # Grey hover highlight
 
     # RTSS running theme
     with dpg.theme(tag="rtss_running_theme"):
@@ -134,6 +136,7 @@ def create_themes(background_colour=(37, 37, 38, 0)):
     with dpg.theme(tag="plot_bg_theme"):
         with dpg.theme_component(dpg.mvAll):
             dpg.add_theme_color(dpg.mvPlotCol_PlotBg, (0, 200, 255, 255))  # Example: cyan
+            dpg.add_theme_style(dpg.mvStyleVar_FrameBorderSize, 0)
             dpg.add_theme_color(dpg.mvThemeCol_ChildBg, (0, 200, 255, 0))
             dpg.add_theme_color(dpg.mvThemeCol_PopupBg, (0, 200, 255, 0))
             dpg.add_theme_color(dpg.mvThemeCol_FrameBg, (0, 200, 255, 0))
