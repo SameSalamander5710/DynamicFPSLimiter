@@ -168,3 +168,7 @@ def create_themes(background_colour=(37, 37, 38, 0)):
     with dpg.theme(tag="enabled_text_theme"):
         with dpg.theme_component(dpg.mvAll):
             dpg.add_theme_color(dpg.mvThemeCol_Text, bg_colour_8_text_enabled)
+    
+    with dpg.theme(tag="warning_text_theme"):
+        with dpg.theme_component(dpg.mvAll):
+            dpg.add_theme_color(dpg.mvThemeCol_Text, (190, 90, 90))

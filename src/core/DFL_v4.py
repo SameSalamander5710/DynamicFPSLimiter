@@ -743,8 +743,11 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                 tag="input_capmethod"
                 )
             dpg.bind_item_theme("input_capmethod", "radio_theme")
+            # TODO: Add dynamic tooltip to warning text, warning if current limits are less than minvalidfps
+            dpg.add_text("Warning!", tag="warning_text", color=(190, 90, 90), 
+                         pos=(500, 5),
+                         show=True)
         dpg.add_spacer(height=1)
-# TODO: Add warning if current limits are less than minvalidfps
 
         draw_height = 40
         layer1_height = 30
