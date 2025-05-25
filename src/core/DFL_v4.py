@@ -49,6 +49,7 @@ rtss_manager = None
 questions = []
 FAQs = {}
 
+# TODO: Check possibility of Bold fonts
 with open(faq_path, newline='', encoding='utf-8') as csvfile:
     reader = csv.DictReader(csvfile)
     for idx, row in enumerate(reader, start=1):
@@ -180,33 +181,11 @@ def update_fps_cap_visualization():
                     )
 
 def generate_adaptive_fps_limits():
-    """
-    Generates FPS limits from `max_fps` down to `min_fps` such that each step
-    reduces expected GPU usage from `upper_usage` to just above `lower_usage`.
     
-    `safety_margin` makes the step a bit more conservative (e.g. 0.07).
-    """
-    safety_margin = 0.07
-
-    lower_usage = float(dpg.get_value("input_gpucutoffforincrease"))
-    upper_usage = float(dpg.get_value("input_gpucutofffordecrease"))
-    min_fps = int(dpg.get_value("input_mincap"))
-    max_fps = int(dpg.get_value("input_maxcap"))
-
-    base_ratio = lower_usage / upper_usage
-    step_ratio = min(base_ratio + safety_margin, 0.999999)  # Prevent step_ratio >= 1
-    fps_limits = []
-    fps = max_fps
-    while fps >= min_fps:
-        fps_limits.append(round(fps))
-        fps *= step_ratio
-    if fps_limits[-1] != min_fps:
-        fps_limits.append(min_fps)
+    fps_limits = sorted(set(current_stepped_limits()))
     
-    fps_limits = sorted(set(fps_limits))
-    
-    # Convert the list to a comma-separated string of integers
     fps_limits_str = ", ".join(str(int(round(x))) for x in fps_limits)
+
     dpg.set_value("input_customfpslimits", fps_limits_str)
 
 def current_method_callback(sender=None, app_data=None, user_data=None):
@@ -771,13 +750,12 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
             dpg.add_input_text(
                 tag="input_customfpslimits",
                 default_value=", ".join(str(x) for x in sorted(cm.settings["customfpslimits"])),#", ".join(map(str, sorted(self.selected_fps_caps))),
-                width=draw_width - 180,
+                width=draw_width - 205,
                 #pos=(10, 140),  # Center the input horizontally
                 callback=sort_customfpslimits_callback,
                 on_enter=True)
             dpg.add_button(label="Reset", tag="rest_fps_cap_button", width=80, callback=reset_customFPSLimits)
-            dpg.add_button(label="Fix this!", tag="autofill_fps_caps", width=80, callback=generate_adaptive_fps_limits)
-            # TODO: Add replicate limit button
+            dpg.add_button(label="Copy from Plot", tag="autofill_fps_caps", width=110, callback=generate_adaptive_fps_limits)
 
     # Fourth Row: Plot Section
     #dpg.add_spacer(height=5)
