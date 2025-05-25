@@ -203,7 +203,11 @@ def current_method_callback(sender=None, app_data=None, user_data=None):
     dpg.bind_item_theme("label_capstep", "enabled_text_theme") if method == "step" else dpg.bind_item_theme("label_capstep", "disabled_text_theme")
     dpg.bind_item_theme("input_capstep", "enabled_text_theme") if method == "step" else dpg.bind_item_theme("input_capstep", "disabled_text_theme")
     dpg.bind_item_theme("input_customfpslimits", "enabled_text_theme") if method == "custom" else dpg.bind_item_theme("input_customfpslimits", "disabled_text_theme")
-
+    dpg.bind_item_theme("label_maxcap", "disabled_text_theme") if method == "custom" else dpg.bind_item_theme("label_maxcap", "enabled_text_theme")
+    dpg.bind_item_theme("label_mincap", "disabled_text_theme") if method == "custom" else dpg.bind_item_theme("label_mincap", "enabled_text_theme")
+    dpg.bind_item_theme("input_maxcap", "disabled_text_theme") if method == "custom" else dpg.bind_item_theme("input_maxcap", "enabled_text_theme")
+    dpg.bind_item_theme("input_mincap", "disabled_text_theme") if method == "custom" else dpg.bind_item_theme("input_mincap", "enabled_text_theme")
+    
     logger.add_log(f"Method selection changed: {method}")
 
 def tooltip_checkbox_callback(sender, app_data, user_data):
