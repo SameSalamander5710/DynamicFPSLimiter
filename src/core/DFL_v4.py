@@ -209,15 +209,17 @@ def generate_adaptive_fps_limits():
     fps_limits_str = ", ".join(str(int(round(x))) for x in fps_limits)
     dpg.set_value("input_customfpslimits", fps_limits_str)
 
-def current_method_callback(sender, app_data, user_data):
-    """
-    Logs the currently selected radio button value for the method selection.
-    """
-    # TODO: Use this function to change method text shade
+def current_method_callback(sender=None, app_data=None, user_data=None):
 
-    for method in dpg.get_item_configuration("input_capmethod")["items"]:
-        if app_data == method:
-            logger.add_log(f"Method selection changed: {app_data}")
+    method = app_data if app_data else dpg.get_value("input_capmethod")
+
+    dpg.bind_item_theme("input_capratio", "enabled_text_theme") if method == "ratio" else dpg.bind_item_theme("input_capratio", "disabled_text_theme")
+    dpg.bind_item_theme("label_capratio", "enabled_text_theme") if method == "ratio" else dpg.bind_item_theme("label_capratio", "disabled_text_theme")
+    dpg.bind_item_theme("label_capstep", "enabled_text_theme") if method == "step" else dpg.bind_item_theme("label_capstep", "disabled_text_theme")
+    dpg.bind_item_theme("input_capstep", "enabled_text_theme") if method == "step" else dpg.bind_item_theme("input_capstep", "disabled_text_theme")
+    dpg.bind_item_theme("input_customfpslimits", "enabled_text_theme") if method == "custom" else dpg.bind_item_theme("input_customfpslimits", "disabled_text_theme")
+
+    logger.add_log(f"Method selection changed: {method}")
 
 def tooltip_checkbox_callback(sender, app_data, user_data):
     update_tooltip_setting(dpg, sender, app_data, user_data, tooltips, cm, logger)
@@ -664,7 +666,7 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                                             ("Framerate ratio:", "capratio"),
                                             ("Framerate step:", "capstep")]:
                                 with dpg.table_row():
-                                    dpg.add_text(label)
+                                    dpg.add_text(label, tag=f"label_{key}")
                                     dpg.add_input_int(tag=f"input_{key}", default_value=int(cm.settings[key]), 
                                                       width=90, step=1, step_fast=10, 
                                                       min_clamped=True, min_value=1)
@@ -751,7 +753,6 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                 default_value="ratio",#settings["method"],
                 tag="input_capmethod"
                 )
-            # TODO: Add faded text theme to relevent source items
             dpg.bind_item_theme("input_capmethod", "radio_theme")
         dpg.add_spacer(height=1)
 
@@ -852,14 +853,16 @@ gui_update_thread = threading.Thread(target=gui_update_loop, daemon=True)
 gui_update_thread.start()
 
 apply_all_tooltips(dpg, tooltips, ShowTooltip, cm, logger)
+current_method_callback()
 
-# Bind themes to the GUI elements
 dpg.bind_theme("main_theme")
 dpg.bind_item_theme("plot_childwindow", "plot_bg_theme")
 pywinstyles.apply_style(None, "acrylic")
 
 logger.add_log("Initialized successfully.")
+
 #dpg.show_style_editor()
+#dpg.show_imgui_demo()
 
 dpg.start_dearpygui()
 
