@@ -1,10 +1,11 @@
 import dearpygui.dearpygui as dpg
 
-bg_colour = (23, 23, 28, 255)
-bg_colour_2_child = (38, 38, 46, 255)
-bg_colour_3_button = (57, 57, 76, 255)
-bg_colour_4_buttonhover = (74, 74, 102, 255)
-bg_colour_5_buttonactive = (100, 100, 150, 255)
+bg_colour = (21, 20, 21, 255)
+bg_colour_2_child = (27, 31, 37, 255)
+bg_colour_3_button = (35, 39, 47, 255)
+bg_colour_4_buttonhover = (32, 60, 68, 255)
+bg_colour_5_buttonactive = (30, 85, 205, 255)
+bg_colour_6_text_faded = (150, 152, 161, 255)
 
 def create_themes(background_colour=(37, 37, 38, 0)):
     # Rounded widget theme
@@ -134,4 +135,4 @@ def create_themes(background_colour=(37, 37, 38, 0)):
             dpg.add_theme_color(dpg.mvThemeCol_Button, (0, 200, 255, 0))
             dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, (0, 200, 255, 0))
             dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, (0, 200, 255, 0))
-            dpg.add_theme_color(dpg.mvThemeCol_Text, (200, 200, 230, 255))
+            dpg.add_theme_color(dpg.mvThemeCol_Text, bg_colour_6_text_faded)
