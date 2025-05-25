@@ -63,6 +63,7 @@ def sort_customfpslimits_callback(sender, app_data, user_data):
     # Parse to set of ints
     try:
         numbers = set(int(x.strip()) for x in value.split(",") if x.strip().isdigit())
+        numbers = sorted(x for x in numbers if x > 0) 
         sorted_str = ", ".join(str(x) for x in sorted(numbers))
         dpg.set_value("input_customfpslimits", sorted_str)
     except Exception:
@@ -86,7 +87,7 @@ def current_stepped_limits():
         if custom_limits:
             try:
                 custom_limits = set(int(x.strip()) for x in custom_limits.split(",") if x.strip().isdigit())
-                custom_limits = sorted(custom_limits)
+                custom_limits = sorted(x for x in custom_limits if x > 0)
                 return sorted(custom_limits)
             except Exception:
                 logger.add_log("Error parsing custom FPS limits, using default stepped limits.")
@@ -97,14 +98,13 @@ def current_stepped_limits():
     #logger.add_log(f"Default stepped limits: {maximum}, {minimum}, {step}")
     #logger.add_log(f"Stepped limits: {make_stepped_values(maximum, minimum, step)}")
 
-# TODO: Set values to steps of 1 if consecutive values are too close
-
 def make_stepped_values(maximum, minimum, step):
     values = list(range(maximum, minimum - 1, -step))
     if minimum not in values:
         values.append(minimum)
     return sorted(set(values))
 
+# TODO: Set values to steps of 1 if consecutive values are too close
 def make_ratioed_values(maximum, minimum, ratio):
     values = []
     current = maximum
@@ -180,12 +180,10 @@ def update_fps_cap_visualization():
                         parent="Foreground"
                     )
 
-def generate_adaptive_fps_limits():
+def copy_from_plot_callback():
     
     fps_limits = sorted(set(current_stepped_limits()))
-    
     fps_limits_str = ", ".join(str(int(round(x))) for x in fps_limits)
-
     dpg.set_value("input_customfpslimits", fps_limits_str)
 
 def current_method_callback(sender=None, app_data=None, user_data=None):
@@ -734,6 +732,7 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                 )
             dpg.bind_item_theme("input_capmethod", "radio_theme")
         dpg.add_spacer(height=1)
+# TODO: Add warning if current limits are less than minvalidfps
 
         draw_height = 40
         layer1_height = 30
@@ -755,7 +754,7 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                 callback=sort_customfpslimits_callback,
                 on_enter=True)
             dpg.add_button(label="Reset", tag="rest_fps_cap_button", width=80, callback=reset_customFPSLimits)
-            dpg.add_button(label="Copy from Plot", tag="autofill_fps_caps", width=110, callback=generate_adaptive_fps_limits)
+            dpg.add_button(label="Copy from Plot", tag="autofill_fps_caps", width=110, callback=copy_from_plot_callback)
 
     # Fourth Row: Plot Section
     #dpg.add_spacer(height=5)
