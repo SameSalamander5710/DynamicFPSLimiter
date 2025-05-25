@@ -96,6 +96,8 @@ def current_stepped_limits():
     #logger.add_log(f"Default stepped limits: {maximum}, {minimum}, {step}")
     #logger.add_log(f"Stepped limits: {make_stepped_values(maximum, minimum, step)}")
 
+# TODO: Set values to steps of 1 if consecutive values are too close
+
 def make_stepped_values(maximum, minimum, step):
     values = list(range(maximum, minimum - 1, -step))
     if minimum not in values:
@@ -211,6 +213,7 @@ def current_method_callback(sender, app_data, user_data):
     """
     Logs the currently selected radio button value for the method selection.
     """
+    # TODO: Use this function to change method text shade
     logger.add_log(f"Method selection changed: {app_data}")
 
 def tooltip_checkbox_callback(sender, app_data, user_data):
@@ -691,7 +694,8 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                             with dpg.table_row():
                                 dpg.add_button(tag="SaveToProfile", label="Save Settings to Profile", callback=cm.save_to_profile, width=tab1_group3_width)
     
-        with dpg.tab(label="  Preferences", tag="tab2"):
+        # TODO: Add starup on restart
+        with dpg.tab(label="  Preferences", tag="tab2"): 
             with dpg.child_window(height=tab_height):
                 dpg.add_checkbox(label="Show Tooltips", tag="tooltip_checkbox",
                                  default_value=ShowTooltip, callback=tooltip_checkbox_callback)
