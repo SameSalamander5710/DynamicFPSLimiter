@@ -120,9 +120,16 @@ def make_ratioed_values(maximum, minimum, ratio):
             prev_diff = abs(values[-1] - values[-2])
         if prev_diff is not None and abs(rounded_current - values[-1]) > prev_diff:
             rounded_current = values[-1] - prev_diff
+
+        # Duplicate detection and correction
+        while rounded_current in values and rounded_current > minimum:
+            rounded_current -= 1
+
         values.append(rounded_current)
         current = rounded_current
 
+        if rounded_current <= minimum:
+            break
     if minimum not in values:
         values.append(minimum)
 
@@ -554,6 +561,7 @@ def plotting_loop():
 
 gui_running = True
 
+# TODO: Add logic to handle Warning display here
 def gui_update_loop():
     global gui_running
     while gui_running:  # Changed from True to gui_running
