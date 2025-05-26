@@ -1,6 +1,7 @@
 import dearpygui.dearpygui as dpg
 
 bg_colour = (21, 20, 21, 255)
+bg_colour_1_transparent = (21, 20, 21, 0)
 bg_colour_2_child = (27, 31, 37, 255)
 bg_colour_3_button = (35, 39, 47, 255)
 bg_colour_4_buttonhover = (32, 60, 68, 255)
@@ -11,8 +12,8 @@ bg_colour_8_text_enabled = (255, 255, 255, 255)
 bg_colour_9_text_disabled = (150, 152, 161, 150) 
 
 
-def create_themes(background_colour=(37, 37, 38, 0)):
-    # Rounded widget theme
+def create_themes():
+
     with dpg.theme(tag="main_theme"):
         with dpg.theme_component(dpg.mvAll):
             dpg.add_theme_color(dpg.mvThemeCol_Separator, (0, 200, 255, 255))  # Cyan, RGBA
@@ -121,9 +122,9 @@ def create_themes(background_colour=(37, 37, 38, 0)):
     with dpg.theme(tag="button_right"):
         with dpg.theme_component(dpg.mvButton):
             dpg.add_theme_style(dpg.mvStyleVar_ButtonTextAlign, 1.00, category=dpg.mvThemeCat_Core)
-            dpg.add_theme_color(dpg.mvThemeCol_Button, background_colour, category=dpg.mvThemeCat_Core)
-            dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, background_colour, category=dpg.mvThemeCat_Core)
-            dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, background_colour, category=dpg.mvThemeCat_Core)
+            dpg.add_theme_color(dpg.mvThemeCol_Button, bg_colour_1_transparent, category=dpg.mvThemeCat_Core)
+            dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, bg_colour_1_transparent, category=dpg.mvThemeCat_Core)
+            dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, bg_colour_1_transparent, category=dpg.mvThemeCat_Core)
             dpg.add_theme_style(dpg.mvStyleVar_FrameBorderSize, 0)
 
     # Plot themes
