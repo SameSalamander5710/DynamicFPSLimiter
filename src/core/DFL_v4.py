@@ -50,7 +50,6 @@ rtss_manager = None
 questions = []
 FAQs = {}
 
-# TODO: Check possibility of Bold fonts
 with open(faq_path, newline='', encoding='utf-8') as csvfile:
     reader = csv.DictReader(csvfile)
     for idx, row in enumerate(reader, start=1):
@@ -587,7 +586,7 @@ def exit_gui():
             
 # GUI setup: Main Window
 dpg.create_context()
-create_themes(background_colour=(37, 37, 38, 0))
+create_themes()
 
 with dpg.font_registry():
     try:
@@ -604,8 +603,9 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
     
     # Title and Start/Stop Button
     with dpg.group(horizontal=True):
-        dpg.add_text("Dynamic FPS Limiter v4.1.0", tag="app_title")
+        dpg.add_text("Dynamic FPS Limiter", tag="app_title")
         dpg.bind_item_font("app_title", bold_font)
+        dpg.add_text("v4.1.0")
         dpg.add_spacer(width=30)
         dpg.add_button(label="Detect Render GPU", callback=toggle_luid_selection, tag="luid_button", width=150)
 
@@ -750,6 +750,7 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
             dpg.add_text("Warning!", tag="warning_text", color=(190, 90, 90), 
                          pos=(500, 5),
                          show=True)
+            dpg.bind_item_font("warning_text", bold_font)
         dpg.add_spacer(height=1)
 
         draw_height = 40
