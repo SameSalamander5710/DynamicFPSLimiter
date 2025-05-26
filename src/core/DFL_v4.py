@@ -699,7 +699,6 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                             with dpg.table_row():
                                 dpg.add_button(tag="SaveToProfile", label="Save Settings to Profile", callback=cm.save_to_profile, width=tab1_group3_width)
     
-        # TODO: Add starup on restart
         with dpg.tab(label="  Preferences", tag="tab2"): 
             with dpg.child_window(height=tab_height):
                 dpg.add_checkbox(label="Show Tooltips", tag="tooltip_checkbox",
@@ -721,6 +720,9 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                     dpg.add_input_text(tag="profileonstartup_name", multiline=False, readonly=True, width=100,
                                        default_value=cm.profileonstartup_name)
                     dpg.bind_item_theme("profileonstartup_name", "transparent_input_theme_2")
+# TODO: Setup autostart checkbox, callback and function module
+                dpg.add_checkbox(label="Launch the app on Windows startup", tag="autostart_checkbox")#,
+                                 #default_value=ShowTooltip, callback=tooltip_checkbox_callback)
 
         with dpg.tab(label=" Log", tag="tab3"):
             with dpg.child_window(tag="LogWindow", autosize_x=True, height=tab_height, border=True):
