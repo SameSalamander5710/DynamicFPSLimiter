@@ -560,13 +560,30 @@ def plotting_loop():
         time.sleep(math.lcm(cm.gpupollinginterval, cm.cpupollinginterval) / 1000.0)  # Convert to seconds
 
 gui_running = True
+warning_message = ""
+warning_visible = False
 
 # TODO: Add logic to handle Warning display here
 def gui_update_loop():
-    global gui_running
+    global gui_running, warning_message, warning_visible
     while gui_running:  # Changed from True to gui_running
         if not running:
             try:
+                # Example warning condition: mincap > maxcap
+                cm.mincap = dpg.get_value("input_mincap")
+                cm.maxcap = dpg.get_value("input_maxcap")
+                if cm.mincap > cm.maxcap:
+                    warning_message = "Minimum FPS limit is greater than maximum FPS limit."
+                    warning_visible = True
+                else:
+                    warning_message = ""
+                    warning_visible = False
+
+                # Update warning text and tooltip
+                dpg.configure_item("warning_text", show=warning_visible)
+                dpg.configure_item("warning_tooltip", show=warning_visible)
+                dpg.set_value("warning_tooltip_text", warning_message)
+
                 # Update FPS limit visualization based on current input values
                 update_fps_cap_visualization()
             except Exception as e:
@@ -760,6 +777,8 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
             dpg.add_text("Warning!", tag="warning_text", color=(190, 90, 90), 
                          pos=(500, 5),
                          show=True)
+            with dpg.tooltip(parent="warning_text", tag="warning_tooltip", show=False):
+                dpg.add_text("", tag="warning_tooltip_text", wrap=300)
             dpg.bind_item_font("warning_text", bold_font)
         dpg.add_spacer(height=1)
 
