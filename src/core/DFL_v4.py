@@ -28,6 +28,7 @@ from core.themes import create_themes
 from core.config_manager import ConfigManager
 from core.tooltips import get_tooltips, add_tooltip, apply_all_tooltips, update_tooltip_setting
 from core.warning import get_active_warnings
+from core.autostart import AutoStartManager
 
 # Always get absolute path to EXE or script location
 Base_dir = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
@@ -220,6 +221,14 @@ def current_method_callback(sender=None, app_data=None, user_data=None):
 
 def tooltip_checkbox_callback(sender, app_data, user_data):
     update_tooltip_setting(dpg, sender, app_data, user_data, tooltips, cm, logger)
+
+def autostart_checkbox_callback(sender, app_data, user_data):
+
+    is_checked = app_data
+    if is_checked:
+        cm.enable_autostart()
+    else:
+        cm.disable_autostart()
 
 ShowTooltip = str(cm.settings_config["Preferences"].get("ShowTooltip", "True")).strip().lower() == "true"
 cm.globallimitonexit = str(cm.settings_config["Preferences"].get("globallimitonexit", "True")).strip().lower() == "true"
@@ -728,8 +737,8 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                                        default_value=cm.profileonstartup_name)
                     dpg.bind_item_theme("profileonstartup_name", "transparent_input_theme_2")
 # TODO: Setup autostart checkbox, callback and function module
-                dpg.add_checkbox(label="Launch the app on Windows startup", tag="autostart_checkbox")#,
-                                 #default_value=ShowTooltip, callback=tooltip_checkbox_callback)
+                dpg.add_checkbox(label="Launch the app on Windows startup", tag="autostart_checkbox",
+                                 default_value=False, callback=autostart_checkbox_callback)
 
         with dpg.tab(label=" Log", tag="tab3"):
             with dpg.child_window(tag="LogWindow", autosize_x=True, height=tab_height, border=True):
@@ -866,6 +875,12 @@ gui_update_thread.start()
 
 apply_all_tooltips(dpg, tooltips, ShowTooltip, cm, logger)
 current_method_callback()
+
+manager = AutoStartManager(app_path="C:\\Path\\To\\YourApp.exe")
+manager.create()  # Add to autostart
+manager.delete()  # Remove from autostart
+manager.update_if_needed()  # Update if needed
+
 
 dpg.bind_theme("main_theme")
 dpg.bind_item_theme("plot_childwindow", "plot_bg_theme")
