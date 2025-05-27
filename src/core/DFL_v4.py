@@ -563,13 +563,12 @@ def plotting_loop():
 
 gui_running = True
 
-# TODO: Add logic to handle Warning display here
 def gui_update_loop():
     global gui_running
     while gui_running:  # Changed from True to gui_running
         if not running:
             try:
-                warnings = get_active_warnings(dpg, cm, rtss_manager)
+                warnings = get_active_warnings(dpg, cm, rtss_manager, int(min(current_stepped_limits())))
                 warning_visible = bool(warnings)
                 warning_message = "\n".join(warnings)
 
@@ -764,7 +763,6 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                 tag="input_capmethod"
                 )
             dpg.bind_item_theme("input_capmethod", "radio_theme")
-            # TODO: Add dynamic tooltip to warning text, warning if current limits are less than minvalidfps
             dpg.add_text("Warning!", tag="warning_text", color=(190, 90, 90), 
                          pos=(500, 5),
                          show=False)
