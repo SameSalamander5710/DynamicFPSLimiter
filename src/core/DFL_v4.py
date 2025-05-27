@@ -27,6 +27,7 @@ from core.gpu_monitor import GPUUsageMonitor
 from core.themes import create_themes
 from core.config_manager import ConfigManager
 from core.tooltips import get_tooltips, add_tooltip, apply_all_tooltips, update_tooltip_setting
+from core.warning import get_active_warnings
 
 # Always get absolute path to EXE or script location
 Base_dir = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
@@ -246,6 +247,7 @@ def start_stop_callback(sender, app_data, user_data):
     global running
     running = not running
     dpg.configure_item("start_stop_button", label="Stop" if running else "Start")
+    dpg.bind_item_theme("start_stop_button", "stop_button_theme" if running else "start_button_theme")
     cm.apply_current_input_values()
     
     # Reset variables to zero or their default state
@@ -560,26 +562,17 @@ def plotting_loop():
         time.sleep(math.lcm(cm.gpupollinginterval, cm.cpupollinginterval) / 1000.0)  # Convert to seconds
 
 gui_running = True
-warning_message = ""
-warning_visible = False
 
 # TODO: Add logic to handle Warning display here
 def gui_update_loop():
-    global gui_running, warning_message, warning_visible
+    global gui_running
     while gui_running:  # Changed from True to gui_running
         if not running:
             try:
-                # Example warning condition: mincap > maxcap
-                cm.mincap = dpg.get_value("input_mincap")
-                cm.maxcap = dpg.get_value("input_maxcap")
-                if cm.mincap > cm.maxcap:
-                    warning_message = "Minimum FPS limit is greater than maximum FPS limit."
-                    warning_visible = True
-                else:
-                    warning_message = ""
-                    warning_visible = False
+                warnings = get_active_warnings(dpg, cm, rtss_manager)
+                warning_visible = bool(warnings)
+                warning_message = "\n".join(warnings)
 
-                # Update warning text and tooltip
                 dpg.configure_item("warning_text", show=warning_visible)
                 dpg.configure_item("warning_tooltip", show=warning_visible)
                 dpg.set_value("warning_tooltip_text", warning_message)
@@ -600,8 +593,6 @@ def exit_gui():
     if cm.globallimitonexit:
         rtss_cli.set_property("Global", "FramerateLimit", int(cm.globallimitonexit_fps))
 
-    if rtss_manager:
-        rtss_manager.stop_monitor_thread()
     if gpu_monitor:
         gpu_monitor.cleanup()
     if cpu_monitor:
@@ -636,7 +627,7 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
 
         dpg.add_spacer(width=30)
         dpg.add_button(label="Start", tag="start_stop_button", callback=start_stop_callback, width=50, user_data=cm)
-
+        dpg.bind_item_theme("start_stop_button", "start_button_theme")  # Apply start button theme
         dpg.add_button(label="Exit", callback=exit_gui, width=50)  # Exit button
 
     # Profiles
@@ -776,7 +767,7 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
             # TODO: Add dynamic tooltip to warning text, warning if current limits are less than minvalidfps
             dpg.add_text("Warning!", tag="warning_text", color=(190, 90, 90), 
                          pos=(500, 5),
-                         show=True)
+                         show=False)
             with dpg.tooltip(parent="warning_text", tag="warning_tooltip", show=False):
                 dpg.add_text("", tag="warning_tooltip_text", wrap=300)
             dpg.bind_item_font("warning_text", bold_font)
@@ -870,8 +861,6 @@ rtss_cli = RTSSCLI(logger, rtss_dll_path)
 rtss_cli.enable_limiter()
 
 rtss_manager = RTSSInterface(logger, dpg)
-if rtss_manager:
-    rtss_manager.start_monitor_thread()
 
 # Add after your other thread initializations
 gui_update_thread = threading.Thread(target=gui_update_loop, daemon=True)
