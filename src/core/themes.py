@@ -89,14 +89,14 @@ def create_themes():
             dpg.add_theme_style(dpg.mvStyleVar_ItemInnerSpacing, 5, 4)  # Spacing within the radio button
 
     # RTSS running theme
-    with dpg.theme(tag="rtss_running_theme"):
+    with dpg.theme(tag="start_button_theme"):
         with dpg.theme_component(dpg.mvButton):
             dpg.add_theme_color(dpg.mvThemeCol_Button, (0, 100, 0))
             dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, (0, 120, 0))
             dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, (0, 140, 0))
 
     # RTSS not running theme
-    with dpg.theme(tag="rtss_not_running_theme"):
+    with dpg.theme(tag="stop_button_theme"):
         with dpg.theme_component(dpg.mvButton):
             dpg.add_theme_color(dpg.mvThemeCol_Button, (170, 70, 70))
             dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, (190, 90, 90))
