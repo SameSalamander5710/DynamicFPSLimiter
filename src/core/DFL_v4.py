@@ -223,12 +223,12 @@ def tooltip_checkbox_callback(sender, app_data, user_data):
     update_tooltip_setting(dpg, sender, app_data, user_data, tooltips, cm, logger)
 
 def autostart_checkbox_callback(sender, app_data, user_data):
-
+#TODO: Update logic here
     is_checked = app_data
     if is_checked:
-        cm.enable_autostart()
+        autostart.create() 
     else:
-        cm.disable_autostart()
+        autostart.delete() 
 
 ShowTooltip = str(cm.settings_config["Preferences"].get("ShowTooltip", "True")).strip().lower() == "true"
 cm.globallimitonexit = str(cm.settings_config["Preferences"].get("globallimitonexit", "True")).strip().lower() == "true"
@@ -876,10 +876,11 @@ gui_update_thread.start()
 apply_all_tooltips(dpg, tooltips, ShowTooltip, cm, logger)
 current_method_callback()
 
-manager = AutoStartManager(app_path="C:\\Path\\To\\YourApp.exe")
-manager.create()  # Add to autostart
-manager.delete()  # Remove from autostart
-manager.update_if_needed()  # Update if needed
+autostart = AutoStartManager(app_path=os.path.join(os.path.dirname(Base_dir), "DynamicFPSLimiter.exe"))
+#FIXME: Add the logic here
+#autostart.create()  # Add to autostart
+#autostart.delete()  # Remove from autostart
+#autostart.update_if_needed()  # Update if needed
 
 
 dpg.bind_theme("main_theme")
