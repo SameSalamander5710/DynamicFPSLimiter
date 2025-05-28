@@ -223,8 +223,9 @@ def tooltip_checkbox_callback(sender, app_data, user_data):
     update_tooltip_setting(dpg, sender, app_data, user_data, tooltips, cm, logger)
 
 def autostart_checkbox_callback(sender, app_data, user_data):
-#TODO: Update logic here
-    is_checked = app_data
+    cm.update_launch_on_startup_setting(sender, app_data, user_data)
+
+    is_checked = dpg.get_value("autostart_checkbox")
     if is_checked:
         autostart.create() 
     else:
@@ -233,6 +234,7 @@ def autostart_checkbox_callback(sender, app_data, user_data):
 ShowTooltip = str(cm.settings_config["Preferences"].get("ShowTooltip", "True")).strip().lower() == "true"
 cm.globallimitonexit = str(cm.settings_config["Preferences"].get("globallimitonexit", "True")).strip().lower() == "true"
 cm.profileonstartup = str(cm.settings_config["Preferences"].get("profileonstartup", "True")).strip().lower() == "true"
+cm.launchonstartup = str(cm.settings_config["Preferences"].get("launchonstartup", "True")).strip().lower() == "true"
 
 #Check: Do I need this after setattr?
 for key in cm.settings_config["GlobalSettings"]:
@@ -607,7 +609,34 @@ def exit_gui():
         cpu_monitor.stop()
     if dpg.is_dearpygui_running():
         dpg.destroy_context()
-            
+
+# Defining short sections of the GUI
+# TODO: Refactor main GUI into a separate module for better organization
+def build_profile_section():
+    with dpg.child_window(width=-1, height=100):
+        with dpg.table(header_row=False):
+            dpg.add_table_column(init_width_or_weight=45)
+            dpg.add_table_column(init_width_or_weight=100)
+            dpg.add_table_column(init_width_or_weight=60)
+
+            # First row
+            with dpg.table_row():
+                dpg.add_text("Select Profile:")
+                dpg.add_combo(tag="profile_dropdown", callback=cm.load_profile_callback, width=260, default_value="Global")
+                dpg.add_button(label="Delete Profile", callback=cm.delete_selected_profile_callback, width=160)
+
+            # Second row
+            with dpg.table_row():
+                dpg.add_text("New RTSS Profile:")
+                dpg.add_input_text(tag="new_profile_input", width=260)
+                dpg.add_button(label="Add Profile", callback=cm.add_new_profile_callback, width=160)
+
+            # Third row
+            with dpg.table_row():
+                dpg.add_text("Last active process:")
+                dpg.add_input_text(tag="LastProcess", multiline=False, readonly=True, width=260)
+                dpg.add_button(label="Add process to Profiles", callback=cm.add_process_profile_callback, width=160)
+
 # GUI setup: Main Window
 dpg.create_context()
 create_themes()
@@ -640,31 +669,7 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
 
     # Profiles
     dpg.add_spacer(height=1)
-    with dpg.child_window(width=-1, height=100):
-        with dpg.table(header_row=False):
-            dpg.add_table_column(init_width_or_weight=45)
-            dpg.add_table_column(init_width_or_weight=100)
-            dpg.add_table_column(init_width_or_weight=60)
-
-            # First row
-            with dpg.table_row():
-                dpg.add_text("Select Profile:")
-                dpg.add_combo(tag="profile_dropdown", callback=cm.load_profile_callback, width=260, default_value="Global")
-                dpg.add_button(label="Delete Profile", callback=cm.delete_selected_profile_callback, width=160)
-
-            # Second row
-            with dpg.table_row():
-                dpg.add_text("New RTSS Profile:")
-                dpg.add_input_text(tag="new_profile_input", width=260)
-                dpg.add_button(label="Add Profile", callback=cm.add_new_profile_callback, width=160)
-
-            # Third row
-            with dpg.table_row():
-                dpg.add_text("Last active process:")
-                dpg.add_input_text(tag="LastProcess", multiline=False, readonly=True, width=260)
-                dpg.add_button(label="Add process to Profiles", callback=cm.add_process_profile_callback, width=160)
-                
- 
+    build_profile_section()
     
     #Tabs
     tab_height = 130
@@ -736,9 +741,8 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                     dpg.add_input_text(tag="profileonstartup_name", multiline=False, readonly=True, width=100,
                                        default_value=cm.profileonstartup_name)
                     dpg.bind_item_theme("profileonstartup_name", "transparent_input_theme_2")
-# TODO: Setup autostart checkbox, callback and function module
                 dpg.add_checkbox(label="Launch the app on Windows startup", tag="autostart_checkbox",
-                                 default_value=False, callback=autostart_checkbox_callback)
+                                 default_value=cm.launchonstartup, callback=autostart_checkbox_callback)
 
         with dpg.tab(label=" Log", tag="tab3"):
             with dpg.child_window(tag="LogWindow", autosize_x=True, height=tab_height, border=True):
@@ -772,6 +776,7 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                 tag="input_capmethod"
                 )
             dpg.bind_item_theme("input_capmethod", "radio_theme")
+            #dpg.bind_item_font("input_capmethod", bold_font)
             dpg.add_text("Warning!", tag="warning_text", color=(190, 90, 90), 
                          pos=(500, 5),
                          show=False)
@@ -837,8 +842,8 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
             dpg.bind_item_theme("line2", "fixed_greyline_theme")
             dpg.bind_item_theme("cap_series", "fps_cap_theme")
 
-dpg.create_viewport(title="Dynamic FPS Limiter", width=Viewport_width, height=Viewport_height, resizable=True)
-dpg.set_viewport_resizable(True)
+dpg.create_viewport(title="Dynamic FPS Limiter", width=Viewport_width, height=Viewport_height, resizable=False)
+dpg.set_viewport_resizable(False)
 dpg.set_viewport_max_width(Viewport_width*3)
 dpg.set_viewport_max_height(Viewport_height*3)
 dpg.set_viewport_small_icon(icon_path)
@@ -877,11 +882,7 @@ apply_all_tooltips(dpg, tooltips, ShowTooltip, cm, logger)
 current_method_callback()
 
 autostart = AutoStartManager(app_path=os.path.join(os.path.dirname(Base_dir), "DynamicFPSLimiter.exe"))
-#FIXME: Add the logic here
-#autostart.create()  # Add to autostart
-#autostart.delete()  # Remove from autostart
-#autostart.update_if_needed()  # Update if needed
-
+autostart.update_if_needed(cm.launchonstartup)
 
 dpg.bind_theme("main_theme")
 dpg.bind_item_theme("plot_childwindow", "plot_bg_theme")

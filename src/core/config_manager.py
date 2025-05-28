@@ -48,6 +48,7 @@ class ConfigManager:
                 'ShowTooltip': 'True',
                 'globallimitonexit': 'True',
                 'profileonstartup': 'True',
+                'launchonstartup': 'False',
             }
             self.settings_config["GlobalSettings"] = {
                 'delaybeforedecrease': '2',
@@ -113,7 +114,8 @@ class ConfigManager:
             'ShowTooltip': bool,
             'globallimitonexit': bool,
             'profileonstartup': bool,
-            'profileonstartup_name': str
+            'profileonstartup_name': str,
+            'launchonstartup': bool,
         }
 
         self.current_profile = "Global"
@@ -384,3 +386,11 @@ class ConfigManager:
                 self.logger.add_log(f"Profile '{profile_name}' not found. Defaulting to 'Global'.")
                 dpg.set_value("profile_dropdown", "Global")
                 self.load_profile_callback(None, "Global", None)
+
+#TODO: Refactor this to use a more generic method for updating preference settings
+    def update_launch_on_startup_setting(self, sender, app_data, user_data):
+        self.launchonstartup = app_data
+        self.settings_config["Preferences"]["launchonstartup"] = str(app_data)
+        with open(self.settings_path, 'w') as f:
+            self.settings_config.write(f)
+        self.logger.add_log(f"Launch on Startup set to: {self.launchonstartup}")
