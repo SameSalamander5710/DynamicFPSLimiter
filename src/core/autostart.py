@@ -1,6 +1,7 @@
 import os
 import sys
 import subprocess
+import dearpygui.dearpygui as dpg
 
 TASK_NAME = "DynamicFPSLimiter"
 
@@ -34,16 +35,19 @@ class AutoStartManager:
         if self.task_exists():
             subprocess.run(f'schtasks /Delete /TN "{self.task_name}" /F', shell=True)
 
-
-    def update_if_needed(self):
-        if self.task_exists():
-            result = subprocess.run(f'schtasks /Query /TN "{self.task_name}" /XML',
-                                    shell=True, stdout=subprocess.PIPE, text=True)
-            if self.app_path.lower() not in result.stdout.lower():
-                self.delete()
+    def update_if_needed(self, startup_checkbox):
+        if startup_checkbox:
+            if self.task_exists():
+                result = subprocess.run(f'schtasks /Query /TN "{self.task_name}" /XML',
+                                        shell=True, stdout=subprocess.PIPE, text=True)
+                if self.app_path.lower() not in result.stdout.lower():
+                    self.delete()
+                    self.create()
+            else:
                 self.create()
         else:
-            self.create()
+            if self.task_exists():
+                self.delete()
 
 
 
