@@ -270,7 +270,8 @@ def start_stop_callback(sender, app_data, user_data):
     cpu_values = []
 
     # Freeze input fields
-
+#FIXME: Prevent disabling input fields changing the applied themes!
+#TODO: Add all theme bindings to a dict and apply them after the item configuration
     for key in cm.input_field_keys:
         dpg.configure_item(f"input_{key}", enabled=not running)
 
