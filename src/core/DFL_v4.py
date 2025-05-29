@@ -270,10 +270,11 @@ def start_stop_callback(sender, app_data, user_data):
     cpu_values = []
 
     # Freeze input fields
-#FIXME: Prevent disabling input fields changing the applied themes!
-#TODO: Add all theme bindings to a dict and apply them after the item configuration
     for key in cm.input_field_keys:
         dpg.configure_item(f"input_{key}", enabled=not running)
+
+    for tag in cm.input_button_tags:
+        dpg.configure_item(tag, enabled=not running)
 
     if running:
         # Initialize RTSS
@@ -713,9 +714,9 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                         with dpg.table(header_row=False, resizable=False, policy=dpg.mvTable_SizingFixedFit):
                             dpg.add_table_column(width_fixed=True)
                             with dpg.table_row():
-                                dpg.add_button(label="Quick Save", callback=cm.quick_save_settings, width=tab1_group3_width)
+                                dpg.add_button(tag="quick_save", label="Quick Save", callback=cm.quick_save_settings, width=tab1_group3_width)
                             with dpg.table_row():
-                                dpg.add_button(label="Quick Load", callback=cm.quick_load_settings, width=tab1_group3_width)
+                                dpg.add_button(tag="quick_load", label="Quick Load", callback=cm.quick_load_settings, width=tab1_group3_width)
                             with dpg.table_row():
                                 dpg.add_button(tag="Reset_Default", label="Reset Settings to Default", callback=cm.reset_to_program_default, width=tab1_group3_width)
                             with dpg.table_row():
@@ -739,7 +740,7 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                     dpg.add_button(label="Current Profile", tag="select_profile_button",
                                     callback=cm.select_default_profile_callback, width=105)
                     dpg.add_text("as default on startup. Currently set to:")
-                    dpg.add_input_text(tag="profileonstartup_name", multiline=False, readonly=True, width=100,
+                    dpg.add_input_text(tag="profileonstartup_name", multiline=False, readonly=True, width=150,
                                        default_value=cm.profileonstartup_name)
                     dpg.bind_item_theme("profileonstartup_name", "transparent_input_theme_2")
                 dpg.add_checkbox(label="Launch the app on Windows startup", tag="autostart_checkbox",

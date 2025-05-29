@@ -16,7 +16,7 @@ def get_tooltips():
     "minvalidfps": "Defines the minimum valid FPS required for adjusting the FPS. If the FPS falls below this value, the FPS cap will not change. This helps prevent FPS fluctuations during loading screens.",
     "quick_save": "Saves input values from memory. This is temporary storage, useful for testing and fine-tuning configurations.",
     "quick_load": "Loads input values from memory. This is temporary storage, useful for testing and fine-tuning configurations.",
-    "start_stop_button": "Starts maintaining the FPS cap dynamically based on GPU/CPU utilization. Green = RTSS running. Red = RTSS not running.",
+    "start_stop_button": "Starts maintaining the FPS cap dynamically based on GPU/CPU utilization.",
     "luid_button": "Detects the render GPU based on highest 3D engine utilization, and sets it as the target GPU for FPS limiting. Click again to deselect.",
     "exit_fps_input": "The specific FPS limit to apply globally when the application exits, if 'Set Global FPS Limit on Exit' is checked.",
     "SaveToProfile": "Saves the current settings to the selected profile. This allows you to quickly switch between different configurations.",
