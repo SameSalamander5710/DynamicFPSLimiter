@@ -14,7 +14,7 @@ def check_rtss_running(rtss_manager):
 
 def check_min_greater_than_minvalidfps(dpg, cm, mincap):
     if mincap < cm.minvalidfps:
-        return "[WARNING]: Minimum FPS limit should be > minimum valid FPS of {}.".format(cm.minvalidfps)
+        return "[WARNING]: Minimum FPS limit should be > minimum valid FPS of {}. This setting can be changes in settings.ini".format(cm.minvalidfps)
     return None
 
 def get_active_warnings(dpg, cm, rtss_manager, mincap):

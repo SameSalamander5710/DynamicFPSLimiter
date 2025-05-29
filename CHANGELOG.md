@@ -1,30 +1,26 @@
 # CHANGELOG
 
-## [Unreleased]
-### Added
-- Initial implementation of the Dynamic FPS Limiter application.
-- User interface for managing FPS limits and monitoring GPU/CPU usage.
-
 ## [v4.1.0] - 2025-05-XX
 ### Added
-- Support for custom FPS limits input.
-- New methods for calculating FPS limits based on ratio and step.
-- GUI enhancements for better user experience.
-- Tooltips for various settings in the application.
+
+- Support for custom FPS limit input.
+- New methods for calculating FPS limits using ratio and step approaches.
+    - Users can configure both custom and calculated limits separately, allowing two different cap settings under the same profile and easy switching between them.
+- Overhauled GUI theme for an improved user experience.
+- Option to launch the app with Windows startup.
+- Ability to set the default profile that loads on app launch.
+- Warning when FPS limits are set below the minimum valid value (configurable in `settings.ini`).
 
 ### Changed
-- Improved logging functionality for better debugging and user feedback.
-- Updated the layout of the profile settings section in the GUI.
-
-### Fixed
-- Resolved issues with incorrect FPS cap settings not being applied.
-- Fixed bugs related to GPU monitoring and usage reporting.
+- Updated internal logic to use lists (sets) for managing FPS limit values.
+- Refactored several parts of the original code for better maintainability.
 
 ## [v4.0.0] - 2025-05-09
 ### Added
 - Complete UI overhaul: Redesigned and simplified interface with proper DPI scaling and a more efficient window layout.
 - CPU usage monitoring: Dynamic framerate limit adjustments can now factor in CPU usage.
 - Process-based profile creation: Create profiles directly from currently running processes.
+- Added a beta FAQ tab
 
 ### Changed
 - Reworked GPU usage retrieval for more accurate and efficient monitoring (no longer uses PowerShell).
@@ -33,9 +29,8 @@
 - Switched from using `rtss-cli.exe` to a direct Python wrapper for RTSS communication.
 - Refined framerate adjustment logic to better respond to real-time system load.
 - Improved repository structure and build instructions.
+- Removed build output from repository; they can only be found in the Releases.
 - `.ini` files are now located back to the main app directory.
-
-### Fixed
 - Does not spawn any persistent subprocesses.
 
 ## [v3.0.2] - 2025-04-16
