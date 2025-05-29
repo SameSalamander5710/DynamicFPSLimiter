@@ -5,7 +5,8 @@ bg_colour_1_transparent = (21, 20, 21, 0)
 bg_colour_2_child = (27, 31, 37, 255)
 bg_colour_3_button = (35, 39, 47, 255)
 bg_colour_4_buttonhover = (32, 60, 68, 255)
-bg_colour_5_buttonactive = (30, 85, 205, 255)
+bg_colour_4_buttonhover_blue = (40, 100, 225, 255)
+bg_colour_5_buttonactive = (30, 85, 205, 255) # Blue
 bg_colour_6_buttonstateactive_orange = (200, 88, 45, 255)
 bg_colour_7_text_faded = (150, 152, 161, 255) # Faded text for plot
 bg_colour_8_text_enabled = (255, 255, 255, 255)
@@ -125,15 +126,15 @@ def create_themes():
     # Detect GPU theme
     with dpg.theme(tag="detect_gpu_theme"):
         with dpg.theme_component(dpg.mvButton):
-            dpg.add_theme_color(dpg.mvThemeCol_Button, bg_colour_3_button)
-            dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, bg_colour_4_buttonhover)
+            #dpg.add_theme_color(dpg.mvThemeCol_Button, bg_colour_3_button)
+            #dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, bg_colour_4_buttonhover_blue)
             dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, bg_colour_5_buttonactive)
 
     # Revert GPU theme
     with dpg.theme(tag="revert_gpu_theme"):
         with dpg.theme_component(dpg.mvButton):
             dpg.add_theme_color(dpg.mvThemeCol_Button, bg_colour_5_buttonactive)
-            dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, bg_colour_4_buttonhover)
+            dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, bg_colour_4_buttonhover_blue)
             dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, bg_colour_5_buttonactive)
         #with dpg.theme_component(dpg.mvAll):
             #dpg.add_theme_color(dpg.mvThemeCol_Text, bg_colour_8_text_stateactive)
