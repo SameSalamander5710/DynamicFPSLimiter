@@ -27,11 +27,6 @@ If you'd like to inspect or customize the source code, follow the instructions i
 >   - [DynamicFPSLimiter_v4.0.0.zip](https://www.virustotal.com/gui/file/b1fcaa5d0854e68359837562bf3df99158d89a457e2839d8b5e7fea2a20e5c32/behavior)
 >   - [DynamicFPSLimiter.exe](https://www.virustotal.com/gui/file/44bb6393c624da36c34e009c52f0057b92c65371f493196155fda6cdceab4d88/behavior)
 
-## Table of Contents
-- [Installation](#installation)
-- [The Concept](#the-concept)
-- [Troubleshooting](#troubleshooting)
-
 ## The Concept
 This app was developed to enhance the gaming experience when using Lossless Scaling Frame Generation (LSFG). LSFG works best when the game runs with an FPS cap that leaves enough GPU headroom for frame generation. However, if GPU usage hits 100%—which may also cause the game’s base FPS to drop—you may experience input lag, which is undesirable.
 
@@ -45,10 +40,6 @@ This app solves the issue by dynamically adjusting the base FPS limit in demandi
 <p float="left">
   <img src="/docs/Images/DFL_v4.0.0_01.png" style="width: 450px; max-width: 45%;" />
 </p>
-
-## Troubleshooting
-
-Check out the [Troubleshooting Guide](/docs/Troubleshooting.md) for a list of known bugs, common problems, and their solutions.
 
 ## Disclaimer
 
