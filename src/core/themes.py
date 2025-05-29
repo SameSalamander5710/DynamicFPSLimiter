@@ -10,7 +10,7 @@ bg_colour_6_buttonstateactive = (200, 88, 45, 255)
 bg_colour_7_text_faded = (150, 152, 161, 255) # Faded text for plot
 bg_colour_8_text_enabled = (255, 255, 255, 255)
 bg_colour_9_text_disabled = (150, 152, 161, 150) 
-
+bg_colour_10_button_disabled = (31, 35, 42, 255) 
 
 def create_themes():
 
@@ -81,6 +81,26 @@ def create_themes():
         
         with dpg.theme_component(dpg.mvTab):
             dpg.add_theme_style(dpg.mvStyleVar_FramePadding, 8, 3)
+
+        disabled_comps = [dpg.mvInputText, dpg.mvButton, dpg.mvTabBar, dpg.mvTab, dpg.mvImage, dpg.mvMenuBar, dpg.mvViewportMenuBar, dpg.mvMenu, dpg.mvMenuItem, dpg.mvChildWindow, dpg.mvGroup, dpg.mvDragFloatMulti, dpg.mvSliderFloat, dpg.mvSliderInt, dpg.mvFilterSet, dpg.mvDragFloat, dpg.mvDragInt, dpg.mvInputFloat, dpg.mvInputInt, dpg.mvColorEdit, dpg.mvClipper, dpg.mvColorPicker, dpg.mvTooltip, dpg.mvCollapsingHeader, dpg.mvSeparator, dpg.mvCheckbox, dpg.mvListbox, dpg.mvText, dpg.mvCombo, dpg.mvPlot, dpg.mvSimplePlot, dpg.mvDrawlist, dpg.mvWindowAppItem, dpg.mvSelectable, dpg.mvTreeNode, dpg.mvProgressBar, dpg.mvSpacer, dpg.mvImageButton, dpg.mvTimePicker, dpg.mvDatePicker, dpg.mvColorButton, dpg.mvFileDialog, dpg.mvTabButton, dpg.mvDrawNode, dpg.mvNodeEditor, dpg.mvNode, dpg.mvNodeAttribute, dpg.mvTable, dpg.mvTableColumn, dpg.mvTableRow]
+        for comp_type in disabled_comps:
+            with dpg.theme_component(comp_type, enabled_state=False):
+                dpg.add_theme_color(dpg.mvThemeCol_Text, bg_colour_9_text_disabled)
+                dpg.add_theme_color(dpg.mvThemeCol_Button, bg_colour_2_child)
+                dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, bg_colour_2_child)
+                dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, bg_colour_2_child)
+                dpg.add_theme_color(dpg.mvThemeCol_CheckMark, (200, 200, 200))  # White selection circle
+                dpg.add_theme_color(dpg.mvThemeCol_FrameBg, bg_colour_2_child)
+                dpg.add_theme_color(dpg.mvThemeCol_BorderShadow, (255, 255, 255, 11))
+
+        with dpg.theme_component(dpg.mvRadioButton, enabled_state=False):
+            dpg.add_theme_color(dpg.mvThemeCol_Text, bg_colour_9_text_disabled)
+            dpg.add_theme_color(dpg.mvThemeCol_Button, bg_colour_2_child)
+            dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, bg_colour_2_child)
+            dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, bg_colour_2_child)
+            dpg.add_theme_color(dpg.mvThemeCol_CheckMark, (200, 200, 200))  # White selection circle
+            dpg.add_theme_style(dpg.mvStyleVar_ItemSpacing, 18, 4)  # Spacing between radio buttons
+            dpg.add_theme_style(dpg.mvStyleVar_ItemInnerSpacing, 5, 4)  # Spacing within the radio button
 
     with dpg.theme(tag="radio_theme"):
         with dpg.theme_component(dpg.mvRadioButton):

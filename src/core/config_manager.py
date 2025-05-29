@@ -89,6 +89,8 @@ class ConfigManager:
                 "gpucutofffordecrease", "gpucutoffforincrease", "cpucutofffordecrease", "cpucutoffforincrease",
                 "capmethod", "customfpslimits"]
 
+        self.input_button_tags = ["rest_fps_cap_button", "autofill_fps_caps", "quick_save", "quick_load", "Reset_Default", "SaveToProfile"]
+
         self.key_type_map = {
             "maxcap": int,
             "mincap": int,
