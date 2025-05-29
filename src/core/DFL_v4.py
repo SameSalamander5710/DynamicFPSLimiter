@@ -637,7 +637,8 @@ def build_profile_section():
             with dpg.table_row():
                 dpg.add_text("Last active process:")
                 dpg.add_input_text(tag="LastProcess", multiline=False, readonly=True, width=260)
-                dpg.add_button(label="Add process to Profiles", callback=cm.add_process_profile_callback, width=160)
+                dpg.bind_item_theme("LastProcess", "transparent_input_theme_2")
+                dpg.add_button(tag="process_to_profile", label="Add process to Profiles", callback=cm.add_process_profile_callback, width=160)
 
 # GUI setup: Main Window
 dpg.create_context()
@@ -704,7 +705,7 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                                             ("CPU: Upper limit", "cpucutofffordecrease"),
                                             ("Lower limit", "cpucutoffforincrease")]:
                                 with dpg.table_row():
-                                    dpg.add_button(label=label, tag=f"button_{key}", width=115)
+                                    dpg.add_button(label=label, tag=f"button_{key}", width=120)
                                     dpg.bind_item_theme(f"button_{key}", "button_right")
                                     dpg.add_input_text(tag=f"input_{key}", default_value=str(cm.settings[key]), width=40)
                     
