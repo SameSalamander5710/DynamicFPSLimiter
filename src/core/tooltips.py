@@ -25,7 +25,7 @@ def get_tooltips():
     "DeleteProfile": "Deletes the selected profile. Be cautious, as this action cannot be undone.",
     "checkbox_enablecustomfpslimits": "Enables or disables the use of custom FPS limits. When enabled, the FPS limits will be applied based on the specified list.",
     "checkbox_globallimitonexit": "Enables or disables the application of a global FPS limit when exiting the program. When enabled, the specified FPS limit will be applied to all processes.",
-    "autofill_fps_caps": "Generates FPS limits from `max FPS limit` down to `min FPS limit` such that each step reduces expected GPU usage from `upper limit` to just above `lower limit` when triggered.",
+    "autofill_fps_caps": "Click with the method set to 'ratio' or 'step' to copy those limits.",
 }
 
 def add_tooltip(dpg, key, tooltips, ShowTooltip, cm, logger):
