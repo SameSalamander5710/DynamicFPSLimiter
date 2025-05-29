@@ -1,3 +1,5 @@
+[Outdated information as of v4.0: Will not be updated due to constant changes in the underlying logic.]
+
 # How It Works
 
 The Dynamic FPS Limiter app dynamically adjusts the FPS cap in real-time based on GPU and CPU usage to optimize performance and reduce input lag. Below is an explanation of the logic used to determine when to increase or decrease the FPS cap.
