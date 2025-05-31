@@ -1,17 +1,17 @@
 # DFL_v4.py
-# Dynamic FPS Limiter v4.0.0
+# Dynamic FPS Limiter v4.1.0
 
 import ctypes
 ctypes.windll.shcore.SetProcessDpiAwareness(2)
 
 import dearpygui.dearpygui as dpg
 import threading
-import configparser
 import time
 import math
 import os
 import sys
 import csv
+import pywinstyles
 
 # tweak path so "src/" (or wherever your modules live) is on sys.path
 _this_dir = os.path.abspath(os.path.dirname(__file__))
@@ -24,91 +24,30 @@ from core.rtss_interface import RTSSInterface
 from core.rtss_cli import RTSSCLI
 from core.cpu_monitor import CPUUsageMonitor
 from core.gpu_monitor import GPUUsageMonitor
+from core.themes import create_themes
+from core.config_manager import ConfigManager
+from core.tooltips import get_tooltips, add_tooltip, apply_all_tooltips, update_tooltip_setting
+from core.warning import get_active_warnings
+from core.autostart import AutoStartManager
 
 # Always get absolute path to EXE or script location
 Base_dir = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
+cm = ConfigManager(logger, dpg, Base_dir)
+tooltips = get_tooltips()
 
 # Ensure the config folder exists in the parent directory of Base_dir
-config_dir = os.path.join(os.path.dirname(Base_dir), "config")
 parent_dir = os.path.dirname(Base_dir)
-os.makedirs(config_dir, exist_ok=True)
 
 # Paths to configuration files
-settings_path = os.path.join(config_dir, "settings.ini")
-profiles_path = os.path.join(config_dir, "profiles.ini")
 rtss_dll_path = os.path.join(Base_dir, "assets/rtss.dll")
 error_log_file = os.path.join(parent_dir, "error_log.txt")
 icon_path = os.path.join(Base_dir, 'assets/DynamicFPSLimiter.ico')
 font_path = os.path.join(os.environ["WINDIR"], "Fonts", "segoeui.ttf") #segoeui, Verdana, Tahoma, Calibri, micross
+bold_font_path = os.path.join(os.environ["WINDIR"], "Fonts", "segoeuib.ttf")
 faq_path = os.path.join(Base_dir, "assets/faqs.csv")
 
 logger.init_logging(error_log_file)
 rtss_manager = None
-
-profiles_config = configparser.ConfigParser()
-settings_config = configparser.ConfigParser()
-
-# Check if the settings and profiles files exist, if not create them with default values
-if os.path.exists(settings_path):
-    settings_config.read(settings_path)
-else:
-    # Initialize Preferences section
-    settings_config["Preferences"] = {
-        'ShowTooltip': 'True',
-        'GlobalLimitOnExit': 'True',
-    }
-    # Add GlobalSettings section
-    settings_config["GlobalSettings"] = {
-        'delaybeforedecrease': '2',
-        'delaybeforeincrease': '2',
-        'minvalidgpu': '20',
-        'minvalidfps': '20',
-        'globallimitonexit_fps': '98',
-        'cpupercentile': '70',
-        'cpupollinginterval': '100',
-        'cpupollingsamples': '20',
-        'gpupercentile': '70',
-        'gpupollinginterval': '100',
-        'gpupollingsamples': '20',
-    }
-    with open(settings_path, 'w') as f:
-        settings_config.write(f)
-
-if os.path.exists(profiles_path):
-    profiles_config.read(profiles_path)
-else:
-    profiles_config["Global"] = {
-        'maxcap': '60',
-        'mincap': '30',
-        'capstep': '5',
-        'gpucutofffordecrease': '85',
-        'gpucutoffforincrease': '75',
-        'cpucutofffordecrease': '95',
-        'cpucutoffforincrease': '85'
-    }
-    with open(profiles_path, 'w') as f:
-        profiles_config.write(f)
-
-Default_settings_original = {
-    "maxcap": 60,
-    "mincap": 30,
-    "capstep": 5,
-    "gpucutofffordecrease": 85,
-    "gpucutoffforincrease": 75,
-    'cpucutofffordecrease': 95,
-    'cpucutoffforincrease': 85,
-    "delaybeforedecrease": 2,
-    "delaybeforeincrease": 2,
-    "minvalidgpu": 20,
-    "minvalidfps": 20,
-    "globallimitonexit_fps": 98,
-    'cpupercentile': 70,
-    'cpupollinginterval': 100,
-    'cpupollingsamples': 20,
-    'gpupercentile': 70,
-    'gpupollinginterval': 100,
-    'gpupollingsamples': 20
-}
 
 questions = []
 FAQs = {}
@@ -120,146 +59,207 @@ with open(faq_path, newline='', encoding='utf-8') as csvfile:
         questions.append(row["question"])
         FAQs[key] = row["answer"]
 
-# Function to get values with correct types
-def get_setting(key, value_type=int):
-    """Get setting from appropriate config section based on key type."""
-    if key in ["delaybeforedecrease", "delaybeforeincrease", "minvalidgpu", "minvalidfps", "globallimitonexit_fps",
-               "cpupercentile", "cpupollinginterval", "cpupollingsamples", "gpupercentile", "gpupollinginterval", "gpupollingsamples"]:
-        return value_type(settings_config["GlobalSettings"].get(key, Default_settings_original[key]))
-    return value_type(profiles_config["Global"].get(key, Default_settings_original[key]))
+def sort_customfpslimits_callback(sender, app_data, user_data):
+    # Get the current value from the input field
+    value = dpg.get_value("input_customfpslimits")
+    # Parse to set of ints
+    try:
+        numbers = set(int(x.strip()) for x in value.split(",") if x.strip().isdigit())
+        numbers = sorted(x for x in numbers if x > 0) 
+        sorted_str = ", ".join(str(x) for x in sorted(numbers))
+        dpg.set_value("input_customfpslimits", sorted_str)
+    except Exception:
+        # If parsing fails, do nothing or optionally reset to previous valid value
+        pass
 
-Default_settings = {key: get_setting(key, str if isinstance(Default_settings_original[key], str) else int) for key in Default_settings_original}
+def current_stepped_limits():
 
-ShowTooltip = str(settings_config["Preferences"].get("ShowTooltip", "True")).strip().lower() == "true"
-GlobalLimitonExit = str(settings_config["Preferences"].get("GlobalLimitOnExit", "True")).strip().lower() == "true"
+    maximum = int(dpg.get_value("input_maxcap"))
+    minimum = int(dpg.get_value("input_mincap"))
+    step = int(dpg.get_value("input_capstep"))
+    ratio = int(dpg.get_value("input_capratio"))
 
-for key in settings_config["GlobalSettings"]:
-    value = get_setting(key, int)
+    use_custom  = dpg.get_value("input_capmethod")
+    #logger.add_log(f"Stepped limits: {make_stepped_values(maximum, minimum, step)}")
+    #logger.add_log(f"Ratio limits: {make_ratioed_values(maximum, minimum, ratio)}")
+    #logger.add_log(f"Method selection: {use_custom}")
+
+    if use_custom == "custom":
+        custom_limits = dpg.get_value("input_customfpslimits")
+        if custom_limits:
+            try:
+                custom_limits = set(int(x.strip()) for x in custom_limits.split(",") if x.strip().isdigit())
+                custom_limits = sorted(x for x in custom_limits if x > 0)
+                return custom_limits
+            except Exception:
+                logger.add_log("Error parsing custom FPS limits, using default stepped limits.")
+    elif use_custom == "step":
+        return make_stepped_values(maximum, minimum, step)
+    elif use_custom == "ratio":
+        return make_ratioed_values(maximum, minimum, ratio)
+    #logger.add_log(f"Default stepped limits: {maximum}, {minimum}, {step}")
+    #logger.add_log(f"Stepped limits: {make_stepped_values(maximum, minimum, step)}")
+
+def make_stepped_values(maximum, minimum, step):
+    values = list(range(maximum, minimum - 1, -step))
+    if minimum not in values:
+        values.append(minimum)
+    return sorted(set(values))
+
+def make_ratioed_values(maximum, minimum, ratio):
+    values = []
+    current = maximum
+    ratio_factor = 1 - (ratio / 100.0)
+    if ratio_factor <= 0 or ratio_factor >= 1:
+        return sorted(set([maximum, minimum]))
+    prev_diff = None
+    values.append(int(round(current)))
+
+    while current >= minimum:
+        current = current * ratio_factor
+        rounded_current = int(round(current))
+        if len(values) >= 3:
+            prev_diff = abs(values[-1] - values[-2])
+        if prev_diff is not None and abs(rounded_current - values[-1]) > prev_diff:
+            rounded_current = values[-1] - prev_diff
+
+        # Duplicate detection and correction
+        while rounded_current in values and rounded_current > minimum:
+            rounded_current -= 1
+
+        values.append(rounded_current)
+        current = rounded_current
+
+        if rounded_current <= minimum:
+            break
+    if minimum not in values:
+        values.append(minimum)
+
+    custom_limits = sorted(x for x in set(values) if x >= minimum)
+    
+    return custom_limits
+
+last_fps_limits = []
+
+def update_fps_cap_visualization():
+
+    global last_fps_limits
+    
+    fps_limits = current_stepped_limits()
+    #logger.add_log(f"FPS limits: {fps_limits}")
+
+    # Check if fps_limits has changed
+    if fps_limits == last_fps_limits:
+        return  # Exit if no change
+    
+    # Store new fps_limits for next comparison
+    last_fps_limits = fps_limits.copy()
+
+    # Clear existing items in drawlist
+    dpg.delete_item("Foreground")
+    
+    with dpg.draw_layer(tag="Foreground", parent="fps_cap_drawlist"):
+        # Get current FPS limits
+        
+        if fps_limits:
+            draw_width = Viewport_width - 67  # Width of drawlist
+            layer2_height = 30  # Height of drawlist
+            margin = 10  # Margin around drawlist
+            
+            # Calculate min and max for scaling
+            min_fps = min(fps_limits)
+            max_fps = max(fps_limits)
+            fps_range = max_fps - min_fps
+            
+            # Draw rectangles for each FPS limit
+            for cap in fps_limits:
+                # Map the FPS cap value to the drawlist width
+                x_pos = margin + int((cap - min_fps) / fps_range * (draw_width - margin))
+                y_pos = layer2_height // 2
+                
+                # Draw FPS marker
+                dpg.draw_circle(
+                    (x_pos, y_pos),  # Center point
+                    7,  # Radius
+                    #thickness=2,
+                    #color=(128, 128, 128),  # Border color (grey)
+                    fill=(200, 200, 200),  # Fill color (white)
+                    parent="Foreground"
+                )
+                
+                if len(fps_limits) < 20:
+                    # Add FPS value text above rectangle
+                    dpg.draw_text(
+                        (x_pos - 10, y_pos + 8),
+                        str(cap),
+                        color=(200, 200, 200),
+                        size=16,
+                        parent="Foreground"
+                    )
+
+def copy_from_plot_callback():
+    
+    fps_limits = sorted(set(current_stepped_limits()))
+    fps_limits_str = ", ".join(str(int(round(x))) for x in fps_limits)
+    dpg.set_value("input_customfpslimits", fps_limits_str)
+
+def current_method_callback(sender=None, app_data=None, user_data=None):
+
+    method = app_data if app_data else dpg.get_value("input_capmethod")
+
+    dpg.bind_item_theme("input_capratio", "enabled_text_theme") if method == "ratio" else dpg.bind_item_theme("input_capratio", "disabled_text_theme")
+    dpg.bind_item_theme("label_capratio", "enabled_text_theme") if method == "ratio" else dpg.bind_item_theme("label_capratio", "disabled_text_theme")
+    dpg.bind_item_theme("label_capstep", "enabled_text_theme") if method == "step" else dpg.bind_item_theme("label_capstep", "disabled_text_theme")
+    dpg.bind_item_theme("input_capstep", "enabled_text_theme") if method == "step" else dpg.bind_item_theme("input_capstep", "disabled_text_theme")
+    dpg.bind_item_theme("input_customfpslimits", "enabled_text_theme") if method == "custom" else dpg.bind_item_theme("input_customfpslimits", "disabled_text_theme")
+    dpg.bind_item_theme("label_maxcap", "disabled_text_theme") if method == "custom" else dpg.bind_item_theme("label_maxcap", "enabled_text_theme")
+    dpg.bind_item_theme("label_mincap", "disabled_text_theme") if method == "custom" else dpg.bind_item_theme("label_mincap", "enabled_text_theme")
+    dpg.bind_item_theme("input_maxcap", "disabled_text_theme") if method == "custom" else dpg.bind_item_theme("input_maxcap", "enabled_text_theme")
+    dpg.bind_item_theme("input_mincap", "disabled_text_theme") if method == "custom" else dpg.bind_item_theme("input_mincap", "enabled_text_theme")
+    
+    logger.add_log(f"Method selection changed: {method}")
+
+def tooltip_checkbox_callback(sender, app_data, user_data):
+    update_tooltip_setting(dpg, sender, app_data, user_data, tooltips, cm, logger)
+
+def autostart_checkbox_callback(sender, app_data, user_data):
+    cm.update_launch_on_startup_setting(sender, app_data, user_data)
+
+    is_checked = dpg.get_value("autostart_checkbox")
+    if is_checked:
+        autostart.create() 
+    else:
+        autostart.delete() 
+
+ShowTooltip = str(cm.settings_config["Preferences"].get("ShowTooltip", "True")).strip().lower() == "true"
+cm.globallimitonexit = str(cm.settings_config["Preferences"].get("globallimitonexit", "True")).strip().lower() == "true"
+cm.profileonstartup = str(cm.settings_config["Preferences"].get("profileonstartup", "True")).strip().lower() == "true"
+cm.launchonstartup = str(cm.settings_config["Preferences"].get("launchonstartup", "True")).strip().lower() == "true"
+
+#Check: Do I need this after setattr?
+for key in cm.settings_config["GlobalSettings"]:
+    value_type = cm.key_type_map.get(key, str)
+    value = cm.get_setting(key, value_type)
     if value is not None:
         globals()[key] = value
 
 # Default viewport size
-Viewport_width = 600
-Viewport_height = 640
-Plot_height = 220
-
-def save_to_profile():
-    selected_profile = dpg.get_value("profile_dropdown")
-
-    if selected_profile:
-        # Update profile-specific settings
-        for key in ["maxcap", "mincap", "capstep",
-                "gpucutofffordecrease", "gpucutoffforincrease", "cpucutofffordecrease", "cpucutoffforincrease"]:
-            value = dpg.get_value(f"input_{key}")  # Get value from input field
-            profiles_config[selected_profile][key] = str(value) 
-        
-        with open(profiles_path, "w") as configfile:
-            profiles_config.write(configfile)
-
-        logger.add_log(f"Settings saved to profile: {selected_profile}")
-settings = Default_settings.copy()
-
-def update_profile_dropdown(select_first=False):
-    profiles = profiles_config.sections()
-    dpg.configure_item("profile_dropdown", items=profiles)
-
-    if select_first and profiles:
-        dpg.set_value("profile_dropdown", profiles[0])  # Set combo selection
-
-current_profile = "Global"
-
-def load_profile_callback(sender, app_data, user_data):
-    
-    global current_profile
-    current_profile = app_data
-    profile_name = app_data
-    
-    if profile_name not in profiles_config:
-        return
-    for key in ["maxcap", "mincap", "capstep",
-                "gpucutofffordecrease", "gpucutoffforincrease", "cpucutofffordecrease", "cpucutoffforincrease"]:
-        value = profiles_config[profile_name].get(key, Default_settings_original[key])
-        dpg.set_value(f"input_{key}", int(value))
-    update_global_variables()
-    dpg.set_value("new_profile_input", "")
-
-def save_profile(profile_name):
-    profiles_config[profile_name] = {}
-    # Save input fields
-    for key in ["maxcap", "mincap", "capstep",
-                "gpucutofffordecrease", "gpucutoffforincrease", "cpucutofffordecrease", "cpucutoffforincrease"]:
-        profiles_config[profile_name][key] = str(dpg.get_value(f"input_{key}"))
-    with open(profiles_path, 'w') as f:
-        profiles_config.write(f)
-    update_profile_dropdown()
-
-def add_new_profile_callback():
-    new_name = dpg.get_value("new_profile_input")
-    if new_name and new_name not in profiles_config:
-        save_profile(new_name)
-        dpg.set_value("new_profile_input", "")
-        logger.add_log(f"New profile created: {new_name}")
-    else:
-        logger.add_log("Profile name is empty or already exists.")
-
-def add_process_profile_callback():
-    new_name = dpg.get_value("LastProcess")
-    if new_name and new_name not in profiles_config:
-        save_profile(new_name)
-        logger.add_log(f"New profile created: {new_name}")
-    else:
-        logger.add_log("Profile name is empty or already exists.")
-
-def delete_selected_profile_callback():
-    global current_profile
-
-    profile_to_delete = dpg.get_value("profile_dropdown")
-    if profile_to_delete == "Global":
-        logger.add_log("Cannot delete the default 'Global' profile.")
-        return
-    if profile_to_delete in profiles_config:
-        profiles_config.remove_section(profile_to_delete)
-        with open(profiles_path, 'w') as f:
-            profiles_config.write(f)
-        update_profile_dropdown(select_first=True)
-
-        # Reset input fields to the "Global" profile values
-        if "Global" in profiles_config:
-            for key in profiles_config["Global"]:
-                try:
-                    # Convert the value to the appropriate type before setting it
-                    value = int(profiles_config["Global"][key])
-                    dpg.set_value(f"input_{key}", value)
-                except ValueError:
-                    logger.add_log(f"Error: Unable to convert value for key '{key}' to int.")
-            update_global_variables()  # Ensure global variables are updated
-        else:
-            logger.add_log("Error: 'Global' profile not found in configuration.")
-
-        logger.add_log(f"Deleted profile: {profile_to_delete}")
-        current_profile = "Global"
+Viewport_width = 625
+Viewport_height = 700
 
 running = False  # Flag to control the monitoring loop
 
-# Function to sync settings with variables
-def update_global_variables():
-    for key, value in settings.items():
-        if str(value).isdigit():  # Check if value is a number
-            globals()[key] = int(value)
+cm.update_global_variables()
 
-update_global_variables()
+def start_stop_callback(sender, app_data, user_data):
 
-# Read values from UI input fields without modifying `settings`
-def apply_current_input_values():
-    for key in ["maxcap", "mincap", "capstep", 
-                "gpucutofffordecrease", "gpucutoffforincrease", "cpucutofffordecrease", "cpucutoffforincrease"]:
-        globals()[key] = int(dpg.get_value(f"input_{key}"))  # Convert to int
+    cm = user_data
 
-def start_stop_callback():
-    global running, maxcap, current_profile
+    global running
     running = not running
     dpg.configure_item("start_stop_button", label="Stop" if running else "Start")
-    apply_current_input_values()
+    dpg.bind_item_theme("start_stop_button", "stop_button_theme" if running else "start_button_theme")
+    cm.apply_current_input_values()
     
     # Reset variables to zero or their default state
     global fps_values, CurrentFPSOffset, fps_mean, gpu_values, cpu_values
@@ -270,15 +270,15 @@ def start_stop_callback():
     cpu_values = []
 
     # Freeze input fields
-
-    for key in ["maxcap", "mincap", "capstep", 
-                "gpucutofffordecrease", "gpucutoffforincrease", "cpucutofffordecrease", "cpucutoffforincrease"]:
+    for key in cm.input_field_keys:
         dpg.configure_item(f"input_{key}", enabled=not running)
+
+    for tag in cm.input_button_tags:
+        dpg.configure_item(tag, enabled=not running)
 
     if running:
         # Initialize RTSS
         rtss_cli.enable_limiter()
-        rtss_cli.set_property(current_profile, "FramerateLimit", int(maxcap))
         
         # Apply current settings and start monitoring
         
@@ -301,22 +301,10 @@ def start_stop_callback():
     else:
         reset_stats()
         CurrentFPSOffset = 0
-        rtss_cli.set_property(current_profile, "FramerateLimit", int(maxcap))
+        
         logger.add_log("Monitoring stopped")
-
-def quick_save_settings():
-    for key in ["maxcap", "mincap", "capstep", 
-                "gpucutofffordecrease", "gpucutoffforincrease", "cpucutofffordecrease", "cpucutoffforincrease"]:
-        settings[key] = dpg.get_value(f"input_{key}")
-    update_global_variables()
-    logger.add_log("Settings quick saved")
-
-def quick_load_settings():
-    for key in ["maxcap", "mincap", "capstep", 
-                "gpucutofffordecrease", "gpucutoffforincrease", "cpucutofffordecrease", "cpucutoffforincrease"]:
-        dpg.set_value(f"input_{key}", settings[key])
-    update_global_variables()
-    logger.add_log("Settings quick loaded")
+    logger.add_log(f"Custom FPS limits: {current_stepped_limits()}")
+    rtss_cli.set_property(cm.current_profile, "FramerateLimit", int(max(current_stepped_limits())))
 
 def reset_stats():
     
@@ -333,15 +321,11 @@ def reset_stats():
     global elapsed_time
     elapsed_time = 0
 
-def reset_to_program_default():
-    
-    global Default_settings_original
-    
-    for key in ["maxcap", "mincap", "capstep"]:
-        dpg.set_value(f"input_{key}", Default_settings_original[key])
-    for key in ["gpucutofffordecrease", "gpucutoffforincrease", "cpucutofffordecrease", "cpucutoffforincrease"]:
-        dpg.set_value(f"input_{key}", Default_settings_original[key])
-    logger.add_log("Settings reset to program default")  
+def reset_customFPSLimits():
+
+    lowerlimit = dpg.get_value(f"input_mincap")
+    upperlimit = dpg.get_value(f"input_maxcap")
+    dpg.set_value("input_customfpslimits", f"{lowerlimit}, {upperlimit}")
 
 time_series = []
 fps_time_series = []
@@ -355,7 +339,7 @@ elapsed_time = 0 # Global time updated by plotting_loop
 def update_plot_FPS(fps_val, cap_val):
 # Uses fps_time_series    
     global fps_time_series, fps_series, cap_series, elapsed_time
-    global max_points, mincap, maxcap, capstep
+    global max_points
 
     while len(fps_time_series) >= max_points:
         fps_time_series.pop(0)
@@ -370,14 +354,19 @@ def update_plot_FPS(fps_val, cap_val):
     dpg.set_value("fps_series", [fps_time_series, fps_series])
     dpg.set_value("cap_series", [fps_time_series, cap_series])  
 
-    min_ft = mincap - capstep
-    max_ft = maxcap + capstep
+    fps_limit_list = current_stepped_limits()
+
+    current_mincap = min(fps_limit_list)
+    current_maxcap = max(fps_limit_list)
+    min_ft = current_mincap - round((current_maxcap - current_mincap) * 0.1)
+    max_ft = current_maxcap + round((current_maxcap - current_mincap) * 0.1)
+
     dpg.set_axis_limits("y_axis_right", min_ft, max_ft) 
 
 def update_plot_usage(time_val, gpu_val, cpu_val):
    
     global time_series, gpu_usage_series, cpu_usage_series
-    global max_points, gpucutofffordecrease, gpucutoffforincrease # Add needed globals
+    global max_points# Add needed globals
     
     while len(time_series) >= max_points:
         time_series.pop(0)
@@ -403,8 +392,8 @@ def update_plot_usage(time_val, gpu_val, cpu_val):
         
         # Update static lines to extend across the current X range of the main time_series
         # Ensure gpucutoff... variables are up-to-date globals
-        dpg.set_value("line1", [[start_x, end_x + 1], [gpucutofffordecrease, gpucutofffordecrease]])
-        dpg.set_value("line2", [[start_x, end_x + 1], [gpucutoffforincrease, gpucutoffforincrease]])
+        dpg.set_value("line1", [[start_x, end_x + 1], [cm.gpucutofffordecrease, cm.gpucutofffordecrease]])
+        dpg.set_value("line2", [[start_x, end_x + 1], [cm.gpucutoffforincrease, cm.gpucutoffforincrease]])
     else:
         dpg.set_axis_limits_auto("x_axis")
 
@@ -439,17 +428,22 @@ CurrentFPSOffset = 0
 fps_mean = 0
 
 def monitoring_loop():
-    global running, fps_values, CurrentFPSOffset, fps_mean, gpu_values, current_profile, cpu_values
-    global mincap, maxcap, capstep, gpucutofffordecrease, delaybeforedecrease, gpucutoffforincrease, delaybeforeincrease, minvalidgpu, minvalidfps, cpucutofffordecrease, cpucutoffforincrease
-    global max_points, minvalidgpu, minvalidfps, luid_selected, luid
+    global running, fps_values, CurrentFPSOffset, fps_mean, gpu_values, cpu_values
+    global max_points, luid_selected, luid
 
     last_process_name = None
-    min_ft = mincap - capstep
-    max_ft = maxcap + capstep
     
     gpu_monitor.reinitialize()
 
+    fps_limit_list = current_stepped_limits()
+
+    current_mincap = min(fps_limit_list)
+    current_maxcap = max(fps_limit_list)
+    min_ft = current_mincap - round((current_maxcap - current_mincap) * 0.1)
+    max_ft = current_maxcap + round((current_maxcap - current_mincap) * 0.1)
+
     while running:
+        current_profile = cm.current_profile
         fps, process_name = rtss_manager.get_fps_for_active_window()
         #logger.add_log(f"Current highed CPU core load: {cpu_monitor.cpu_percentile}%")
         
@@ -467,58 +461,95 @@ def monitoring_loop():
             fps_mean = sum(fps_values) / len(fps_values)
         
         gpuUsage = gpu_monitor.gpu_percentile
-        if len(gpu_values) > (max(delaybeforedecrease, delaybeforeincrease)+1):
+        if len(gpu_values) > (max(cm.delaybeforedecrease, cm.delaybeforeincrease)+1):
             gpu_values.pop(0)
         gpu_values.append(gpuUsage)
 
         cpuUsage = cpu_monitor.cpu_percentile
-        if len(cpu_values) > (max(delaybeforedecrease, delaybeforeincrease)+1):
+        if len(cpu_values) > (max(cm.delaybeforedecrease, cm.delaybeforeincrease)+1):
             cpu_values.pop(0)
         cpu_values.append(cpuUsage)
 
         # To prevent loading screens from affecting the fps cap
         if gpuUsage and process_name not in {"DynamicFPSLimiter.exe"}:
-            if gpuUsage > minvalidgpu and fps_mean > minvalidfps: 
+            if gpuUsage > cm.minvalidgpu and fps_mean > cm.minvalidfps: 
 
                 should_decrease = False
-                gpu_decrease_condition = (len(gpu_values) >= delaybeforedecrease and
-                                          all(value >= gpucutofffordecrease for value in gpu_values[-delaybeforedecrease:]))
-                cpu_decrease_condition = (len(cpu_values) >= delaybeforedecrease and
-                                          all(value >= cpucutofffordecrease for value in cpu_values[-delaybeforedecrease:]))
+                gpu_decrease_condition = (len(gpu_values) >= cm.delaybeforedecrease and
+                                          all(value >= cm.gpucutofffordecrease for value in gpu_values[-cm.delaybeforedecrease:]))
+                cpu_decrease_condition = (len(cpu_values) >= cm.delaybeforedecrease and
+                                          all(value >= cm.cpucutofffordecrease for value in cpu_values[-cm.delaybeforedecrease:]))
                 if gpu_decrease_condition or cpu_decrease_condition:
                     should_decrease = True
-                if CurrentFPSOffset > (mincap - maxcap) and should_decrease:
-                    X = math.ceil(((maxcap + CurrentFPSOffset) - (fps_mean)) / capstep)
-                    X = max(1, X)
-                    CurrentFPSOffset -= (capstep * X)
-                    CurrentFPSOffset = max(CurrentFPSOffset, mincap - maxcap)
-                    rtss_cli.set_property(current_profile, "FramerateLimit", int(maxcap+CurrentFPSOffset))
+                
+                if CurrentFPSOffset > (current_mincap - current_maxcap) and should_decrease:
+                    current_fps_cap = current_maxcap + CurrentFPSOffset
+                    try:
+                        # Find values lower than current fps_mean
+                        lower_values = [x for x in fps_limit_list if x < fps_mean]
+                        
+                        if lower_values:
+                            # If current cap is already lower than fps_mean
+                            if current_fps_cap <= fps_mean:
+                                # Get current index and move to next lower value
+                                current_index = fps_limit_list.index(current_fps_cap)
+                                if current_index < 0:
+                                    next_fps = fps_limit_list[current_index - 1]
+                                    CurrentFPSOffset = next_fps - current_maxcap
+                                    rtss_cli.set_property(current_profile, "FramerateLimit", next_fps)
+                            else:
+                                # Jump to highest value below fps_mean
+                                next_fps = max(lower_values)
+                                CurrentFPSOffset = next_fps - current_maxcap
+                                rtss_cli.set_property(current_profile, "FramerateLimit", next_fps)
+                    except ValueError:
+                        # If current FPS not in list, find nearest lower value
+                        lower_values = [x for x in fps_limit_list if x < current_fps_cap]
+                        if lower_values:
+                            next_fps = max(lower_values)
+                            CurrentFPSOffset = next_fps - current_maxcap
+                            rtss_cli.set_property(current_profile, "FramerateLimit", next_fps)
 
                 should_increase = False
-                gpu_increase_condition = (len(gpu_values) >= delaybeforeincrease and
-                                          all(value <= gpucutoffforincrease for value in gpu_values[-delaybeforeincrease:]))
-                cpu_increase_condition = (len(cpu_values) >= delaybeforeincrease and
-                                          all(value <= cpucutoffforincrease for value in cpu_values[-delaybeforeincrease:]))
+                gpu_increase_condition = (len(gpu_values) >= cm.delaybeforeincrease and
+                                          all(value <= cm.gpucutoffforincrease for value in gpu_values[-cm.delaybeforeincrease:]))
+                cpu_increase_condition = (len(cpu_values) >= cm.delaybeforeincrease and
+                                          all(value <= cm.cpucutoffforincrease for value in cpu_values[-cm.delaybeforeincrease:]))
                 if gpu_increase_condition and cpu_increase_condition:
                      should_increase = True
+
                 if CurrentFPSOffset < 0 and should_increase:
-                    CurrentFPSOffset += capstep
-                    CurrentFPSOffset = min(CurrentFPSOffset, 0)
-                    rtss_cli.set_property(current_profile, "FramerateLimit", int(maxcap+CurrentFPSOffset))
+                    # Get current index in the fps_limit_list
+                    current_fps = current_maxcap + CurrentFPSOffset
+                    try:
+                        current_index = fps_limit_list.index(current_fps)
+                        # Move to next higher FPS value if available
+                        if current_index < len(fps_limit_list) - 1:  # Check if we can move up in the list
+                            next_fps = fps_limit_list[current_index + 1]
+                            CurrentFPSOffset = next_fps - current_maxcap
+                            rtss_cli.set_property(current_profile, "FramerateLimit", int(next_fps))
+                    except ValueError:
+                        # If current FPS not in list, find nearest higher value
+                        higher_values = [x for x in fps_limit_list if x > current_fps]
+                        if higher_values:
+                            next_fps = min(higher_values)
+                            CurrentFPSOffset = next_fps - current_maxcap
+                            rtss_cli.set_property(current_profile, "FramerateLimit", int(next_fps))
 
         if running:
             # Update legend labels with current values
             dpg.configure_item("gpu_usage_series", label=f"GPU: {gpuUsage}%")
-            dpg.configure_item("fps_series", label=f"FPS: {fps:.1f}" if fps else "FPS: --")
-            dpg.configure_item("cap_series", label=f"FPS Cap: {maxcap + CurrentFPSOffset}")
+            if running and fps is not None:
+                dpg.configure_item("fps_series", label=f"FPS: {fps:.1f}")
+            dpg.configure_item("cap_series", label=f"FPS Cap: {current_maxcap + CurrentFPSOffset}")
             dpg.configure_item("cpu_usage_series", label=f"CPU: {cpuUsage}%")
 
             # Update plot if fps is valid
             if fps and process_name not in {"DynamicFPSLimiter.exe"}:
                 # Scaling FPS value to fit 0-100 axis
                 scaled_fps = ((fps - min_ft)/(max_ft - min_ft))*100
-                scaled_cap = ((maxcap + CurrentFPSOffset - min_ft)/(max_ft - min_ft))*100
-                actual_cap = maxcap + CurrentFPSOffset
+                scaled_cap = ((current_maxcap + CurrentFPSOffset - min_ft)/(max_ft - min_ft))*100
+                actual_cap = current_maxcap + CurrentFPSOffset
                 # Pass actual values, update_plot_FPS handles timing and lists
                 update_plot_FPS(scaled_fps, scaled_cap)
 
@@ -529,7 +560,7 @@ def monitoring_loop():
         time.sleep(1) # This loop runs every 1 second
 
 def plotting_loop():
-    global running, elapsed_time, gpupollinginterval, cpupollinginterval# Make sure elapsed_time is global
+    global running, elapsed_time # Make sure elapsed_time is global
 
     start_time = time.time()
     while running:
@@ -542,245 +573,131 @@ def plotting_loop():
         # CALL update_plot_usage with the current time and usage values
         update_plot_usage(elapsed_time, gpuUsage, cpuUsage)
 
-        time.sleep(math.lcm(gpupollinginterval, cpupollinginterval) / 1000.0)  # Convert to seconds
+        time.sleep(math.lcm(cm.gpupollinginterval, cm.cpupollinginterval) / 1000.0)  # Convert to seconds
 
-def update_tooltip_setting(sender, app_data, user_data):
-    global ShowTooltip, input_field_keys, tooltips
-    ShowTooltip = app_data
-    settings_config["Preferences"]["ShowTooltip"] = str(app_data)
-    with open(settings_path, 'w') as f:
-        settings_config.write(f)
-    logger.add_log(f"Tooltip visibility set to: {ShowTooltip}")
+gui_running = True
 
-    for key in tooltips.keys():
-        parent_tag = ""
-        # Determine the parent tag first
-        if key in input_field_keys:
-            parent_tag = f"input_{key}"
-        else:
-            parent_tag = key # Assume key matches parent tag for others
-
-        # Construct the specific TOOLTIP tag
-        tooltip_specific_tag = f"{parent_tag}_tooltip"
-
-        # Check if the TOOLTIP item exists and configure it
-        if dpg.does_item_exist(tooltip_specific_tag):
+def gui_update_loop():
+    global gui_running
+    while gui_running:  # Changed from True to gui_running
+        if not running:
             try:
-                # Configure the tooltip item itself using its specific tag
-                dpg.configure_item(tooltip_specific_tag, show=ShowTooltip)
-            except SystemError as e:
-                # This error is less likely now but kept for safety
-                logger.add_log(f"Minor issue configuring tooltip '{tooltip_specific_tag}' for key '{key}': {e}")
+                warnings = get_active_warnings(dpg, cm, rtss_manager, int(min(current_stepped_limits())))
+                warning_visible = bool(warnings)
+                warning_message = "\n".join(warnings)
 
-def update_limit_on_exit_setting(sender, app_data, user_data):
-    global GlobalLimitonExit
-    GlobalLimitonExit = app_data
-    settings_config["Preferences"]["GlobalLimitOnExit"] = str(app_data)
-    with open(settings_path, 'w') as f:
-        settings_config.write(f)
-    logger.add_log(f"Global Limit on Exit set to: {GlobalLimitonExit}")
+                dpg.configure_item("warning_text", show=warning_visible)
+                dpg.configure_item("warning_tooltip", show=warning_visible)
+                dpg.set_value("warning_tooltip_text", warning_message)
 
-def update_exit_fps_value(sender, app_data, user_data):
-    global globallimitonexit_fps 
-    new_value = app_data
-
-    if isinstance(new_value, int) and new_value > 0:
-        globallimitonexit_fps = new_value
-        settings_config["GlobalSettings"]["globallimitonexit_fps"] = str(new_value)
-        with open(settings_path, 'w') as f:
-            settings_config.write(f)
-        logger.add_log(f"Global Limit on Exit FPS value set to: {globallimitonexit_fps}")
-    else:
-        logger.add_log(f"Invalid value entered for Global Limit on Exit FPS: {app_data}. Reverting.")
-        dpg.set_value(sender, globallimitonexit_fps)
+                # Update FPS limit visualization based on current input values
+                update_fps_cap_visualization()
+            except Exception as e:
+                if gui_running:  # Only log if we're still supposed to be running
+                    logger.add_log(f"Error in GUI update loop: {e}")
+        time.sleep(0.1)
 
 def exit_gui():
-    global running, rtss_manager, monitoring_thread, plotting_thread, globallimitonexit_fps, GlobalLimitonExit
-
-    if GlobalLimitonExit:
-        rtss_cli.set_property("Global", "FramerateLimit", int(globallimitonexit_fps))
-
+    global running, gui_running, rtss_manager, monitoring_thread, plotting_thread
+    
+    gui_running = False
     running = False 
-    if rtss_manager:
-        rtss_manager.stop_monitor_thread()
+
+    if cm.globallimitonexit:
+        rtss_cli.set_property("Global", "FramerateLimit", int(cm.globallimitonexit_fps))
+
     if gpu_monitor:
         gpu_monitor.cleanup()
     if cpu_monitor:
         cpu_monitor.stop()
     if dpg.is_dearpygui_running():
         dpg.destroy_context()
-    
-    if monitoring_thread and monitoring_thread.is_alive():
-        logger.add_log("Waiting for monitoring thread to stop...")
-        monitoring_thread.join(timeout=0.1)
-        if monitoring_thread.is_alive():
-            logger.add_log("Warning: Monitoring thread did not stop gracefully.")
-        else:
-            logger.add_log("Monitoring thread stopped.")
-    if plotting_thread and plotting_thread.is_alive():
-        logger.add_log("Waiting for monitoring thread to stop...")
-        plotting_thread.join(timeout=0.1)
-        if plotting_thread.is_alive():
-            logger.add_log("Warning: Plotting thread did not stop gracefully.")
-        else:
-            logger.add_log("Plotting thread stopped.")
 
-# Define keys used for input fields (used to construct tooltip tags)
-input_field_keys = ["maxcap", "mincap", "capstep", "gpucutofffordecrease", "gpucutoffforincrease", "cpucutofffordecrease", "cpucutoffforincrease"]
+# Defining short sections of the GUI
+# TODO: Refactor main GUI into a separate module for better organization
+def build_profile_section():
+    with dpg.child_window(width=-1, height=100):
+        with dpg.table(header_row=False):
+            dpg.add_table_column(init_width_or_weight=45)
+            dpg.add_table_column(init_width_or_weight=100)
+            dpg.add_table_column(init_width_or_weight=60)
 
-tooltips = {
-    "maxcap": "Defines the maximum FPS limit for the game.",
-    "mincap": "Specifies the minimum FPS limit that may be reached. For optimal performance, set this to the lowest value you're comfortable with.",
-    "capstep": "Indicates the increment size for adjusting the FPS cap. Smaller step sizes provide finer control",
-    "gpucutofffordecrease": "Sets the upper threshold for GPU usage. If GPU usage exceeds this value, the FPS cap will be lowered to maintain system performance.",
-    "delaybeforedecrease": "Specifies how many times in a row GPU usage must exceed the upper threshold before the FPS cap begins to drop.",
-    "gpucutoffforincrease": "Defines the lower threshold for GPU usage. If GPU usage falls below this value, the FPS cap will increase to improve performance.",
-    "delaybeforeincrease": "Specifies how many times in a row GPU usage must fall below the lower threshold before the FPS cap begins to rise.",
-    "cpucutofffordecrease": "Sets the upper threshold for CPU usage. If CPU usage exceeds this value, the FPS cap will be lowered to maintain system performance.",
-    "cpucutoffforincrease": "Defines the lower threshold for CPU usage. If CPU usage falls below this value, the FPS cap will increase to improve performance.",
-    "minvalidgpu": "Sets the minimum valid GPU usage percentage required for adjusting the FPS. If the GPU usage is below this threshold, the FPS cap will not change. This helps prevent FPS fluctuations during loading screens.",
-    "minvalidfps": "Defines the minimum valid FPS required for adjusting the FPS. If the FPS falls below this value, the FPS cap will not change. This helps prevent FPS fluctuations during loading screens.",
-    "quick_save_load": "Saves and loads input values from memory. This is temporary storage, useful for testing and fine-tuning configurations.",
-    "start_stop_button": "Starts maintaining the FPS cap dynamically based on GPU/CPU utilization. Green = RTSS running. Red = RTSS not running.",
-    "luid_button": "Detects the render GPU based on highest 3D engine utilization, and sets it as the target GPU for FPS limiting. Click again to deselect.",
-    "exit_fps_input": "The specific FPS limit to apply globally when the application exits, if 'Set Global FPS Limit on Exit' is checked.",
-    "SaveToProfile": "Saves the current settings to the selected profile. This allows you to quickly switch between different configurations.",
-    "Reset_Default": "Resets all settings to the program's default values. This is useful if you want to start fresh or if you encounter issues."
-}
+            # First row
+            with dpg.table_row():
+                dpg.add_text("Select Profile:")
+                dpg.add_combo(tag="profile_dropdown", callback=cm.load_profile_callback, width=260, default_value="Global")
+                dpg.add_button(label="Delete Profile", callback=cm.delete_selected_profile_callback, width=160)
+
+            # Second row
+            with dpg.table_row():
+                dpg.add_text("New RTSS Profile:")
+                dpg.add_input_text(tag="new_profile_input", width=260)
+                dpg.add_button(label="Add Profile", callback=cm.add_new_profile_callback, width=160)
+
+            # Third row
+            with dpg.table_row():
+                dpg.add_text("Last active process:")
+                dpg.add_input_text(tag="LastProcess", multiline=False, readonly=True, width=260)
+                dpg.bind_item_theme("LastProcess", "transparent_input_theme_2")
+                dpg.add_button(tag="process_to_profile", label="Add process to Profiles", callback=cm.add_process_profile_callback, width=160)
 
 # GUI setup: Main Window
 dpg.create_context()
+create_themes()
 
 with dpg.font_registry():
     try:
         default_font = dpg.add_font(font_path, 18)
+        bold_font = dpg.add_font(bold_font_path, 18)
         if default_font:
             dpg.bind_font(default_font)
     except Exception as e:
         logger.add_log(f"Failed to load system font: {e}")
         # Will use DearPyGui's default font as fallback
 
-# Create a theme for rounded buttons
-background_colour = (37, 37, 38)  # Default grey background
-
-with dpg.theme(tag="rounded_widget_theme"):
-    with dpg.theme_component(dpg.mvAll):
-        dpg.add_theme_style(dpg.mvStyleVar_FrameRounding, 3.0)  # Set corner rounding to 10.0
-        dpg.add_theme_color(dpg.mvThemeCol_Button, (51, 51, 55)) 
-        #dpg.add_theme_style(dpg.mvStyleVar_FramePadding, 0.0, 1.0, category=dpg.mvThemeCat_Core)
-        #dpg.add_theme_color(dpg.mvThemeCol_Button, (50, 150, 250))  # Button color
-        #dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, (70, 170, 255))  # Hover color
-        #dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, (90, 190, 255))  # Active color
-
-    # Customize specific widget types
-    #with dpg.theme_component(dpg.mvInputInt):
-
-    #with dpg.theme_component(dpg.mvInputText):
-
-    with dpg.theme_component(dpg.mvCheckbox):
-        dpg.add_theme_color(dpg.mvThemeCol_CheckMark, (50, 150, 250))  # Checkmark color
-
-# Bind the rounded button theme globally
-dpg.bind_theme("rounded_widget_theme")
-
-# Create themes for specific buttons
-with dpg.theme(tag="rtss_running_theme"):
-    with dpg.theme_component(dpg.mvButton):
-        dpg.add_theme_color(dpg.mvThemeCol_Button, (0, 100, 0))
-        dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, (0, 120, 0))
-        dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, (0, 140, 0))
-
-with dpg.theme(tag="rtss_not_running_theme"):
-    with dpg.theme_component(dpg.mvButton):
-        dpg.add_theme_color(dpg.mvThemeCol_Button, (170, 70, 70)) #Reds
-        dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, (190, 90, 90))
-        dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, (190, 90, 90))
-
-with dpg.theme(tag="detect_gpu_theme"):
-    with dpg.theme_component(dpg.mvButton):
-        dpg.add_theme_color(dpg.mvThemeCol_Button, (51, 51, 55))  # Defualt grey button background
-        dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, (15, 86, 135))
-        dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, (15, 86, 135))
-
-with dpg.theme(tag="revert_gpu_theme"):
-    with dpg.theme_component(dpg.mvButton):
-        dpg.add_theme_color(dpg.mvThemeCol_Button, (15, 86, 135))  # Blue color botton background
-        dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, (6, 96, 158))
-        dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, (0, 105, 176))
-
-with dpg.theme(tag="button_right"):
-    with dpg.theme_component(dpg.mvButton):
-        dpg.add_theme_style(dpg.mvStyleVar_ButtonTextAlign, 1.00, category=dpg.mvThemeCat_Core)
-        dpg.add_theme_color(dpg.mvThemeCol_Button, background_colour, category=dpg.mvThemeCat_Core)
-        dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, background_colour, category=dpg.mvThemeCat_Core)
-        dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, background_colour, category=dpg.mvThemeCat_Core)
-
 #The actual GUI starts here
 with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
     
     # Title and Start/Stop Button
     with dpg.group(horizontal=True):
-        dpg.add_text("Dynamic FPS Limiter v4.0.0")
+        dpg.add_text("Dynamic FPS Limiter", tag="app_title")
+        dpg.bind_item_font("app_title", bold_font)
+        dpg.add_text("v4.1.0")
         dpg.add_spacer(width=30)
         dpg.add_button(label="Detect Render GPU", callback=toggle_luid_selection, tag="luid_button", width=150)
-        # Give the tooltip its own tag
-        with dpg.tooltip(parent="luid_button", tag="luid_button_tooltip", show=ShowTooltip, delay=1):
-            dpg.add_text(tooltips["luid_button"], wrap = 200)
+
         dpg.add_spacer(width=30)
-        dpg.add_button(label="Start", tag="start_stop_button", callback=start_stop_callback, width=50)
-        # Give the tooltip its own tag
-        with dpg.tooltip(parent="start_stop_button", tag="start_stop_button_tooltip", show=ShowTooltip, delay=1):
-            dpg.add_text(tooltips["start_stop_button"], wrap = 200)
+        dpg.add_button(label="Start", tag="start_stop_button", callback=start_stop_callback, width=50, user_data=cm)
+        dpg.bind_item_theme("start_stop_button", "start_button_theme")  # Apply start button theme
         dpg.add_button(label="Exit", callback=exit_gui, width=50)  # Exit button
 
     # Profiles
-    with dpg.child_window(width=-1, height=145):
-        with dpg.table(header_row=False):
-            dpg.add_table_column(init_width_or_weight=55)
-            dpg.add_table_column(init_width_or_weight=140)
-            dpg.add_table_column(init_width_or_weight=60)
-
-            # First row
-            with dpg.table_row():
-                dpg.add_text("Select Profile:")
-                dpg.add_combo(tag="profile_dropdown", callback=load_profile_callback, width=260, default_value="Global")
-                dpg.add_button(label="Delete Profile", callback=delete_selected_profile_callback, width=120)
-
-            # Second row
-            with dpg.table_row():
-                dpg.add_text("New RTSS Profile:")
-                dpg.add_input_text(tag="new_profile_input", width=260)
-                dpg.add_button(label="Add Profile", callback=add_new_profile_callback, width=120)
-
-        dpg.add_spacer(height=3)        
-        with dpg.group(horizontal=True):
-            dpg.add_text("Last active process:")
-            dpg.add_spacer(width=260)
-            dpg.add_button(label="Add process to Profiles", callback=add_process_profile_callback)
-        dpg.add_spacer(height=1)
-        dpg.add_input_text(tag="LastProcess", multiline=False, readonly=True, width=-1)    
+    dpg.add_spacer(height=1)
+    build_profile_section()
     
     #Tabs
-    dpg.add_spacer(height=1)
+    tab_height = 130
+    dpg.add_spacer(height=2)
     with dpg.tab_bar():
-        with dpg.tab(label="Profile Settings", tag="tab1"):
-            with dpg.child_window(height=135):
+        with dpg.tab(label="  Profile Settings", tag="tab1"):
+            with dpg.child_window(height=tab_height, border=True):
                 with dpg.group(horizontal=True):
-                    with dpg.group(width=200):
+                    with dpg.group(width=205):
                         with dpg.table(header_row=False, resizable=False, policy=dpg.mvTable_SizingFixedFit):
                             dpg.add_table_column(width_fixed=True)  # Column for labels
                             dpg.add_table_column(width_fixed=True)  # Column for input boxes
                             for label, key in [("Max FPS limit:", "maxcap"), 
                                             ("Min FPS limit:", "mincap"),
-                                            ("Frame rate step:", "capstep")]:
+                                            ("Framerate ratio:", "capratio"),
+                                            ("Framerate step:", "capstep")]:
                                 with dpg.table_row():
-                                    dpg.add_text(label)
-                                    dpg.add_input_int(tag=f"input_{key}", default_value=int(settings[key]), width=90, step=1, step_fast=10)
-                                    # Give the tooltip its own tag
-                                    with dpg.tooltip(parent=f"input_{key}", tag=f"input_{key}_tooltip", show=ShowTooltip, delay=1):
-                                        dpg.add_text(tooltips[key], wrap = 200)
-                    dpg.add_spacer(width=0.5)
-                    with dpg.group(width=160):
+                                    dpg.add_text(label, tag=f"label_{key}")
+                                    dpg.add_input_int(tag=f"input_{key}", default_value=int(cm.settings[key]), 
+                                                      width=90, step=1, step_fast=10, 
+                                                      min_clamped=True, min_value=1)
+                   
+                    #2 dpg.add_spacer(width=1)
+                    with dpg.group(width=175):
                         with dpg.table(header_row=False, resizable=False, policy=dpg.mvTable_SizingFixedFit):
                             dpg.add_table_column(width_fixed=True)
                             dpg.add_table_column(width_fixed=True)
@@ -789,80 +706,118 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                                             ("CPU: Upper limit", "cpucutofffordecrease"),
                                             ("Lower limit", "cpucutoffforincrease")]:
                                 with dpg.table_row():
-                                    dpg.add_button(label=label, tag=f"button_{key}", width=110)
+                                    dpg.add_button(label=label, tag=f"button_{key}", width=120)
                                     dpg.bind_item_theme(f"button_{key}", "button_right")
-                                    dpg.add_input_text(tag=f"input_{key}", default_value=str(settings[key]), width=40)
-                                    # Give the tooltip its own tag
-                                    with dpg.tooltip(parent=f"input_{key}", tag=f"input_{key}_tooltip", show=ShowTooltip, delay=1):
-                                        dpg.add_text(tooltips[key], wrap=200)
+                                    dpg.add_input_text(tag=f"input_{key}", default_value=str(cm.settings[key]), width=40)
                     
-                    dpg.add_spacer(width=0.5)
-                    with dpg.group(width=160):
-                        #dpg.add_spacer(height=3)
-                        with dpg.group(horizontal=False):
-                            with dpg.group(tag="quick_save_load"):
-                                # Give the tooltip its own tag
-                                with dpg.tooltip(parent="quick_save_load", tag="quick_save_load_tooltip", show=ShowTooltip, delay=1):
-                                    dpg.add_text(tooltips["quick_save_load"], wrap = 200)
-                                dpg.add_button(label="Quick Save", callback=quick_save_settings)
-                                dpg.add_button(label="Quick Load", callback=quick_load_settings)
-                            dpg.add_button(tag="Reset_Default", label="Reset Settings to Default", callback=reset_to_program_default)
-                            # Give the tooltip its own tag
-                            with dpg.tooltip(parent="Reset_Default", tag="Reset_Default_tooltip", show=ShowTooltip, delay=1):
-                                dpg.add_text(tooltips["Reset_Default"], wrap = 200)
-                            dpg.add_spacer(height=3)
-                            dpg.add_button(tag="SaveToProfile", label="Save Settings to Profile", callback=save_to_profile)
-                            # Give the tooltip its own tag
-                            with dpg.tooltip(parent="SaveToProfile", tag="SaveToProfile_tooltip", show=ShowTooltip, delay=1):
-                                dpg.add_text(tooltips["SaveToProfile"], wrap = 200)
-
-        with dpg.tab(label="Preferences", tag="tab2"):
-            with dpg.child_window(height=135):
+                    #dpg.add_spacer(width=1)
+                    tab1_group3_width = 170
+                    with dpg.group(width=180):
+                        with dpg.table(header_row=False, resizable=False, policy=dpg.mvTable_SizingFixedFit):
+                            dpg.add_table_column(width_fixed=True)
+                            with dpg.table_row():
+                                dpg.add_button(tag="quick_save", label="Quick Save", callback=cm.quick_save_settings, width=tab1_group3_width)
+                            with dpg.table_row():
+                                dpg.add_button(tag="quick_load", label="Quick Load", callback=cm.quick_load_settings, width=tab1_group3_width)
+                            with dpg.table_row():
+                                dpg.add_button(tag="Reset_Default", label="Reset Settings to Default", callback=cm.reset_to_program_default, width=tab1_group3_width)
+                            with dpg.table_row():
+                                dpg.add_button(tag="SaveToProfile", label="Save Settings to Profile", callback=cm.save_to_profile, width=tab1_group3_width)
+    
+        with dpg.tab(label="  Preferences", tag="tab2"): 
+            with dpg.child_window(height=tab_height):
                 dpg.add_checkbox(label="Show Tooltips", tag="tooltip_checkbox",
-                                 default_value=ShowTooltip, callback=update_tooltip_setting)
-                dpg.add_checkbox(label="Reset Global RTSS Framerate Limit on Exit", tag="limit_on_exit_checkbox",
-                                 default_value=GlobalLimitonExit, callback=update_limit_on_exit_setting)
-                dpg.add_spacer(height=3)
+                                 default_value=ShowTooltip, callback=tooltip_checkbox_callback)
+                #2 dpg.add_spacer(height=3)
                 with dpg.group(horizontal=True):
-                    dpg.add_text("Framerate limit:")
+                    dpg.add_checkbox(label="Reset RTSS Global Limit on Exit: ", tag="limit_on_exit_checkbox",
+                                    default_value=cm.globallimitonexit, callback=cm.update_limit_on_exit_setting)
                     dpg.add_input_int(tag="exit_fps_input",
-                                    default_value=globallimitonexit_fps, callback=update_exit_fps_value,
+                                    default_value=cm.globallimitonexit_fps, callback=cm.update_exit_fps_value,
                                     width=100, step=1, step_fast=10)
-                # Give the tooltip its own tag
-                with dpg.tooltip(parent="exit_fps_input", tag="exit_fps_input_tooltip", show=ShowTooltip, delay=1):
-                    dpg.add_text(tooltips["exit_fps_input"], wrap = 200)
+                
+                with dpg.group(horizontal=True):
+                    dpg.add_checkbox(label="Set", tag="profile_on_startup_checkbox",
+                                    default_value=cm.profileonstartup, callback=cm.update_profile_on_startup_setting)
+                    dpg.add_button(label="Current Profile", tag="select_profile_button",
+                                    callback=cm.select_default_profile_callback, width=105)
+                    dpg.add_text("as default on startup. Currently set to:")
+                    dpg.add_input_text(tag="profileonstartup_name", multiline=False, readonly=True, width=150,
+                                       default_value=cm.profileonstartup_name)
+                    dpg.bind_item_theme("profileonstartup_name", "transparent_input_theme_2")
+                dpg.add_checkbox(label="Launch the app on Windows startup", tag="autostart_checkbox",
+                                 default_value=cm.launchonstartup, callback=autostart_checkbox_callback)
 
-        with dpg.tab(label="Log", tag="tab3"):
-            with dpg.child_window(tag="LogWindow", autosize_x=True, height=135, border=True):
+        with dpg.tab(label=" Log", tag="tab3"):
+            with dpg.child_window(tag="LogWindow", autosize_x=True, height=tab_height, border=True):
                 #dpg.add_text("", tag="LogText", tracked = True, track_offset = 1.0)
-                dpg.add_spacer(height=2)
+                #2 dpg.add_spacer(height=2)
                 dpg.add_input_text(tag="LogText", multiline=True, readonly=True, width=-1, height=110)
-
-                with dpg.theme(tag="transparent_input_theme"):
-                    with dpg.theme_component(dpg.mvInputText):
-                        dpg.add_theme_style(dpg.mvStyleVar_FrameBorderSize, 0)
-                        dpg.add_theme_style(dpg.mvStyleVar_FramePadding, 0, category=dpg.mvThemeCat_Core)
-                        dpg.add_theme_color(dpg.mvThemeCol_FrameBg, (0, 0, 0, 0), category=dpg.mvThemeCat_Core)
 
                 dpg.bind_item_theme("LogText", "transparent_input_theme")
 
-        with dpg.tab(label="FAQs", tag="tab4"):
-            with dpg.child_window(height=135):
+        with dpg.tab(label=" FAQs", tag="tab4"):
+            with dpg.child_window(height=tab_height):
                 dpg.add_text("Frequently Asked Questions (FAQs): Hover for answers")
-                dpg.add_spacer(height=3)
+                #2 dpg.add_spacer(height=3)
                 for question, (key, answer) in zip(questions, FAQs.items()):
                     dpg.add_text(question, tag=key, bullet=True)
                     with dpg.tooltip(parent=key, delay=0.5):
                         dpg.add_text(answer, wrap=300)
-    
-    # Third Row: Plot Section
-    dpg.add_spacer(height=1)
-    with dpg.child_window(width=-1, height=Plot_height):
-        with dpg.theme(tag="plot_theme") as item_theme:
-            with dpg.theme_component(dpg.mvAll):
-                dpg.add_theme_color(dpg.mvPlotCol_Line, (128, 128, 128), category = dpg.mvThemeCat_Plots)
 
-        with dpg.plot(height=200, width=-1, tag="plot"):
+    # Third Row: FPS lists and methods
+    #dpg.add_spacer(height=5)
+    #dpg.add_separator()
+    dpg.add_spacer(height=5)
+    with dpg.child_window(width=-1, height=125, border=True):
+        with dpg.group(horizontal=True, width=-1):
+            dpg.add_text("Method:")
+            dpg.add_radio_button(
+                items=["ratio", "step", "custom"], 
+                horizontal=True,
+                callback=current_method_callback,
+                default_value="ratio",#settings["method"],
+                tag="input_capmethod"
+                )
+            dpg.bind_item_theme("input_capmethod", "radio_theme")
+            #dpg.bind_item_font("input_capmethod", bold_font)
+            dpg.add_text("Warning!", tag="warning_text", color=(190, 90, 90), 
+                         pos=(500, 5),
+                         show=False)
+            with dpg.tooltip(parent="warning_text", tag="warning_tooltip", show=False):
+                dpg.add_text("", tag="warning_tooltip_text", wrap=300)
+            dpg.bind_item_font("warning_text", bold_font)
+        dpg.add_spacer(height=1)
+
+        draw_height = 40
+        layer1_height = 30
+        layer2_height = 30
+        draw_width = Viewport_width - 60
+        margin = 10
+        with dpg.drawlist(width= draw_width + 5, height=draw_height, tag="fps_cap_drawlist"):
+            with dpg.draw_layer(tag="Baseline"):
+                dpg.draw_line((margin, layer1_height // 2), (draw_width, layer1_height // 2), color=(200, 200, 200), thickness=2)
+            with dpg.draw_layer(tag="Foreground"):
+                dpg.draw_line((margin, layer2_height // 2), (draw_width, layer2_height // 2), color=(200, 200, 200), thickness=2)
+        dpg.add_spacer(height=1)
+        with dpg.group(horizontal=True):
+            dpg.add_input_text(
+                tag="input_customfpslimits",
+                default_value=", ".join(str(x) for x in sorted(cm.settings["customfpslimits"])),#", ".join(map(str, sorted(self.selected_fps_caps))),
+                width=draw_width - 205,
+                #pos=(10, 140),  # Center the input horizontally
+                callback=sort_customfpslimits_callback,
+                on_enter=True)
+            dpg.add_button(label="Reset", tag="rest_fps_cap_button", width=80, callback=reset_customFPSLimits)
+            dpg.add_button(label="Copy from Plot", tag="autofill_fps_caps", width=110, callback=copy_from_plot_callback)
+
+    # Fourth Row: Plot Section
+    #dpg.add_spacer(height=5)
+    #dpg.add_separator()
+    #dpg.add_spacer(height=5)
+    with dpg.child_window(tag = "plot_childwindow", width=-1, height=190, border=False):
+
+        with dpg.plot(height=190, width=-1, tag="plot", no_menus=True, no_box_select=True, no_inputs=True):
             dpg.add_plot_axis(dpg.mvXAxis, label="Time (s)", tag="x_axis")
             dpg.add_plot_legend(location=dpg.mvPlot_Location_North, horizontal=True, 
                               no_highlight_item=True, no_highlight_axis=True, outside=True)
@@ -872,45 +827,49 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                 dpg.add_line_series([], [], label="GPU: --", parent=y_axis_left, tag="gpu_usage_series")
                 dpg.add_line_series([], [], label="CPU: --", parent=y_axis_left, tag="cpu_usage_series")
                 # Add static horizontal dashed lines
-                dpg.add_line_series([], [gpucutofffordecrease, gpucutofffordecrease], parent=y_axis_left, tag="line1")
-                dpg.add_line_series([], [gpucutoffforincrease, gpucutoffforincrease], parent=y_axis_left, tag="line2")
+                dpg.add_line_series([], [cm.gpucutofffordecrease, cm.gpucutofffordecrease], parent=y_axis_left, tag="line1")
+                dpg.add_line_series([], [cm.gpucutoffforincrease, cm.gpucutoffforincrease], parent=y_axis_left, tag="line2")
             
             # Right Y-axis for FPS
             with dpg.plot_axis(dpg.mvYAxis, label="FPS", tag="y_axis_right", no_gridlines=True) as y_axis_right:
                 dpg.add_line_series([], [], label="FPS: --", parent=y_axis_right, tag="fps_series")
-                dpg.add_line_series([], [], label="FPS Cap: --", parent=y_axis_right, tag="cap_series", segments=True)
+                dpg.add_line_series([], [], label="FPS Cap: --", parent=y_axis_right, tag="cap_series", segments=False)
                 
             # Set axis limits
             dpg.set_axis_limits("y_axis_left", 0, 100)  # GPU usage range
-            min_ft = mincap - capstep
-            max_ft = maxcap + capstep
+            min_ft = cm.mincap - cm.capstep
+            max_ft = cm.maxcap + cm.capstep
             dpg.set_axis_limits("y_axis_right", min_ft, max_ft)  # FPS range
             
             # apply theme to series
-            dpg.bind_item_theme("line1", "plot_theme")
-            dpg.bind_item_theme("line2", "plot_theme")
+            dpg.bind_item_theme("line1", "fixed_greyline_theme")
+            dpg.bind_item_theme("line2", "fixed_greyline_theme")
+            dpg.bind_item_theme("cap_series", "fps_cap_theme")
 
 dpg.create_viewport(title="Dynamic FPS Limiter", width=Viewport_width, height=Viewport_height, resizable=False)
 dpg.set_viewport_resizable(False)
-dpg.set_viewport_max_width(Viewport_width)
-dpg.set_viewport_max_height(Viewport_height)
+dpg.set_viewport_max_width(Viewport_width*3)
+dpg.set_viewport_max_height(Viewport_height*3)
 dpg.set_viewport_small_icon(icon_path)
 dpg.setup_dearpygui()
 dpg.show_viewport()
 dpg.set_primary_window("Primary Window", True)
 
 # Setup and Run GUI
-update_profile_dropdown(select_first=True)
-
 logger.add_log("Initializing...")
 
-gpu_monitor = GPUUsageMonitor(lambda: luid, lambda: running, logger, dpg, interval=(gpupollinginterval/1000), max_samples=gpupollingsamples, percentile=gpupercentile)
+cm.update_profile_dropdown(select_first=True)
+cm.startup_profile_selection()
+
+
+
+gpu_monitor = GPUUsageMonitor(lambda: luid, lambda: running, logger, dpg, interval=(cm.gpupollinginterval/1000), max_samples=cm.gpupollingsamples, percentile=cm.gpupercentile)
 #logger.add_log(f"Current highed GPU core load: {gpu_monitor.gpu_percentile}%")
 
 #usage, luid = gpu_monitor.get_gpu_usage(engine_type="engtype_3D")
 #logger.add_log(f"Current Top LUID: {luid}, 3D engine usage: {usage}%")
 
-cpu_monitor = CPUUsageMonitor(lambda: running, logger, dpg, interval=(cpupollinginterval/1000), max_samples=cpupollingsamples, percentile=cpupercentile)
+cpu_monitor = CPUUsageMonitor(lambda: running, logger, dpg, interval=(cm.cpupollinginterval/1000), max_samples=cm.cpupollingsamples, percentile=cm.cpupercentile)
 #logger.add_log(f"Current highed CPU core load: {cpu_monitor.cpu_percentile}%")
 
 # Assuming logger and dpg are initialized, and rtss_dll_path is defined
@@ -918,11 +877,25 @@ rtss_cli = RTSSCLI(logger, rtss_dll_path)
 rtss_cli.enable_limiter()
 
 rtss_manager = RTSSInterface(logger, dpg)
-if rtss_manager:
-    rtss_manager.start_monitor_thread()
+
+# Add after your other thread initializations
+gui_update_thread = threading.Thread(target=gui_update_loop, daemon=True)
+gui_update_thread.start()
+
+apply_all_tooltips(dpg, tooltips, ShowTooltip, cm, logger)
+current_method_callback()
+
+autostart = AutoStartManager(app_path=os.path.join(os.path.dirname(Base_dir), "DynamicFPSLimiter.exe"))
+autostart.update_if_needed(cm.launchonstartup)
+
+dpg.bind_theme("main_theme")
+dpg.bind_item_theme("plot_childwindow", "plot_bg_theme")
+pywinstyles.apply_style(None, "acrylic")
 
 logger.add_log("Initialized successfully.")
 
-#Always make sure the corresponding GUI element exists before trying to get/set its value
+#dpg.show_style_editor()
+#dpg.show_imgui_demo()
+
 dpg.start_dearpygui()
 

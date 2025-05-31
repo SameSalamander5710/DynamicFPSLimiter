@@ -4,3 +4,4 @@ How do I select a specific GPU as the render GPU?,Click 'Detect Render GPU' whil
 How do I add a running game process to Profiles?,Switch between the app and the game while monitoring is active. Then click 'Add process to profiles' to save the last active process.
 How do I disable CPU usage monitoring?,Set the CPU usage upper threshold to a value above 100 in the profile settings.
 How do I toggle visibility of plot elements?,Click the plot items in the legend to show or hide specific elements.
+What to do if I get slideshow-like behavior when using LS?,Keep the DynamicFPSLimiter app minimised to avoid conflicts.
