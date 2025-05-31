@@ -539,7 +539,8 @@ def monitoring_loop():
         if running:
             # Update legend labels with current values
             dpg.configure_item("gpu_usage_series", label=f"GPU: {gpuUsage}%")
-            dpg.configure_item("fps_series", label=f"FPS: {fps:.1f}" if fps else "FPS: --")
+            if running and fps is not None:
+                dpg.configure_item("fps_series", label=f"FPS: {fps:.1f}")
             dpg.configure_item("cap_series", label=f"FPS Cap: {current_maxcap + CurrentFPSOffset}")
             dpg.configure_item("cpu_usage_series", label=f"CPU: {cpuUsage}%")
 
