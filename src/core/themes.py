@@ -3,7 +3,8 @@ import dearpygui.dearpygui as dpg
 bg_colour = (21, 20, 21, 255)
 bg_colour_1_transparent = (21, 20, 21, 0)
 bg_colour_2_child = (27, 31, 37, 255)
-bg_colour_3_button = (35, 39, 47, 255)
+#bg_colour_3_button = (35, 39, 47, 255)
+bg_colour_3_button = (43, 47, 57, 255)
 bg_colour_4_buttonhover = (32, 60, 68, 255)
 bg_colour_4_buttonhover_blue = (40, 100, 225, 255)
 bg_colour_5_buttonactive = (30, 85, 205, 255) # Blue
