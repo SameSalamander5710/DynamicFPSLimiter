@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## [v4.1.0] - 2025-05-XX
+## [v4.1.0] - 2025-05-31
 ### Added
 
 - Support for custom FPS limit input.

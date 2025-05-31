@@ -2,8 +2,10 @@
 
 A lightweight companion app for RTSS that dynamically adjusts framerate limits based on real-time GPU and CPU usage. It's especially useful for reducing input latency when using frame generation tools like Lossless Scaling.
 
-<p float="left">
-  <img src="/docs/Images/DFL_v4.0.0_01.png" style="width: 450px; max-width: 45%;" />
+<p align="center">
+  <img src="docs/Images/v4.1.0_2025-05-31-09-50-18.gif" width="45%" />
+  &nbsp;
+  <img src="docs/Images/v4.1.0_2025-05-31-09-43-54.gif" width="45%" />
 </p>
 
 ## Installation
@@ -35,11 +37,6 @@ Typically, you have two ways to set an FPS cap:
 - Set a cap well below the lowest observed FPS – This ensures stability but sacrifices frame rate in less demanding scenes.
 
 This app solves the issue by dynamically adjusting the base FPS limit in demanding areas, reducing input lag while still allowing higher frame rates in less intensive regions. As a result, you get a smoother and more responsive gaming experience without compromising too much performance.
-
-
-<p float="left">
-  <img src="/docs/Images/DFL_v4.0.0_01.png" style="width: 450px; max-width: 45%;" />
-</p>
 
 ## Disclaimer
 
