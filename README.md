@@ -25,9 +25,10 @@ If you'd like to inspect or customize the source code, follow the instructions i
 
 > [!CAUTION]
 > - The executable in the release was packaged using PyInstaller and may be flagged by some antivirus software as a Trojan. 
-> - You can find the VirusTotal report on the app's behaviour for the latest release (v4.0.0):
->   - [DynamicFPSLimiter_v4.0.0.zip](https://www.virustotal.com/gui/file/b1fcaa5d0854e68359837562bf3df99158d89a457e2839d8b5e7fea2a20e5c32/behavior)
->   - [DynamicFPSLimiter.exe](https://www.virustotal.com/gui/file/44bb6393c624da36c34e009c52f0057b92c65371f493196155fda6cdceab4d88/behavior)
+> - You can confirm whether the app is signed by me using the public certificate [here.](/src/Public_SameSalamander5710.cer).
+> - You can find the VirusTotal report on the app's behaviour for the latest release (v4.1.0):
+>   - [DynamicFPSLimiter_v4.1.0.zip](https://www.virustotal.com/gui/file/5df0ae4dce8f058f5062cc9c421b260bff196e6a9d02d931af014750faaf4c0d/behavior)
+>   - [DynamicFPSLimiter.exe](https://www.virustotal.com/gui/file/b7f4bd4a6481da85b23baace907db77dfada7849b64b97f4021ed80048183275/behavior)
 
 ## The Concept
 This app was developed to enhance the gaming experience when using Lossless Scaling Frame Generation (LSFG). LSFG works best when the game runs with an FPS cap that leaves enough GPU headroom for frame generation. However, if GPU usage hits 100%—which may also cause the game’s base FPS to drop—you may experience input lag, which is undesirable.
