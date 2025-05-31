@@ -22,8 +22,8 @@ class ConfigManager:
             "delaybeforedecrease": 2,
             "delaybeforeincrease": 3,
             "capmethod": "ratio",
-            "customfpslimits": {30, 35, 42, 50, 60},
-            "minvalidgpu": 15,
+            "customfpslimits": {30, 60},
+            "minvalidgpu": 14,
             "minvalidfps": 14,
             "globallimitonexit_fps": 98,
             'cpupercentile': 70,
@@ -46,14 +46,14 @@ class ConfigManager:
         else:
             self.settings_config["Preferences"] = {
                 'ShowTooltip': 'True',
-                'globallimitonexit': 'True',
+                'globallimitonexit': 'False',
                 'profileonstartup': 'True',
                 'launchonstartup': 'False',
             }
             self.settings_config["GlobalSettings"] = {
                 'delaybeforedecrease': '2',
                 'delaybeforeincrease': '3',
-                'minvalidgpu': '15',
+                'minvalidgpu': '14',
                 'minvalidfps': '14',
                 'globallimitonexit_fps': '98',
                 'cpupercentile': '70',
@@ -80,7 +80,7 @@ class ConfigManager:
                 'cpucutofffordecrease': '95',
                 'cpucutoffforincrease': '85',
                 'capmethod': 'ratio',
-                'customfpslimits': '30, 35, 42, 50, 60',
+                'customfpslimits': '30, 60',
             }
             with open(self.profiles_path, 'w') as f:
                 self.profiles_config.write(f)
