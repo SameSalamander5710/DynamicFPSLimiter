@@ -31,7 +31,7 @@ If you'd like to inspect or customize the source code, follow the instructions i
 >   - [DynamicFPSLimiter.exe](https://www.virustotal.com/gui/file/c2c517850a1be7e157605640ba5f35e54696b376e6fee779a00149d475c28b61/behavior)
 
 ## The Concept
-This app was developed to enhance the gaming experience when using Lossless Scaling Frame Generation (LSFG). LSFG works best when the game runs with an FPS cap that leaves enough GPU headroom for frame generation. However, if GPU usage hits 100%—which may also cause the game’s base FPS to drop—you may experience input lag, which is undesirable.
+This app was developed to enhance gaming experience in situations where the GPU load/demand varies greatly during a session. This is especially useful when using Lossless Scaling Frame Generation (LSFG). LSFG works best when the game runs with an FPS cap that leaves enough GPU headroom for frame generation. However, if GPU usage hits 100%—which may also cause the game’s base FPS to drop—you may experience input lag, which is undesirable.
 
 Typically, you have two ways to set an FPS cap:
 - Set a cap just below the average FPS – This works most of the time but can lead to input lag when FPS drops due to GPU saturation.
