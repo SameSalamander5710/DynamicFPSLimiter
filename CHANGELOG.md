@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## [v4.2.0] - Unreleased
+### To Add
+
+- Precision framerate limits
+- Now deletes profiles from RTSS as well
+
+### To change
+- Uses simplified python script
+
 ## [v4.1.0] - 2025-05-31
 ### Added
 
