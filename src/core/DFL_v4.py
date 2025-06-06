@@ -305,6 +305,7 @@ def start_stop_callback(sender, app_data, user_data):
         
         logger.add_log("Monitoring stopped")
     logger.add_log(f"Custom FPS limits: {cm.parse_decimal_set_to_string(current_stepped_limits())}")
+    #FIXME: Game crashing bug when changing to fractional from an existing integer number
     rtss.set_fractional_framerate(cm.current_profile, Decimal(max(current_stepped_limits())))
 
 def reset_stats():
@@ -663,7 +664,7 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
     with dpg.group(horizontal=True):
         dpg.add_text("Dynamic FPS Limiter", tag="app_title")
         dpg.bind_item_font("app_title", bold_font)
-        dpg.add_text("v4.1.0")
+        dpg.add_text("v4.2.0")
         dpg.add_spacer(width=30)
         dpg.add_button(label="Detect Render GPU", callback=toggle_luid_selection, tag="luid_button", width=150)
 
