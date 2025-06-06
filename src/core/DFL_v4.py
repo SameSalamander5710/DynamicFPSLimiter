@@ -62,9 +62,9 @@ with open(faq_path, newline='', encoding='utf-8') as csvfile:
 
 def parse_string_to_decimal_set(input_string):
     """Parse a comma-separated string into a sorted list of unique positive Decimals."""
-    decimal_set = {Decimal(x.strip()) for x in input_string.split(',')}
-    sorted_decimals = sorted(decimal_set, key=lambda d: d)
-    return sorted(set(sorted_decimals))
+    values = [x.strip() for x in input_string.split(',') if x.strip()]
+    decimal_set = {Decimal(x) for x in values}
+    return sorted(decimal_set)
 
 def parse_decimal_set_to_string(decimal_set):
     original_string = ', '.join(str(d) for d in decimal_set)
@@ -103,6 +103,7 @@ def current_stepped_limits():
                 custom_limits = parse_string_to_decimal_set(custom_limits)
                 return custom_limits
             except Exception:
+                #pass  # silently ignore and fall through
                 logger.add_log("Error parsing custom FPS limits, using default stepped limits.")
     elif use_custom == "step":
         return make_stepped_values(maximum, minimum, step)
@@ -151,18 +152,18 @@ def make_ratioed_values(maximum, minimum, ratio):
     return custom_limits
 
 last_fps_limits = []
-#TODO: add compatibility for fractional numbers
+#TODO: Fix updating error while user is typing
 def update_fps_cap_visualization():
 
     global last_fps_limits
-    
+
     fps_limits = current_stepped_limits()
     #logger.add_log(f"FPS limits: {fps_limits}")
 
     # Check if fps_limits has changed
     if fps_limits == last_fps_limits:
         return  # Exit if no change
-    
+
     # Store new fps_limits for next comparison
     last_fps_limits = fps_limits.copy()
 
