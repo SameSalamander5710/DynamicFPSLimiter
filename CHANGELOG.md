@@ -2,8 +2,9 @@
 
 ## [v4.2.0] - Unreleased
 ### To Add
-
 - Precision framerate limits
+
+### Added
 - Now deletes profiles from RTSS as well
 
 ### To change

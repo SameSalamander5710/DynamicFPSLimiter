@@ -12,6 +12,7 @@ import os
 import sys
 import csv
 import pywinstyles
+from decimal import Decimal, InvalidOperation
 
 # tweak path so "src/" (or wherever your modules live) is on sys.path
 _this_dir = os.path.abspath(os.path.dirname(__file__))
@@ -59,19 +60,33 @@ with open(faq_path, newline='', encoding='utf-8') as csvfile:
         questions.append(row["question"])
         FAQs[key] = row["answer"]
 
+def parse_positive_decimal_list(input_string):
+    """Parse a comma-separated string into a sorted list of unique positive Decimals."""
+    entries = []
+    for x in input_string.split(","):
+        s = x.strip()
+        if s:
+            try:
+                d = Decimal(s)
+                if d > 0:
+                    entries.append(d)
+            except InvalidOperation:
+                continue
+    return sorted(set(entries))
+
 def sort_customfpslimits_callback(sender, app_data, user_data):
-    # Get the current value from the input field
     value = dpg.get_value("input_customfpslimits")
-    # Parse to set of ints
     try:
-        numbers = set(int(x.strip()) for x in value.split(",") if x.strip().isdigit())
-        numbers = sorted(x for x in numbers if x > 0) 
-        sorted_str = ", ".join(str(x) for x in sorted(numbers))
+        # Use the new helper function to parse and sort
+        sorted_limits = parse_positive_decimal_list(value)
+        # Convert back to string, preserving user formatting if needed
+        sorted_str = ", ".join(str(x) for x in sorted_limits)
         dpg.set_value("input_customfpslimits", sorted_str)
     except Exception:
         # If parsing fails, do nothing or optionally reset to previous valid value
         pass
 
+#TODO: Change for demical points
 def current_stepped_limits():
 
     maximum = int(dpg.get_value("input_maxcap"))
@@ -88,8 +103,7 @@ def current_stepped_limits():
         custom_limits = dpg.get_value("input_customfpslimits")
         if custom_limits:
             try:
-                custom_limits = set(int(x.strip()) for x in custom_limits.split(",") if x.strip().isdigit())
-                custom_limits = sorted(x for x in custom_limits if x > 0)
+                custom_limits = parse_positive_decimal_list(custom_limits)
                 return custom_limits
             except Exception:
                 logger.add_log("Error parsing custom FPS limits, using default stepped limits.")
@@ -140,7 +154,7 @@ def make_ratioed_values(maximum, minimum, ratio):
     return custom_limits
 
 last_fps_limits = []
-
+#TODO: add compatibility for fractional numbers
 def update_fps_cap_visualization():
 
     global last_fps_limits
