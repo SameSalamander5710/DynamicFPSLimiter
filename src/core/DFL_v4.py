@@ -29,6 +29,7 @@ from core.config_manager import ConfigManager
 from core.tooltips import get_tooltips, add_tooltip, apply_all_tooltips, update_tooltip_setting
 from core.warning import get_active_warnings
 from core.autostart import AutoStartManager
+from core.rtss_functions import RTSSController
 
 # Always get absolute path to EXE or script location
 Base_dir = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
@@ -278,7 +279,7 @@ def start_stop_callback(sender, app_data, user_data):
 
     if running:
         # Initialize RTSS
-        rtss_cli.enable_limiter()
+        rtss.enable_limiter()
         
         # Apply current settings and start monitoring
         
@@ -874,7 +875,8 @@ cpu_monitor = CPUUsageMonitor(lambda: running, logger, dpg, interval=(cm.cpupoll
 
 # Assuming logger and dpg are initialized, and rtss_dll_path is defined
 rtss_cli = RTSSCLI(logger, rtss_dll_path)
-rtss_cli.enable_limiter()
+rtss = RTSSController(logger)
+rtss.enable_limiter()
 
 rtss_manager = RTSSInterface(logger, dpg)
 
