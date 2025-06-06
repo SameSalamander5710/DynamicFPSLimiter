@@ -1,6 +1,7 @@
 import os
 import configparser
 import dearpygui.dearpygui as dpg
+from decimal import Decimal, InvalidOperation
 
 class ConfigManager:
     def __init__(self, logger_instance, dpg_instance, rtss_instance, base_dir):
@@ -23,7 +24,7 @@ class ConfigManager:
             "delaybeforedecrease": 2,
             "delaybeforeincrease": 3,
             "capmethod": "ratio",
-            "customfpslimits": {30, 60},
+            "customfpslimits": '30.0, 45.00, 60.000',
             "minvalidgpu": 14,
             "minvalidfps": 14,
             "globallimitonexit_fps": 98,
@@ -81,7 +82,7 @@ class ConfigManager:
                 'cpucutofffordecrease': '95',
                 'cpucutoffforincrease': '85',
                 'capmethod': 'ratio',
-                'customfpslimits': '30, 60',
+                'customfpslimits': '30.0, 45.00, 60.000',
             }
             with open(self.profiles_path, 'w') as f:
                 self.profiles_config.write(f)
@@ -102,7 +103,7 @@ class ConfigManager:
             "cpucutofffordecrease": int,
             "cpucutoffforincrease": int,
             "capmethod": str,
-            "customfpslimits": set,
+            "customfpslimits": str,
             "delaybeforedecrease": int,
             "delaybeforeincrease": int,
             "minvalidgpu": int,
@@ -128,34 +129,27 @@ class ConfigManager:
         }
         self.settings = self.Default_settings.copy()
 
+    def parse_customfpslimits(self, values):
+        return [Decimal(x.strip()) for x in values.split(",") if x.strip()]
 
     def parse_input_value(self, key, value):
         value_type = self.key_type_map.get(key, int)
-        if value_type is set:
-            if isinstance(value, set):
-                return value
-            # Remove curly braces if present
+        if key == "customfpslimits":
+            # Use the custom parser for decimal FPS limits
             if isinstance(value, str):
-                value = value.strip()
-                if value.startswith("{") and value.endswith("}"):
-                    value = value[1:-1]
-            try:
-                return set(int(x.strip()) for x in str(value).split(",") if x.strip().isdigit())
-            except Exception:
-                return set()
+                try:
+                    return self.parse_customfpslimits(value)
+                except Exception:
+                    return []
+            elif isinstance(value, list):
+                return value
+            else:
+                return []
         else:
             try:
                 return value_type(value)
             except Exception:
                 return value
-
-    def format_output_value(self, key, value):
-        value_type = self.key_type_map.get(key, int)
-        if value_type is set:
-            if isinstance(value, set):
-                return ", ".join(str(x) for x in sorted(value))
-            return str(value)
-        return value
 
     # Function to get values with correct types
     def get_setting(self, key, value_type=None):
@@ -204,7 +198,7 @@ class ConfigManager:
                 value = dpg.get_value(f"input_{key}")
                 parsed_value = self.parse_input_value(key, value)
                 # Store as string for config file
-                self.profiles_config[selected_profile][key] = str(self.format_output_value(key, parsed_value))
+                self.profiles_config[selected_profile][key] = str(parsed_value)
             
             with open(self.profiles_path, "w") as configfile:
                 self.profiles_config.write(configfile)
@@ -228,7 +222,7 @@ class ConfigManager:
         for key in self.input_field_keys:
             value = self.profiles_config[profile_name].get(key, self.Default_settings_original[key])
             parsed_value = self.parse_input_value(key, value)
-            dpg.set_value(f"input_{key}", self.format_output_value(key, parsed_value))
+            dpg.set_value(f"input_{key}", parsed_value)
         self.update_global_variables()
         dpg.set_value("new_profile_input", "")
 
@@ -238,7 +232,7 @@ class ConfigManager:
         for key in self.input_field_keys:
             value = dpg.get_value(f"input_{key}")
             parsed_value = self.parse_input_value(key, value)
-            self.profiles_config[profile_name][key] = str(self.format_output_value(key, parsed_value))
+            self.profiles_config[profile_name][key] = str(parsed_value)
         with open(self.profiles_path, 'w') as f:
             self.profiles_config.write(f)
         self.update_profile_dropdown()
@@ -281,7 +275,7 @@ class ConfigManager:
                     try:
                         value = self.profiles_config["Global"][key]
                         parsed_value = self.parse_input_value(key, value)
-                        dpg.set_value(f"input_{key}", self.format_output_value(key, parsed_value))
+                        dpg.set_value(f"input_{key}", parsed_value)
                     except Exception as e:
                         self.logger.add_log(f"Error: Unable to convert value for key '{key}': {e}")
                 self.update_global_variables()  # Ensure global variables are updated
@@ -331,14 +325,14 @@ class ConfigManager:
 
     def quick_load_settings(self):
         for key in self.input_field_keys:
-            dpg.set_value(f"input_{key}", self.format_output_value(key, self.settings[key]))
+            dpg.set_value(f"input_{key}", self.settings[key])
         self.update_global_variables()
         self.logger.add_log("Settings quick loaded")
 
     def reset_to_program_default(self):
         
         for key in self.input_field_keys:
-            dpg.set_value(f"input_{key}", self.format_output_value(key, self.Default_settings_original[key]))
+            dpg.set_value(f"input_{key}", self.Default_settings_original[key])
         self.logger.add_log("Settings reset to program default")
 
     def update_limit_on_exit_setting(self, sender, app_data, user_data):
