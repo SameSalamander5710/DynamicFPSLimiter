@@ -7,7 +7,7 @@
 - Now deletes profiles from RTSS as well
 
 ### To change
-- Uses simplified python script
+- Uses simplified python script to use RTSSHooks dll
 
 ## [v4.1.0] - 2025-05-31
 ### Added
