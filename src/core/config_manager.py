@@ -24,7 +24,7 @@ class ConfigManager:
             "delaybeforedecrease": 2,
             "delaybeforeincrease": 3,
             "capmethod": "ratio",
-            "customfpslimits": '30.0, 45.00, 60.000',
+            "customfpslimits": '30.0, 45.00, 60.000, 100.0000',
             "minvalidgpu": 14,
             "minvalidfps": 14,
             "globallimitonexit_fps": 98,
@@ -82,7 +82,7 @@ class ConfigManager:
                 'cpucutofffordecrease': '95',
                 'cpucutoffforincrease': '85',
                 'capmethod': 'ratio',
-                'customfpslimits': '30.0, 45.00, 60.000',
+                'customfpslimits': '30.0, 45.00, 60.000, 100.0000',
             }
             with open(self.profiles_path, 'w') as f:
                 self.profiles_config.write(f)

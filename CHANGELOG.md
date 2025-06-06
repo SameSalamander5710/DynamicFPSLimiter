@@ -1,18 +1,17 @@
 # CHANGELOG
 
 ## [v4.2.0] - Unreleased
-### To Add
-- Precision framerate limits
-
 ### Added
-- Now deletes profiles from RTSS as well
+- Enabled addition of fractional framerate limits in the custom limit input field.
 
-### To change
-- Uses simplified python script to use RTSSHooks dll
+### Changed
+- Uses simplified python script to directly use RTSSHooks64.dll
+
+### Fixed
+- Deleting a profile on DFL now deletes the corresponding app on RTSS
 
 ## [v4.1.0] - 2025-05-31
 ### Added
-
 - Support for custom FPS limit input.
 - New methods for calculating FPS limits using ratio and step approaches.
     - Users can configure both custom and calculated limits separately, allowing two different cap settings under the same profile and easy switching between them.
