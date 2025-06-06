@@ -1,5 +1,5 @@
 # DFL_v4.py
-# Dynamic FPS Limiter v4.1.0
+# Dynamic FPS Limiter v4.2.0
 
 import ctypes
 ctypes.windll.shcore.SetProcessDpiAwareness(2)
@@ -21,7 +21,6 @@ if _root not in sys.path:
 
 from core import logger
 from core.rtss_interface import RTSSInterface
-from core.rtss_cli import RTSSCLI
 from core.cpu_monitor import CPUUsageMonitor
 from core.gpu_monitor import GPUUsageMonitor
 from core.themes import create_themes
@@ -33,14 +32,14 @@ from core.rtss_functions import RTSSController
 
 # Always get absolute path to EXE or script location
 Base_dir = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
-cm = ConfigManager(logger, dpg, Base_dir)
+rtss = RTSSController(logger)
+cm = ConfigManager(logger, dpg, rtss, Base_dir)
 tooltips = get_tooltips()
 
 # Ensure the config folder exists in the parent directory of Base_dir
 parent_dir = os.path.dirname(Base_dir)
 
 # Paths to configuration files
-rtss_dll_path = os.path.join(Base_dir, "assets/rtss.dll")
 error_log_file = os.path.join(parent_dir, "error_log.txt")
 icon_path = os.path.join(Base_dir, 'assets/DynamicFPSLimiter.ico')
 font_path = os.path.join(os.environ["WINDIR"], "Fonts", "segoeui.ttf") #segoeui, Verdana, Tahoma, Calibri, micross
@@ -305,7 +304,6 @@ def start_stop_callback(sender, app_data, user_data):
         
         logger.add_log("Monitoring stopped")
     logger.add_log(f"Custom FPS limits: {current_stepped_limits()}")
-    #rtss_cli.set_property(cm.current_profile, "FramerateLimit", int(max(current_stepped_limits())))
     rtss.set_fractional_framerate(cm.current_profile, int(max(current_stepped_limits())))
 
 def reset_stats():
@@ -498,13 +496,11 @@ def monitoring_loop():
                                 if current_index < 0:
                                     next_fps = fps_limit_list[current_index - 1]
                                     CurrentFPSOffset = next_fps - current_maxcap
-                                    #rtss_cli.set_property(current_profile, "FramerateLimit", next_fps)
                                     rtss.set_fractional_framerate(current_profile, next_fps)
                             else:
                                 # Jump to highest value below fps_mean
                                 next_fps = max(lower_values)
                                 CurrentFPSOffset = next_fps - current_maxcap
-                                #rtss_cli.set_property(current_profile, "FramerateLimit", next_fps)
                                 rtss.set_fractional_framerate(current_profile, next_fps)
                     except ValueError:
                         # If current FPS not in list, find nearest lower value
@@ -512,7 +508,6 @@ def monitoring_loop():
                         if lower_values:
                             next_fps = max(lower_values)
                             CurrentFPSOffset = next_fps - current_maxcap
-                            #rtss_cli.set_property(current_profile, "FramerateLimit", next_fps)
                             rtss.set_fractional_framerate(current_profile, next_fps)
 
                 should_increase = False
@@ -532,7 +527,6 @@ def monitoring_loop():
                         if current_index < len(fps_limit_list) - 1:  # Check if we can move up in the list
                             next_fps = fps_limit_list[current_index + 1]
                             CurrentFPSOffset = next_fps - current_maxcap
-                            #rtss_cli.set_property(current_profile, "FramerateLimit", int(next_fps))
                             rtss.set_fractional_framerate(current_profile, next_fps)
                     except ValueError:
                         # If current FPS not in list, find nearest higher value
@@ -540,7 +534,6 @@ def monitoring_loop():
                         if higher_values:
                             next_fps = min(higher_values)
                             CurrentFPSOffset = next_fps - current_maxcap
-                            #rtss_cli.set_property(current_profile, "FramerateLimit", int(next_fps))
                             rtss.set_fractional_framerate(current_profile, next_fps)
 
         if running:
@@ -611,7 +604,6 @@ def exit_gui():
     running = False 
 
     if cm.globallimitonexit:
-        #rtss_cli.set_property("Global", "FramerateLimit", int(cm.globallimitonexit_fps))
         rtss.set_fractional_framerate("Global", int(cm.globallimitonexit_fps))
 
     if gpu_monitor:
@@ -869,8 +861,6 @@ logger.add_log("Initializing...")
 cm.update_profile_dropdown(select_first=True)
 cm.startup_profile_selection()
 
-
-
 gpu_monitor = GPUUsageMonitor(lambda: luid, lambda: running, logger, dpg, interval=(cm.gpupollinginterval/1000), max_samples=cm.gpupollingsamples, percentile=cm.gpupercentile)
 #logger.add_log(f"Current highed GPU core load: {gpu_monitor.gpu_percentile}%")
 
@@ -880,9 +870,7 @@ gpu_monitor = GPUUsageMonitor(lambda: luid, lambda: running, logger, dpg, interv
 cpu_monitor = CPUUsageMonitor(lambda: running, logger, dpg, interval=(cm.cpupollinginterval/1000), max_samples=cm.cpupollingsamples, percentile=cm.cpupercentile)
 #logger.add_log(f"Current highed CPU core load: {cpu_monitor.cpu_percentile}%")
 
-# Assuming logger and dpg are initialized, and rtss_dll_path is defined
-rtss_cli = RTSSCLI(logger, rtss_dll_path)
-rtss = RTSSController(logger)
+# Assuming logger and dpg are initialized
 rtss.enable_limiter()
 
 rtss_manager = RTSSInterface(logger, dpg)

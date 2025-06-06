@@ -3,9 +3,10 @@ import configparser
 import dearpygui.dearpygui as dpg
 
 class ConfigManager:
-    def __init__(self, logger_instance, dpg_instance, base_dir):
+    def __init__(self, logger_instance, dpg_instance, rtss_instance, base_dir):
         self.logger = logger_instance
         self.dpg = dpg_instance
+        self.rtss = rtss_instance
         self.config_dir = os.path.join(os.path.dirname(base_dir), "config")
         os.makedirs(self.config_dir, exist_ok=True)
         self.settings_path = os.path.join(self.config_dir, "settings.ini")
@@ -269,6 +270,7 @@ class ConfigManager:
             return
         if profile_to_delete in self.profiles_config:
             self.profiles_config.remove_section(profile_to_delete)
+            self.rtss.delete_profile(profile_to_delete)
             with open(self.profiles_path, 'w') as f:
                 self.profiles_config.write(f)
             self.update_profile_dropdown(select_first=True)

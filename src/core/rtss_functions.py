@@ -177,8 +177,8 @@ class RTSSController:
             limit = int(framerate)
 
         self.set_limit_denominator(profile_name, denominator, update=False)
-        self.set_profile_property(profile_name_for_api, "FramerateLimit", limit, update=True)
-        #self.UpdateProfiles()
+        self.set_profile_property(profile_name_for_api, "FramerateLimit", limit, update=False)
+        self.UpdateProfiles()
         print(f"Set {profile_name}: FramerateLimit={limit}, LimitDenominator={denominator} (actual limit: {limit/denominator})")
         return limit, denominator
 
@@ -219,21 +219,21 @@ if __name__ == "__main__":
     rtss = RTSSController()
     test_profile = "test_profile 5.exe"
 
-    #rtss.create_profile("test2.exe")
+    #rtss.create_profile("test245345.exe") # this doesn not work without an additional parameter.
 
     # Set a framerate limit
-    print("Setting framerate limit to 60...")
-    rtss.set_profile_property(test_profile, "FramerateLimit", 65)
+    #print("Setting framerate limit to 60...")
+    #rtss.set_profile_property(test_profile, "FramerateLimit", 65)
 
     # Get the framerate limit
     #limit = rtss.get_framerate_limit(test_profile)
     #print(f"Framerate limit for {test_profile}: {limit}")
 
     # Set a fractional framerate (e.g., 59.94)
-    print("Setting fractional framerate to 59.94...")
+    #print("Setting fractional framerate to 59.94...")
     #rtss.set_fractional_framerate(test_profile, 59.94)
-    limit_fractional = rtss.get_framerate_limit(test_profile, get_denominator=True)
-    print(f"Fractional framerate limit for {test_profile}: {limit_fractional}")
+    #limit_fractional = rtss.get_framerate_limit(test_profile, get_denominator=True)
+    #print(f"Fractional framerate limit for {test_profile}: {limit_fractional}")
 
     # Clean up (optional)
     # rtss.delete_profile(test_profile)
