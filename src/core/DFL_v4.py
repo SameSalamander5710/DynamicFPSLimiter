@@ -305,7 +305,8 @@ def start_stop_callback(sender, app_data, user_data):
         
         logger.add_log("Monitoring stopped")
     logger.add_log(f"Custom FPS limits: {current_stepped_limits()}")
-    rtss_cli.set_property(cm.current_profile, "FramerateLimit", int(max(current_stepped_limits())))
+    #rtss_cli.set_property(cm.current_profile, "FramerateLimit", int(max(current_stepped_limits())))
+    rtss.set_fractional_framerate(cm.current_profile, int(max(current_stepped_limits())))
 
 def reset_stats():
     
@@ -497,19 +498,22 @@ def monitoring_loop():
                                 if current_index < 0:
                                     next_fps = fps_limit_list[current_index - 1]
                                     CurrentFPSOffset = next_fps - current_maxcap
-                                    rtss_cli.set_property(current_profile, "FramerateLimit", next_fps)
+                                    #rtss_cli.set_property(current_profile, "FramerateLimit", next_fps)
+                                    rtss.set_fractional_framerate(current_profile, next_fps)
                             else:
                                 # Jump to highest value below fps_mean
                                 next_fps = max(lower_values)
                                 CurrentFPSOffset = next_fps - current_maxcap
-                                rtss_cli.set_property(current_profile, "FramerateLimit", next_fps)
+                                #rtss_cli.set_property(current_profile, "FramerateLimit", next_fps)
+                                rtss.set_fractional_framerate(current_profile, next_fps)
                     except ValueError:
                         # If current FPS not in list, find nearest lower value
                         lower_values = [x for x in fps_limit_list if x < current_fps_cap]
                         if lower_values:
                             next_fps = max(lower_values)
                             CurrentFPSOffset = next_fps - current_maxcap
-                            rtss_cli.set_property(current_profile, "FramerateLimit", next_fps)
+                            #rtss_cli.set_property(current_profile, "FramerateLimit", next_fps)
+                            rtss.set_fractional_framerate(current_profile, next_fps)
 
                 should_increase = False
                 gpu_increase_condition = (len(gpu_values) >= cm.delaybeforeincrease and
@@ -528,14 +532,16 @@ def monitoring_loop():
                         if current_index < len(fps_limit_list) - 1:  # Check if we can move up in the list
                             next_fps = fps_limit_list[current_index + 1]
                             CurrentFPSOffset = next_fps - current_maxcap
-                            rtss_cli.set_property(current_profile, "FramerateLimit", int(next_fps))
+                            #rtss_cli.set_property(current_profile, "FramerateLimit", int(next_fps))
+                            rtss.set_fractional_framerate(current_profile, next_fps)
                     except ValueError:
                         # If current FPS not in list, find nearest higher value
                         higher_values = [x for x in fps_limit_list if x > current_fps]
                         if higher_values:
                             next_fps = min(higher_values)
                             CurrentFPSOffset = next_fps - current_maxcap
-                            rtss_cli.set_property(current_profile, "FramerateLimit", int(next_fps))
+                            #rtss_cli.set_property(current_profile, "FramerateLimit", int(next_fps))
+                            rtss.set_fractional_framerate(current_profile, next_fps)
 
         if running:
             # Update legend labels with current values
@@ -605,7 +611,8 @@ def exit_gui():
     running = False 
 
     if cm.globallimitonexit:
-        rtss_cli.set_property("Global", "FramerateLimit", int(cm.globallimitonexit_fps))
+        #rtss_cli.set_property("Global", "FramerateLimit", int(cm.globallimitonexit_fps))
+        rtss.set_fractional_framerate("Global", int(cm.globallimitonexit_fps))
 
     if gpu_monitor:
         gpu_monitor.cleanup()

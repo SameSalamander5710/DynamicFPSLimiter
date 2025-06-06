@@ -135,8 +135,10 @@ class RTSSController:
         profiles_dir = os.path.join(self.rtss_install_path, "Profiles")
         if not profile_name or profile_name.lower() == "global":
             profile_file = os.path.join(profiles_dir, "Global")
+            profile_name_for_api = ""
         else:
             profile_file = os.path.join(profiles_dir, f"{profile_name}.cfg")
+            profile_name_for_api = profile_name
 
         if not os.path.isfile(profile_file):
             print(f"Profile file not found: {profile_file}")
@@ -164,6 +166,7 @@ class RTSSController:
         return True
 
     def set_fractional_framerate(self, profile_name, framerate):
+        profile_name_for_api = "" if not profile_name or profile_name.lower() == "global" else profile_name
         fr_str = str(framerate)
         if '.' in fr_str:
             decimals = len(fr_str.split('.')[1])
@@ -174,13 +177,14 @@ class RTSSController:
             limit = int(framerate)
 
         self.set_limit_denominator(profile_name, denominator, update=False)
-        self.set_profile_property(profile_name, "FramerateLimit", limit, update=False)
-        self.UpdateProfiles()
+        self.set_profile_property(profile_name_for_api, "FramerateLimit", limit, update=True)
+        #self.UpdateProfiles()
         print(f"Set {profile_name}: FramerateLimit={limit}, LimitDenominator={denominator} (actual limit: {limit/denominator})")
         return limit, denominator
 
     def get_framerate_limit(self, profile_name, get_denominator=False):
-        limit = self.get_profile_property(profile_name, "FramerateLimit", 4)
+        profile_name_for_api = "" if not profile_name or profile_name.lower() == "global" else profile_name
+        limit = self.get_profile_property(profile_name_for_api, "FramerateLimit", 4)
         if limit is None:
             return None
 
