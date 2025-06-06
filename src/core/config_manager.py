@@ -141,9 +141,9 @@ class ConfigManager:
 
     def parse_string_to_decimal_set(self, input_string):
         """Parse a comma-separated string into a sorted list of unique positive Decimals."""
-        decimal_set = {Decimal(x.strip()) for x in input_string.split(',')}
-        sorted_decimals = sorted(decimal_set, key=lambda d: d)
-        return sorted(set(sorted_decimals))
+        values = [x.strip() for x in input_string.split(',') if x.strip()]
+        decimal_set = {Decimal(x) for x in values}
+        return sorted(decimal_set)
 
     def parse_decimal_set_to_string(self, decimal_set):
         original_string = ', '.join(str(d) for d in decimal_set)

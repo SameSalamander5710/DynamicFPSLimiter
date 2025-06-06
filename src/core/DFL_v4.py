@@ -60,21 +60,11 @@ with open(faq_path, newline='', encoding='utf-8') as csvfile:
         questions.append(row["question"])
         FAQs[key] = row["answer"]
 
-def parse_string_to_decimal_set(input_string):
-    """Parse a comma-separated string into a sorted list of unique positive Decimals."""
-    values = [x.strip() for x in input_string.split(',') if x.strip()]
-    decimal_set = {Decimal(x) for x in values}
-    return sorted(decimal_set)
-
-def parse_decimal_set_to_string(decimal_set):
-    original_string = ', '.join(str(d) for d in decimal_set)
-    return  original_string
-
 def sort_customfpslimits_callback(sender, app_data, user_data):
     value = dpg.get_value("input_customfpslimits")
     try:
         # Use the new helper function to parse and sort
-        sorted_limits = parse_string_to_decimal_set(value)
+        sorted_limits = cm.parse_string_to_decimal_set(value)
         # Convert back to string, preserving user formatting if needed
         sorted_str = ", ".join(str(x) for x in sorted_limits)
         dpg.set_value("input_customfpslimits", sorted_str)
@@ -82,7 +72,6 @@ def sort_customfpslimits_callback(sender, app_data, user_data):
         # If parsing fails, do nothing or optionally reset to previous valid value
         pass
 
-#TODO: Change for demical points
 def current_stepped_limits():
 
     maximum = int(dpg.get_value("input_maxcap"))
@@ -100,7 +89,7 @@ def current_stepped_limits():
         #logger.add_log(f"01 {custom_limits}")
         if custom_limits:
             try:
-                custom_limits = parse_string_to_decimal_set(custom_limits)
+                custom_limits = cm.parse_string_to_decimal_set(custom_limits)
                 return custom_limits
             except Exception:
                 #pass  # silently ignore and fall through
@@ -152,7 +141,7 @@ def make_ratioed_values(maximum, minimum, ratio):
     return custom_limits
 
 last_fps_limits = []
-#TODO: Fix updating error while user is typing
+
 def update_fps_cap_visualization():
 
     global last_fps_limits
@@ -315,7 +304,7 @@ def start_stop_callback(sender, app_data, user_data):
         CurrentFPSOffset = 0
         
         logger.add_log("Monitoring stopped")
-    logger.add_log(f"Custom FPS limits: {parse_decimal_set_to_string(current_stepped_limits())}")
+    logger.add_log(f"Custom FPS limits: {cm.parse_decimal_set_to_string(current_stepped_limits())}")
     rtss.set_fractional_framerate(cm.current_profile, Decimal(max(current_stepped_limits())))
 
 def reset_stats():
