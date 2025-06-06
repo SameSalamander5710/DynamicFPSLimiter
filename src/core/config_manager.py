@@ -134,22 +134,20 @@ class ConfigManager:
 
     def parse_input_value(self, key, value):
         value_type = self.key_type_map.get(key, int)
-        if key == "customfpslimits":
-            # Use the custom parser for decimal FPS limits
-            if isinstance(value, str):
-                try:
-                    return self.parse_customfpslimits(value)
-                except Exception:
-                    return []
-            elif isinstance(value, list):
-                return value
-            else:
-                return []
-        else:
-            try:
-                return value_type(value)
-            except Exception:
-                return value
+        try:
+            return value_type(value)
+        except Exception:
+            return value
+
+    def parse_string_to_decimal_set(self, input_string):
+        """Parse a comma-separated string into a sorted list of unique positive Decimals."""
+        decimal_set = {Decimal(x.strip()) for x in input_string.split(',')}
+        sorted_decimals = sorted(decimal_set, key=lambda d: d)
+        return sorted(set(sorted_decimals))
+
+    def parse_decimal_set_to_string(self, decimal_set):
+        original_string = ', '.join(str(d) for d in decimal_set)
+        return  original_string
 
     # Function to get values with correct types
     def get_setting(self, key, value_type=None):
@@ -285,24 +283,13 @@ class ConfigManager:
             self.logger.add_log(f"Deleted profile: {profile_to_delete}")
             self.current_profile = "Global"
 
+
+
     # Function to sync settings with variables
     def update_global_variables(self):
         for key, value in self.settings.items():
-            value_type = self.key_type_map.get(key, type(value))
-            if value_type is set:
-                # If value is a string, parse it to a set of ints
-                if isinstance(value, set):
-                    #globals()[key] = value
-                    setattr(self, key, value)
-                else:
-                    try:
-                        values = [int(x.strip()) for x in str(value).split(",") if x.strip().isdigit()]
-                        #globals()[key] = set(values)
-                        setattr(self, key, set(values))
-                    except Exception:
-                        #globals()[key] = set()
-                        setattr(self, key, set())
-            elif str(value).isdigit():
+            #value_type = self.key_type_map.get(key, type(value))
+            if str(value).isdigit():
                 #globals()[key] = int(value)
                 setattr(self, key, int(value))
             else:

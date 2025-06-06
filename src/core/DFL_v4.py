@@ -60,25 +60,21 @@ with open(faq_path, newline='', encoding='utf-8') as csvfile:
         questions.append(row["question"])
         FAQs[key] = row["answer"]
 
-def parse_positive_decimal_list(input_string):
+def parse_string_to_decimal_set(input_string):
     """Parse a comma-separated string into a sorted list of unique positive Decimals."""
-    entries = []
-    for x in input_string.split(","):
-        s = x.strip()
-        if s:
-            try:
-                d = Decimal(s)
-                if d > 0:
-                    entries.append(d)
-            except InvalidOperation:
-                continue
-    return sorted(set(entries))
+    decimal_set = {Decimal(x.strip()) for x in input_string.split(',')}
+    sorted_decimals = sorted(decimal_set, key=lambda d: d)
+    return sorted(set(sorted_decimals))
+
+def parse_decimal_set_to_string(decimal_set):
+    original_string = ', '.join(str(d) for d in decimal_set)
+    return  original_string
 
 def sort_customfpslimits_callback(sender, app_data, user_data):
     value = dpg.get_value("input_customfpslimits")
     try:
         # Use the new helper function to parse and sort
-        sorted_limits = parse_positive_decimal_list(value)
+        sorted_limits = parse_string_to_decimal_set(value)
         # Convert back to string, preserving user formatting if needed
         sorted_str = ", ".join(str(x) for x in sorted_limits)
         dpg.set_value("input_customfpslimits", sorted_str)
@@ -101,9 +97,10 @@ def current_stepped_limits():
 
     if use_custom == "custom":
         custom_limits = dpg.get_value("input_customfpslimits")
+        #logger.add_log(f"01 {custom_limits}")
         if custom_limits:
             try:
-                custom_limits = parse_positive_decimal_list(custom_limits)
+                custom_limits = parse_string_to_decimal_set(custom_limits)
                 return custom_limits
             except Exception:
                 logger.add_log("Error parsing custom FPS limits, using default stepped limits.")
@@ -317,8 +314,8 @@ def start_stop_callback(sender, app_data, user_data):
         CurrentFPSOffset = 0
         
         logger.add_log("Monitoring stopped")
-    logger.add_log(f"Custom FPS limits: {current_stepped_limits()}")
-    rtss.set_fractional_framerate(cm.current_profile, int(max(current_stepped_limits())))
+    logger.add_log(f"Custom FPS limits: {parse_decimal_set_to_string(current_stepped_limits())}")
+    rtss.set_fractional_framerate(cm.current_profile, Decimal(max(current_stepped_limits())))
 
 def reset_stats():
     
@@ -372,8 +369,8 @@ def update_plot_FPS(fps_val, cap_val):
 
     current_mincap = min(fps_limit_list)
     current_maxcap = max(fps_limit_list)
-    min_ft = current_mincap - round((current_maxcap - current_mincap) * 0.1)
-    max_ft = current_maxcap + round((current_maxcap - current_mincap) * 0.1)
+    min_ft = current_mincap - round((current_maxcap - current_mincap) * Decimal('0.1'))
+    max_ft = current_maxcap + round((current_maxcap - current_mincap)* Decimal('0.1'))
 
     dpg.set_axis_limits("y_axis_right", min_ft, max_ft) 
 
@@ -453,8 +450,8 @@ def monitoring_loop():
 
     current_mincap = min(fps_limit_list)
     current_maxcap = max(fps_limit_list)
-    min_ft = current_mincap - round((current_maxcap - current_mincap) * 0.1)
-    max_ft = current_maxcap + round((current_maxcap - current_mincap) * 0.1)
+    min_ft = current_mincap - round((current_maxcap - current_mincap) * Decimal('0.1'))
+    max_ft = current_maxcap + round((current_maxcap - current_mincap) * Decimal('0.1'))
 
     while running:
         current_profile = cm.current_profile
@@ -561,8 +558,8 @@ def monitoring_loop():
             # Update plot if fps is valid
             if fps and process_name not in {"DynamicFPSLimiter.exe"}:
                 # Scaling FPS value to fit 0-100 axis
-                scaled_fps = ((fps - min_ft)/(max_ft - min_ft))*100
-                scaled_cap = ((current_maxcap + CurrentFPSOffset - min_ft)/(max_ft - min_ft))*100
+                scaled_fps = ((fps - min_ft)/(max_ft - min_ft)) * Decimal('100')
+                scaled_cap = ((current_maxcap + CurrentFPSOffset - min_ft)/(max_ft - min_ft))* Decimal('100')
                 actual_cap = current_maxcap + CurrentFPSOffset
                 # Pass actual values, update_plot_FPS handles timing and lists
                 update_plot_FPS(scaled_fps, scaled_cap)
@@ -618,7 +615,7 @@ def exit_gui():
     running = False 
 
     if cm.globallimitonexit:
-        rtss.set_fractional_framerate("Global", int(cm.globallimitonexit_fps))
+        rtss.set_fractional_framerate("Global", Decimal(cm.globallimitonexit_fps))
 
     if gpu_monitor:
         gpu_monitor.cleanup()
