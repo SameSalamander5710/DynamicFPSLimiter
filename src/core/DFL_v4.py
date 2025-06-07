@@ -64,7 +64,7 @@ def sort_customfpslimits_callback(sender, app_data, user_data):
     value = dpg.get_value("input_customfpslimits")
     try:
         # Use the new helper function to parse and sort
-        sorted_limits = cm.parse_string_to_decimal_set(value)
+        sorted_limits = cm.parse_and_normalize_string_to_decimal_set(value)
         # Convert back to string, preserving user formatting if needed
         sorted_str = ", ".join(str(x) for x in sorted_limits)
         dpg.set_value("input_customfpslimits", sorted_str)
@@ -89,7 +89,7 @@ def current_stepped_limits():
         #logger.add_log(f"01 {custom_limits}")
         if custom_limits:
             try:
-                custom_limits = cm.parse_string_to_decimal_set(custom_limits)
+                custom_limits = cm.parse_and_normalize_string_to_decimal_set(custom_limits)
                 return custom_limits
             except Exception:
                 #pass  # silently ignore and fall through
@@ -304,6 +304,7 @@ def start_stop_callback(sender, app_data, user_data):
     #FIXME: Game crashing bug when changing to fractional from an existing integer number
     #FIXME: Possible reason: FPS being set to <1 when changing denominator
     rtss.set_fractional_fps_direct(cm.current_profile, Decimal(max(current_stepped_limits())))
+    rtss.set_fractional_framerate(cm.current_profile, Decimal(max(current_stepped_limits()))) #To update GUI
 
 def reset_stats():
     

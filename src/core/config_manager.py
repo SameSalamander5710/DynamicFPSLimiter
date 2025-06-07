@@ -24,7 +24,7 @@ class ConfigManager:
             "delaybeforedecrease": 2,
             "delaybeforeincrease": 3,
             "capmethod": "ratio",
-            "customfpslimits": '30.0, 45.00, 60.000, 100.0000',
+            "customfpslimits": '30.01, 45.00, 59.99',
             "minvalidgpu": 14,
             "minvalidfps": 14,
             "globallimitonexit_fps": 98,
@@ -82,7 +82,7 @@ class ConfigManager:
                 'cpucutofffordecrease': '95',
                 'cpucutoffforincrease': '85',
                 'capmethod': 'ratio',
-                'customfpslimits': '30.0, 45.00, 60.000, 100.0000',
+                'customfpslimits': '30.01, 45.00, 59.99',
             }
             with open(self.profiles_path, 'w') as f:
                 self.profiles_config.write(f)
@@ -138,12 +138,47 @@ class ConfigManager:
             return value_type(value)
         except Exception:
             return value
-
+    #TODO: Cleanup unused functions
     def parse_string_to_decimal_set(self, input_string):
         """Parse a comma-separated string into a sorted list of unique positive Decimals."""
         values = [x.strip() for x in input_string.split(',') if x.strip()]
         decimal_set = {Decimal(x) for x in values}
         return sorted(decimal_set)
+
+    def parse_and_normalize_string_to_decimal_set(self, input_string):
+        """Parse a comma-separated string into a set of unique Decimals normalized to max decimal places."""
+        values = [x.strip() for x in input_string.split(',') if x.strip()]
+        decimal_set = {Decimal(x) for x in values}
+        sorted_decimals = sorted(decimal_set)
+
+        # Determine max number of decimal places   
+        max_decimals = max(
+            -d.normalize().as_tuple().exponent if d.normalize().as_tuple().exponent < 0 else 0
+            for d in sorted_decimals
+        )
+
+        # Create the quantize pattern, e.g., Decimal('0.0001') for 4 decimal places
+        quantize_pattern = Decimal(f"1.{'0' * max_decimals}") if max_decimals > 0 else Decimal("1")
+        
+        normalized_list = sorted({d.quantize(quantize_pattern) for d in sorted_decimals})
+        return normalized_list
+
+    def parse_and_normalize_string_to_decimals(self, input_string):
+        """Parse a comma-separated string into sorted unique Decimals, normalized to max decimal places."""
+        values = [x.strip() for x in input_string.split(',') if x.strip()]
+        decimal_set = {Decimal(x) for x in values}
+        sorted_decimals = sorted(decimal_set)
+
+        # Determine max number of decimal places
+        max_decimals = max(
+            len(str(d.normalize()).split('.')[-1]) if '.' in str(d) else 0
+            for d in sorted_decimals
+        )
+
+        # Normalize to the same number of decimal places as strings
+        normalized = [f"{d:.{max_decimals}f}" for d in sorted_decimals]
+
+        return normalized
 
     def parse_decimal_set_to_string(self, decimal_set):
         original_string = ', '.join(str(d) for d in decimal_set)

@@ -167,7 +167,7 @@ class RTSSController:
             self.UpdateProfiles()
         return True
 
-    def set_fractional_framerate(self, profile_name, framerate, update=False):
+    def set_fractional_framerate(self, profile_name, framerate, update=False, denominator=False):
         profile_name_for_api = "" if not profile_name or profile_name.lower() == "global" else profile_name
         fr_str = str(framerate)
         if '.' in fr_str:
@@ -177,8 +177,10 @@ class RTSSController:
         else:
             denominator = 1
             limit = int(framerate)
-
-        self.set_limit_denominator(profile_name, denominator, update=update)
+        
+        if denominator:
+            self.set_limit_denominator(profile_name, denominator, update=update)
+            
         self.set_profile_property(profile_name_for_api, "FramerateLimit", limit, update=update)
         if not update:
             self.UpdateProfiles()
