@@ -1,6 +1,7 @@
 import ctypes
 import os
 import winreg
+from decimal import Decimal, InvalidOperation
 
 class RTSSController:
     RTSSHOOKSFLAG_LIMITER_DISABLED = 4
@@ -130,7 +131,8 @@ class RTSSController:
         self.logger.add_log(f"Enabling RTSS limiter...")
         self.SetFlags(~self.RTSSHOOKSFLAG_LIMITER_DISABLED & 0xFFFFFFFF, 0)
         self.UpdateProfiles()
-        
+
+    # Derived functions    
     def set_limit_denominator(self, profile_name, new_denominator, update=True):
         profiles_dir = os.path.join(self.rtss_install_path, "Profiles")
         if not profile_name or profile_name.lower() == "global":
@@ -180,10 +182,67 @@ class RTSSController:
         self.set_profile_property(profile_name_for_api, "FramerateLimit", limit, update=update)
         if not update:
             self.UpdateProfiles()
-            
+
         print(f"Set {profile_name}: FramerateLimit={limit}, LimitDenominator={denominator} (actual limit: {limit/denominator})")
         return limit, denominator
 
+    def set_fractional_fps_direct(self, profile_name, framerate, update=True):
+
+        profiles_dir = os.path.join(self.rtss_install_path, "Profiles")
+        if not profile_name or profile_name.lower() == "global":
+            profile_file = os.path.join(profiles_dir, "Global")
+            profile_name_for_api = ""
+        else:
+            profile_file = os.path.join(profiles_dir, f"{profile_name}.cfg")
+            profile_name_for_api = profile_name
+
+        if not os.path.isfile(profile_file):
+            print(f"Profile file not found: {profile_file}")
+            return False
+
+        fr_str = str(framerate)
+
+        if '.' in fr_str:
+            decimals = len(fr_str.split('.')[1])
+            denominator = 10 ** decimals
+            limit = int(round(float(framerate) * denominator))
+        else:
+            denominator = 1
+            limit = int(framerate)
+
+        with open(profile_file, "r", encoding="utf-8") as f:
+            lines = f.readlines()
+
+        found = False
+        for i, line in enumerate(lines):
+            if line.strip().startswith("LimitDenominator="):
+                lines[i] = f"LimitDenominator={denominator}\n"
+                found = True
+                break
+
+        for i, line in enumerate(lines):
+            stripped = line.strip()
+            if stripped.startswith("Limit="):
+                lines[i] = f"Limit={limit}\n"
+                found_limit = True
+            elif stripped.startswith("LimitDenominator="):
+                lines[i] = f"LimitDenominator={denominator}\n"
+                found_denominator = True
+
+        # Append if not found
+        if not found_limit:
+            lines.append(f"Limit={limit}\n")
+        if not found_denominator:
+            lines.append(f"LimitDenominator={denominator}\n")
+
+        with open(profile_file, "w", encoding="utf-8") as f:
+            f.writelines(lines)
+
+        print(f"Updated Limit={limit}, LimitDenominator={denominator} in {profile_file}")
+        if update:
+            self.UpdateProfiles()
+        return True
+    
     def get_framerate_limit(self, profile_name, get_denominator=False):
         profile_name_for_api = "" if not profile_name or profile_name.lower() == "global" else profile_name
         limit = self.get_profile_property(profile_name_for_api, "FramerateLimit", 4)

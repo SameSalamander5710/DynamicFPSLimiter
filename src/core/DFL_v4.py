@@ -303,7 +303,7 @@ def start_stop_callback(sender, app_data, user_data):
     logger.add_log(f"Custom FPS limits: {cm.parse_decimal_set_to_string(current_stepped_limits())}")
     #FIXME: Game crashing bug when changing to fractional from an existing integer number
     #FIXME: Possible reason: FPS being set to <1 when changing denominator
-    rtss.set_fractional_framerate(cm.current_profile, Decimal(max(current_stepped_limits())), update=False)
+    rtss.set_fractional_fps_direct(cm.current_profile, Decimal(max(current_stepped_limits())))
 
 def reset_stats():
     
@@ -547,7 +547,8 @@ def monitoring_loop():
             if fps and process_name not in {"DynamicFPSLimiter.exe"}:
                 # Scaling FPS value to fit 0-100 axis
                 scaled_fps = ((fps - min_ft)/(max_ft - min_ft)) * Decimal('100')
-                scaled_cap = ((current_maxcap + CurrentFPSOffset - min_ft)/(max_ft - min_ft))* Decimal('100')
+                scaled_cap = ((current_maxcap + CurrentFPSOffset - min_ft)/(max_ft - min_ft)) * Decimal('100')
+                #FIXME: Fix type errors
                 actual_cap = current_maxcap + CurrentFPSOffset
                 # Pass actual values, update_plot_FPS handles timing and lists
                 update_plot_FPS(scaled_fps, scaled_cap)
