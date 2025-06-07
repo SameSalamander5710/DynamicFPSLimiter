@@ -1,6 +1,8 @@
 # DFL_v4.py
 # Dynamic FPS Limiter v4.2.0
 
+#TODO: Clean up print statements and logs
+
 import ctypes
 ctypes.windll.shcore.SetProcessDpiAwareness(2)
 
@@ -301,8 +303,7 @@ def start_stop_callback(sender, app_data, user_data):
         
         logger.add_log("Monitoring stopped")
     logger.add_log(f"Custom FPS limits: {cm.parse_decimal_set_to_string(current_stepped_limits())}")
-    #FIXME: Game crashing bug when changing to fractional from an existing integer number
-    #FIXME: Possible reason: FPS being set to <1 when changing denominator
+
     rtss.set_fractional_fps_direct(cm.current_profile, Decimal(max(current_stepped_limits())))
     rtss.set_fractional_framerate(cm.current_profile, Decimal(max(current_stepped_limits()))) #To update GUI
 
@@ -548,8 +549,7 @@ def monitoring_loop():
             if fps and process_name not in {"DynamicFPSLimiter.exe"}:
                 # Scaling FPS value to fit 0-100 axis
                 scaled_fps = ((fps - min_ft)/(max_ft - min_ft)) * Decimal('100')
-                scaled_cap = ((current_maxcap + CurrentFPSOffset - min_ft)/(max_ft - min_ft)) * Decimal('100')
-                #FIXME: Fix type errors
+                scaled_cap = ((Decimal(current_maxcap) + Decimal(CurrentFPSOffset) - min_ft)/(max_ft - min_ft)) * Decimal('100')
                 actual_cap = current_maxcap + CurrentFPSOffset
                 # Pass actual values, update_plot_FPS handles timing and lists
                 update_plot_FPS(scaled_fps, scaled_cap)
@@ -663,7 +663,7 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
     with dpg.group(horizontal=True):
         dpg.add_text("Dynamic FPS Limiter", tag="app_title")
         dpg.bind_item_font("app_title", bold_font)
-        dpg.add_text("v4.2.0")
+        dpg.add_text("v4.2.0 (beta)")
         dpg.add_spacer(width=30)
         dpg.add_button(label="Detect Render GPU", callback=toggle_luid_selection, tag="luid_button", width=150)
 

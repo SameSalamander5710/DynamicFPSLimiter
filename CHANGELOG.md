@@ -1,8 +1,8 @@
 # CHANGELOG
 
-## [v4.2.0] - Unreleased
+## [v4.2.0] - Pre-release
 ### Added
-- Enabled addition of fractional framerate limits in the custom limit input field.
+- Enabled fractional framerate limits in the custom limits input field.
 
 ### Changed
 - Uses simplified python script to directly use RTSSHooks64.dll
