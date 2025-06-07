@@ -278,10 +278,6 @@ def start_stop_callback(sender, app_data, user_data):
         dpg.configure_item(tag, enabled=not running)
 
     if running:
-        # Initialize RTSS
-        rtss.enable_limiter()
-        
-        # Apply current settings and start monitoring
         
         time_series.clear()
         fps_time_series.clear()
@@ -306,7 +302,8 @@ def start_stop_callback(sender, app_data, user_data):
         logger.add_log("Monitoring stopped")
     logger.add_log(f"Custom FPS limits: {cm.parse_decimal_set_to_string(current_stepped_limits())}")
     #FIXME: Game crashing bug when changing to fractional from an existing integer number
-    rtss.set_fractional_framerate(cm.current_profile, Decimal(max(current_stepped_limits())))
+    #FIXME: Possible reason: FPS being set to <1 when changing denominator
+    rtss.set_fractional_framerate(cm.current_profile, Decimal(max(current_stepped_limits())), update=False)
 
 def reset_stats():
     
