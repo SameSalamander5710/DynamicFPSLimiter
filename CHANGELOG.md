@@ -1,14 +1,14 @@
 # CHANGELOG
 
-## [v4.2.0] - Pre-release
+## [v4.2.0] - 2025-06-14
 ### Added
-- Enabled fractional framerate limits in the custom limits input field.
+- Support for fractional framerate values in the custom FPS limit input.
 
 ### Changed
-- Uses simplified python script to directly use RTSSHooks64.dll
+- Uses simplified python script to directly use RTSSHooks64.dll.
 
 ### Fixed
-- Deleting a profile on DFL now deletes the corresponding app on RTSS
+- Deleting a profile on DFL now deletes the corresponding profile on RTSS.
 
 ## [v4.1.0] - 2025-05-31
 ### Added

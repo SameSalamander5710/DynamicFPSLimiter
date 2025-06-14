@@ -663,10 +663,9 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
     with dpg.group(horizontal=True):
         dpg.add_text("Dynamic FPS Limiter", tag="app_title")
         dpg.bind_item_font("app_title", bold_font)
-        dpg.add_text("v4.2.0 (beta)")
-        dpg.add_spacer(width=30)
+        dpg.add_text("v4.2.0")
+        dpg.add_spacer(width=50)
         dpg.add_button(label="Detect Render GPU", callback=toggle_luid_selection, tag="luid_button", width=150)
-
         dpg.add_spacer(width=30)
         dpg.add_button(label="Start", tag="start_stop_button", callback=start_stop_callback, width=50, user_data=cm)
         dpg.bind_item_theme("start_stop_button", "start_button_theme")  # Apply start button theme

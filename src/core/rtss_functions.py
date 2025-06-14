@@ -217,12 +217,6 @@ class RTSSController:
 
         found = False
         for i, line in enumerate(lines):
-            if line.strip().startswith("LimitDenominator="):
-                lines[i] = f"LimitDenominator={denominator}\n"
-                found = True
-                break
-
-        for i, line in enumerate(lines):
             stripped = line.strip()
             if stripped.startswith("Limit="):
                 lines[i] = f"Limit={limit}\n"
