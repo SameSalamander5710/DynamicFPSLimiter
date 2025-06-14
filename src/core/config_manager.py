@@ -259,6 +259,7 @@ class ConfigManager:
             dpg.set_value(f"input_{key}", parsed_value)
         self.update_global_variables()
         dpg.set_value("new_profile_input", "")
+        self.current_method_callback()  # Update method-specific UI elements
 
     def save_profile(self, profile_name):
         self.profiles_config[profile_name] = {}
@@ -318,8 +319,7 @@ class ConfigManager:
 
             self.logger.add_log(f"Deleted profile: {profile_to_delete}")
             self.current_profile = "Global"
-
-
+        self.current_method_callback()  # Update method-specific UI elements
 
     # Function to sync settings with variables
     def update_global_variables(self):
@@ -351,11 +351,13 @@ class ConfigManager:
             dpg.set_value(f"input_{key}", self.settings[key])
         self.update_global_variables()
         self.logger.add_log("Settings quick loaded")
+        self.current_method_callback()  # Update method-specific UI elements
 
     def reset_to_program_default(self):
         
         for key in self.input_field_keys:
             dpg.set_value(f"input_{key}", self.Default_settings_original[key])
+        self.current_method_callback()  # Update method-specific UI elements
         self.logger.add_log("Settings reset to program default")
 
     def update_limit_on_exit_setting(self, sender, app_data, user_data):
