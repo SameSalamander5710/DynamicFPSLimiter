@@ -143,7 +143,7 @@ class RTSSController:
             profile_name_for_api = profile_name
 
         if not os.path.isfile(profile_file):
-            print(f"Profile file not found: {profile_file}")
+            self.logger.add_log(f"Profile file not found: {profile_file}")
             return False
 
         with open(profile_file, "r", encoding="utf-8") as f:
@@ -162,7 +162,7 @@ class RTSSController:
         with open(profile_file, "w", encoding="utf-8") as f:
             f.writelines(lines)
 
-        print(f"Updated LimitDenominator to {new_denominator} in {profile_file}")
+        #self.logger.add_log(f"Updated LimitDenominator to {new_denominator} in {profile_file}")
         if update:
             self.UpdateProfiles()
         return True
@@ -185,7 +185,7 @@ class RTSSController:
         if not update:
             self.UpdateProfiles()
 
-        print(f"Set {profile_name}: FramerateLimit={limit}, LimitDenominator={denominator} (actual limit: {limit/denominator})")
+        self.logger.add_log(f"Set {profile_name}: FramerateLimit={limit}, LimitDenominator={denominator} (actual limit: {limit/denominator})")
         return limit, denominator
 
     def set_fractional_fps_direct(self, profile_name, framerate, update=True):
@@ -199,7 +199,7 @@ class RTSSController:
             profile_name_for_api = profile_name
 
         if not os.path.isfile(profile_file):
-            print(f"Profile file not found: {profile_file}")
+            self.logger.add_log(f"Profile file not found: {profile_file}")
             return False
 
         fr_str = str(framerate)
@@ -234,7 +234,7 @@ class RTSSController:
         with open(profile_file, "w", encoding="utf-8") as f:
             f.writelines(lines)
 
-        print(f"Updated Limit={limit}, LimitDenominator={denominator} in {profile_file}")
+        #self.logger.add_log(f"Updated Limit={limit}, LimitDenominator={denominator} in {profile_file}")
         if update:
             self.UpdateProfiles()
         return True
