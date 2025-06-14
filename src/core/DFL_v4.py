@@ -26,7 +26,7 @@ from core import logger
 from core.rtss_interface import RTSSInterface
 from core.cpu_monitor import CPUUsageMonitor
 from core.gpu_monitor import GPUUsageMonitor
-from core.themes import create_themes
+from core.themes import ThemesManager
 from core.config_manager import ConfigManager
 from core.tooltips import get_tooltips, add_tooltip, apply_all_tooltips, update_tooltip_setting
 from core.warning import get_active_warnings
@@ -36,7 +36,8 @@ from core.rtss_functions import RTSSController
 # Always get absolute path to EXE or script location
 Base_dir = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
 rtss = RTSSController(logger)
-cm = ConfigManager(logger, dpg, rtss, Base_dir)
+themes_manager = ThemesManager()
+cm = ConfigManager(logger, dpg, rtss, themes_manager, Base_dir)
 tooltips = get_tooltips()
 
 # Ensure the config folder exists in the parent directory of Base_dir
@@ -205,22 +206,6 @@ def copy_from_plot_callback():
     fps_limits = sorted(set(current_stepped_limits()))
     fps_limits_str = ", ".join(str(int(round(x))) for x in fps_limits)
     dpg.set_value("input_customfpslimits", fps_limits_str)
-
-def current_method_callback(sender=None, app_data=None, user_data=None):
-
-    method = app_data if app_data else dpg.get_value("input_capmethod")
-
-    dpg.bind_item_theme("input_capratio", "enabled_text_theme") if method == "ratio" else dpg.bind_item_theme("input_capratio", "disabled_text_theme")
-    dpg.bind_item_theme("label_capratio", "enabled_text_theme") if method == "ratio" else dpg.bind_item_theme("label_capratio", "disabled_text_theme")
-    dpg.bind_item_theme("label_capstep", "enabled_text_theme") if method == "step" else dpg.bind_item_theme("label_capstep", "disabled_text_theme")
-    dpg.bind_item_theme("input_capstep", "enabled_text_theme") if method == "step" else dpg.bind_item_theme("input_capstep", "disabled_text_theme")
-    dpg.bind_item_theme("input_customfpslimits", "enabled_text_theme") if method == "custom" else dpg.bind_item_theme("input_customfpslimits", "disabled_text_theme")
-    dpg.bind_item_theme("label_maxcap", "disabled_text_theme") if method == "custom" else dpg.bind_item_theme("label_maxcap", "enabled_text_theme")
-    dpg.bind_item_theme("label_mincap", "disabled_text_theme") if method == "custom" else dpg.bind_item_theme("label_mincap", "enabled_text_theme")
-    dpg.bind_item_theme("input_maxcap", "disabled_text_theme") if method == "custom" else dpg.bind_item_theme("input_maxcap", "enabled_text_theme")
-    dpg.bind_item_theme("input_mincap", "disabled_text_theme") if method == "custom" else dpg.bind_item_theme("input_mincap", "enabled_text_theme")
-    
-    logger.add_log(f"Method selection changed: {method}")
 
 def tooltip_checkbox_callback(sender, app_data, user_data):
     update_tooltip_setting(dpg, sender, app_data, user_data, tooltips, cm, logger)
@@ -644,7 +629,7 @@ def build_profile_section():
 
 # GUI setup: Main Window
 dpg.create_context()
-create_themes()
+themes_manager.create_themes()
 
 with dpg.font_registry():
     try:
@@ -775,7 +760,7 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
             dpg.add_radio_button(
                 items=["ratio", "step", "custom"], 
                 horizontal=True,
-                callback=current_method_callback,
+                callback=cm.current_method_callback,
                 default_value="ratio",#settings["method"],
                 tag="input_capmethod"
                 )
@@ -880,7 +865,7 @@ gui_update_thread = threading.Thread(target=gui_update_loop, daemon=True)
 gui_update_thread.start()
 
 apply_all_tooltips(dpg, tooltips, ShowTooltip, cm, logger)
-current_method_callback()
+cm.current_method_callback()
 
 autostart = AutoStartManager(app_path=os.path.join(os.path.dirname(Base_dir), "DynamicFPSLimiter.exe"))
 autostart.update_if_needed(cm.launchonstartup)

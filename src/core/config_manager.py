@@ -4,10 +4,11 @@ import dearpygui.dearpygui as dpg
 from decimal import Decimal, InvalidOperation
 
 class ConfigManager:
-    def __init__(self, logger_instance, dpg_instance, rtss_instance, base_dir):
+    def __init__(self, logger_instance, dpg_instance, rtss_instance, themes_manager, base_dir):
         self.logger = logger_instance
         self.dpg = dpg_instance
         self.rtss = rtss_instance
+        self.themes = themes_manager.themes
         self.config_dir = os.path.join(os.path.dirname(base_dir), "config")
         os.makedirs(self.config_dir, exist_ok=True)
         self.settings_path = os.path.join(self.config_dir, "settings.ini")
@@ -406,6 +407,22 @@ class ConfigManager:
                 self.logger.add_log(f"Profile '{profile_name}' not found. Defaulting to 'Global'.")
                 dpg.set_value("profile_dropdown", "Global")
                 self.load_profile_callback(None, "Global", None)
+
+    def current_method_callback(self, sender=None, app_data=None, user_data=None):
+
+        method = app_data if app_data else dpg.get_value("input_capmethod")
+
+        dpg.bind_item_theme("input_capratio", self.themes["enabled_text_theme"] if method == "ratio" else self.themes["disabled_text_theme"])
+        dpg.bind_item_theme("label_capratio", self.themes["enabled_text_theme"] if method == "ratio" else self.themes["disabled_text_theme"])
+        dpg.bind_item_theme("label_capstep", self.themes["enabled_text_theme"] if method == "step" else self.themes["disabled_text_theme"])
+        dpg.bind_item_theme("input_capstep", self.themes["enabled_text_theme"] if method == "step" else self.themes["disabled_text_theme"])
+        dpg.bind_item_theme("input_customfpslimits", self.themes["enabled_text_theme"] if method == "custom" else self.themes["disabled_text_theme"])
+        dpg.bind_item_theme("label_maxcap", self.themes["disabled_text_theme"] if method == "custom" else self.themes["enabled_text_theme"])
+        dpg.bind_item_theme("label_mincap", self.themes["disabled_text_theme"] if method == "custom" else self.themes["enabled_text_theme"])
+        dpg.bind_item_theme("input_maxcap", self.themes["disabled_text_theme"] if method == "custom" else self.themes["enabled_text_theme"])
+        dpg.bind_item_theme("input_mincap", self.themes["disabled_text_theme"] if method == "custom" else self.themes["enabled_text_theme"])
+
+        self.logger.add_log(f"Method selection changed: {method}")
 
 #TODO: Refactor this to use a more generic method for updating preference settings
     def update_launch_on_startup_setting(self, sender, app_data, user_data):
