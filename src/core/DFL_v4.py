@@ -246,7 +246,7 @@ def start_stop_callback(sender, app_data, user_data):
     global running
     running = not running
     dpg.configure_item("start_stop_button", label="Stop" if running else "Start")
-    dpg.bind_item_theme("start_stop_button", "stop_button_theme" if running else "start_button_theme")
+    dpg.bind_item_theme("start_stop_button", themes_manager.themes["stop_button_theme"] if running else "start_button_theme")
     cm.apply_current_input_values()
     
     # Reset variables to zero or their default state
@@ -395,7 +395,7 @@ def toggle_luid_selection():
         if luid:
             logger.add_log(f"Tracking LUID: {luid} | Current 3D engine Utilization: {usage}%")
             dpg.configure_item("luid_button", label="Revert to all GPUs")
-            dpg.bind_item_theme("luid_button", "revert_gpu_theme")  # Apply blue theme
+            dpg.bind_item_theme("luid_button", themes_manager.themes["revert_gpu_theme"])  # Apply blue theme
             luid_selected = True
         else:
             logger.add_log("Failed to detect active LUID.")
@@ -404,7 +404,7 @@ def toggle_luid_selection():
         luid = "All"
         logger.add_log("Tracking all GPU engines.")
         dpg.configure_item("luid_button", label="Detect Render GPU")
-        dpg.bind_item_theme("luid_button", "detect_gpu_theme")  # Apply default grey theme
+        dpg.bind_item_theme("luid_button", themes_manager.themes["detect_gpu_theme"])  # Apply default grey theme
         luid_selected = False
 
 fps_values = []
@@ -624,7 +624,7 @@ def build_profile_section():
             with dpg.table_row():
                 dpg.add_text("Last active process:")
                 dpg.add_input_text(tag="LastProcess", multiline=False, readonly=True, width=260)
-                dpg.bind_item_theme("LastProcess", "transparent_input_theme_2")
+                dpg.bind_item_theme("LastProcess", themes_manager.themes["transparent_input_theme_2"])
                 dpg.add_button(tag="process_to_profile", label="Add process to Profiles", callback=cm.add_process_profile_callback, width=160)
 
 # GUI setup: Main Window
@@ -653,7 +653,7 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
         dpg.add_button(label="Detect Render GPU", callback=toggle_luid_selection, tag="luid_button", width=150)
         dpg.add_spacer(width=30)
         dpg.add_button(label="Start", tag="start_stop_button", callback=start_stop_callback, width=50, user_data=cm)
-        dpg.bind_item_theme("start_stop_button", "start_button_theme")  # Apply start button theme
+        dpg.bind_item_theme("start_stop_button", themes_manager.themes["start_button_theme"])  # Apply start button theme
         dpg.add_button(label="Exit", callback=exit_gui, width=50)  # Exit button
 
     # Profiles
@@ -692,7 +692,7 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                                             ("Lower limit", "cpucutoffforincrease")]:
                                 with dpg.table_row():
                                     dpg.add_button(label=label, tag=f"button_{key}", width=120)
-                                    dpg.bind_item_theme(f"button_{key}", "button_right")
+                                    dpg.bind_item_theme(f"button_{key}", themes_manager.themes["button_right_theme"])
                                     dpg.add_input_text(tag=f"input_{key}", default_value=str(cm.settings[key]), width=40)
                     
                     #dpg.add_spacer(width=1)
@@ -729,7 +729,7 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                     dpg.add_text("as default on startup. Currently set to:")
                     dpg.add_input_text(tag="profileonstartup_name", multiline=False, readonly=True, width=150,
                                        default_value=cm.profileonstartup_name)
-                    dpg.bind_item_theme("profileonstartup_name", "transparent_input_theme_2")
+                    dpg.bind_item_theme("profileonstartup_name", themes_manager.themes["transparent_input_theme_2"])
                 dpg.add_checkbox(label="Launch the app on Windows startup", tag="autostart_checkbox",
                                  default_value=cm.launchonstartup, callback=autostart_checkbox_callback)
 
@@ -739,7 +739,7 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                 #2 dpg.add_spacer(height=2)
                 dpg.add_input_text(tag="LogText", multiline=True, readonly=True, width=-1, height=110)
 
-                dpg.bind_item_theme("LogText", "transparent_input_theme")
+                dpg.bind_item_theme("LogText", themes_manager.themes["transparent_input_theme"])
 
         with dpg.tab(label=" FAQs", tag="tab4"):
             with dpg.child_window(height=tab_height):
@@ -764,7 +764,7 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                 default_value="ratio",#settings["method"],
                 tag="input_capmethod"
                 )
-            dpg.bind_item_theme("input_capmethod", "radio_theme")
+            dpg.bind_item_theme("input_capmethod", themes_manager.themes["radio_theme"])
             #dpg.bind_item_font("input_capmethod", bold_font)
             dpg.add_text("Warning!", tag="warning_text", color=(190, 90, 90), 
                          pos=(500, 5),
@@ -827,9 +827,9 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
             dpg.set_axis_limits("y_axis_right", min_ft, max_ft)  # FPS range
             
             # apply theme to series
-            dpg.bind_item_theme("line1", "fixed_greyline_theme")
-            dpg.bind_item_theme("line2", "fixed_greyline_theme")
-            dpg.bind_item_theme("cap_series", "fps_cap_theme")
+            dpg.bind_item_theme("line1", themes_manager.themes["fixed_greyline_theme"])
+            dpg.bind_item_theme("line2", themes_manager.themes["fixed_greyline_theme"])
+            dpg.bind_item_theme("cap_series", themes_manager.themes["fps_cap_theme"])
 
 dpg.create_viewport(title="Dynamic FPS Limiter", width=Viewport_width, height=Viewport_height, resizable=False)
 dpg.set_viewport_resizable(False)
@@ -870,8 +870,8 @@ cm.current_method_callback()
 autostart = AutoStartManager(app_path=os.path.join(os.path.dirname(Base_dir), "DynamicFPSLimiter.exe"))
 autostart.update_if_needed(cm.launchonstartup)
 
-dpg.bind_theme("main_theme")
-dpg.bind_item_theme("plot_childwindow", "plot_bg_theme")
+dpg.bind_theme(themes_manager.themes["main_theme"])
+dpg.bind_item_theme("plot_childwindow", themes_manager.themes["plot_bg_theme"])
 pywinstyles.apply_style(None, "acrylic")
 
 logger.add_log("Initialized successfully.")
