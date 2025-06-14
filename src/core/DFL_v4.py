@@ -152,6 +152,10 @@ def update_fps_cap_visualization():
     fps_limits = current_stepped_limits()
     #logger.add_log(f"FPS limits: {fps_limits}")
 
+    # Exit early if fps_limits is empty or has fewer than 2 values
+    if not fps_limits or len(fps_limits) < 2:
+        return
+
     # Check if fps_limits has changed
     if fps_limits == last_fps_limits:
         return  # Exit if no change

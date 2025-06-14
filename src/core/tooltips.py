@@ -28,7 +28,7 @@ def get_tooltips():
     "process_to_profile": "Add the current settings to a new profile based on the last used process.",
     "button_cpucutofffordecrease": "(Optional) Set values below 100 to enable CPU-based FPS limiting.",
     "button_cpucutoffforincrease": "(Optional) Set values below 100 to enable CPU-based FPS limiting.",
-    "rest_fps_cap_button": "Clears the input fields and resets to Max/Min values",
+    "rest_fps_cap_button": "Clears the input fields and resets to Min/Max values",
 }
 
 def add_tooltip(dpg, key, tooltips, ShowTooltip, cm, logger):
