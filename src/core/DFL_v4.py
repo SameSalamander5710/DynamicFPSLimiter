@@ -572,16 +572,17 @@ def gui_update_loop():
     while gui_running:  # Changed from True to gui_running
         if not running:
             try:
-                warnings = get_active_warnings(dpg, cm, rtss_manager, int(min(current_stepped_limits())))
-                warning_visible = bool(warnings)
-                warning_message = "\n".join(warnings)
+                if current_stepped_limits():
+                    warnings = get_active_warnings(dpg, cm, rtss_manager, int(min(current_stepped_limits())))
+                    warning_visible = bool(warnings)
+                    warning_message = "\n".join(warnings)
 
-                dpg.configure_item("warning_text", show=warning_visible)
-                dpg.configure_item("warning_tooltip", show=warning_visible)
-                dpg.set_value("warning_tooltip_text", warning_message)
+                    dpg.configure_item("warning_text", show=warning_visible)
+                    dpg.configure_item("warning_tooltip", show=warning_visible)
+                    dpg.set_value("warning_tooltip_text", warning_message)
 
                 # Update FPS limit visualization based on current input values
-                update_fps_cap_visualization()
+                    update_fps_cap_visualization()
             except Exception as e:
                 if gui_running:  # Only log if we're still supposed to be running
                     logger.add_log(f"Error in GUI update loop: {e}")

@@ -140,7 +140,16 @@ class ConfigManager:
     def parse_and_normalize_string_to_decimal_set(self, input_string):
         """Parse a comma-separated string into a set of unique Decimals normalized to max decimal places."""
         values = [x.strip() for x in input_string.split(',') if x.strip()]
-        decimal_set = {Decimal(x) for x in values}
+
+        if not values:
+            self.logger.add_log("Input string is empty or contains only whitespace.")
+            return []
+
+        try:
+            decimal_set = {Decimal(x) for x in values}
+        except InvalidOperation:
+            self.logger.add_log("Invalid decimal in input string.")
+            return []
         sorted_decimals = sorted(decimal_set)
 
         # Determine max number of decimal places   
