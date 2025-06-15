@@ -1,11 +1,14 @@
 import os
 import configparser
 import dearpygui.dearpygui as dpg
+from decimal import Decimal, InvalidOperation
 
 class ConfigManager:
-    def __init__(self, logger_instance, dpg_instance, base_dir):
+    def __init__(self, logger_instance, dpg_instance, rtss_instance, themes_manager, base_dir):
         self.logger = logger_instance
         self.dpg = dpg_instance
+        self.rtss = rtss_instance
+        self.themes = themes_manager.themes
         self.config_dir = os.path.join(os.path.dirname(base_dir), "config")
         os.makedirs(self.config_dir, exist_ok=True)
         self.settings_path = os.path.join(self.config_dir, "settings.ini")
@@ -17,12 +20,12 @@ class ConfigManager:
             "capstep": 5,
             "gpucutofffordecrease": 85,
             "gpucutoffforincrease": 65,
-            'cpucutofffordecrease': 95,
-            'cpucutoffforincrease': 85,
+            'cpucutofffordecrease': 105,
+            'cpucutoffforincrease': 101,
             "delaybeforedecrease": 2,
             "delaybeforeincrease": 3,
             "capmethod": "ratio",
-            "customfpslimits": {30, 60},
+            "customfpslimits": '30.01, 45.00, 59.99',
             "minvalidgpu": 14,
             "minvalidfps": 14,
             "globallimitonexit_fps": 98,
@@ -77,10 +80,10 @@ class ConfigManager:
                 'capstep': '5',
                 'gpucutofffordecrease': '85',
                 'gpucutoffforincrease': '65',
-                'cpucutofffordecrease': '95',
-                'cpucutoffforincrease': '85',
+                'cpucutofffordecrease': '105',
+                'cpucutoffforincrease': '101',
                 'capmethod': 'ratio',
-                'customfpslimits': '30, 60',
+                'customfpslimits': '30.01, 45.00, 59.99',
             }
             with open(self.profiles_path, 'w') as f:
                 self.profiles_config.write(f)
@@ -101,7 +104,7 @@ class ConfigManager:
             "cpucutofffordecrease": int,
             "cpucutoffforincrease": int,
             "capmethod": str,
-            "customfpslimits": set,
+            "customfpslimits": str,
             "delaybeforedecrease": int,
             "delaybeforeincrease": int,
             "minvalidgpu": int,
@@ -127,34 +130,43 @@ class ConfigManager:
         }
         self.settings = self.Default_settings.copy()
 
-
     def parse_input_value(self, key, value):
         value_type = self.key_type_map.get(key, int)
-        if value_type is set:
-            if isinstance(value, set):
-                return value
-            # Remove curly braces if present
-            if isinstance(value, str):
-                value = value.strip()
-                if value.startswith("{") and value.endswith("}"):
-                    value = value[1:-1]
-            try:
-                return set(int(x.strip()) for x in str(value).split(",") if x.strip().isdigit())
-            except Exception:
-                return set()
-        else:
-            try:
-                return value_type(value)
-            except Exception:
-                return value
+        try:
+            return value_type(value)
+        except Exception:
+            return value
 
-    def format_output_value(self, key, value):
-        value_type = self.key_type_map.get(key, int)
-        if value_type is set:
-            if isinstance(value, set):
-                return ", ".join(str(x) for x in sorted(value))
-            return str(value)
-        return value
+    def parse_and_normalize_string_to_decimal_set(self, input_string):
+        """Parse a comma-separated string into a set of unique Decimals normalized to max decimal places."""
+        values = [x.strip() for x in input_string.split(',') if x.strip()]
+
+        if not values:
+            self.logger.add_log("Input string is empty or contains only whitespace.")
+            return []
+
+        try:
+            decimal_set = {Decimal(x) for x in values}
+        except InvalidOperation:
+            self.logger.add_log("Invalid decimal in input string.")
+            return []
+        sorted_decimals = sorted(decimal_set)
+
+        # Determine max number of decimal places   
+        max_decimals = max(
+            -d.normalize().as_tuple().exponent if d.normalize().as_tuple().exponent < 0 else 0
+            for d in sorted_decimals
+        )
+
+        # Create the quantize pattern, e.g., Decimal('0.0001') for 4 decimal places
+        quantize_pattern = Decimal(f"1.{'0' * max_decimals}") if max_decimals > 0 else Decimal("1")
+        
+        normalized_list = sorted({d.quantize(quantize_pattern) for d in sorted_decimals})
+        return normalized_list
+
+    def parse_decimal_set_to_string(self, decimal_set):
+        original_string = ', '.join(str(d) for d in decimal_set)
+        return  original_string
 
     # Function to get values with correct types
     def get_setting(self, key, value_type=None):
@@ -203,7 +215,7 @@ class ConfigManager:
                 value = dpg.get_value(f"input_{key}")
                 parsed_value = self.parse_input_value(key, value)
                 # Store as string for config file
-                self.profiles_config[selected_profile][key] = str(self.format_output_value(key, parsed_value))
+                self.profiles_config[selected_profile][key] = str(parsed_value)
             
             with open(self.profiles_path, "w") as configfile:
                 self.profiles_config.write(configfile)
@@ -227,9 +239,10 @@ class ConfigManager:
         for key in self.input_field_keys:
             value = self.profiles_config[profile_name].get(key, self.Default_settings_original[key])
             parsed_value = self.parse_input_value(key, value)
-            dpg.set_value(f"input_{key}", self.format_output_value(key, parsed_value))
+            dpg.set_value(f"input_{key}", parsed_value)
         self.update_global_variables()
         dpg.set_value("new_profile_input", "")
+        self.current_method_callback()  # Update method-specific UI elements
 
     def save_profile(self, profile_name):
         self.profiles_config[profile_name] = {}
@@ -237,7 +250,7 @@ class ConfigManager:
         for key in self.input_field_keys:
             value = dpg.get_value(f"input_{key}")
             parsed_value = self.parse_input_value(key, value)
-            self.profiles_config[profile_name][key] = str(self.format_output_value(key, parsed_value))
+            self.profiles_config[profile_name][key] = str(parsed_value)
         with open(self.profiles_path, 'w') as f:
             self.profiles_config.write(f)
         self.update_profile_dropdown()
@@ -269,6 +282,7 @@ class ConfigManager:
             return
         if profile_to_delete in self.profiles_config:
             self.profiles_config.remove_section(profile_to_delete)
+            self.rtss.delete_profile(profile_to_delete)
             with open(self.profiles_path, 'w') as f:
                 self.profiles_config.write(f)
             self.update_profile_dropdown(select_first=True)
@@ -279,7 +293,7 @@ class ConfigManager:
                     try:
                         value = self.profiles_config["Global"][key]
                         parsed_value = self.parse_input_value(key, value)
-                        dpg.set_value(f"input_{key}", self.format_output_value(key, parsed_value))
+                        dpg.set_value(f"input_{key}", parsed_value)
                     except Exception as e:
                         self.logger.add_log(f"Error: Unable to convert value for key '{key}': {e}")
                 self.update_global_variables()  # Ensure global variables are updated
@@ -288,25 +302,13 @@ class ConfigManager:
 
             self.logger.add_log(f"Deleted profile: {profile_to_delete}")
             self.current_profile = "Global"
+        self.current_method_callback()  # Update method-specific UI elements
 
     # Function to sync settings with variables
     def update_global_variables(self):
         for key, value in self.settings.items():
-            value_type = self.key_type_map.get(key, type(value))
-            if value_type is set:
-                # If value is a string, parse it to a set of ints
-                if isinstance(value, set):
-                    #globals()[key] = value
-                    setattr(self, key, value)
-                else:
-                    try:
-                        values = [int(x.strip()) for x in str(value).split(",") if x.strip().isdigit()]
-                        #globals()[key] = set(values)
-                        setattr(self, key, set(values))
-                    except Exception:
-                        #globals()[key] = set()
-                        setattr(self, key, set())
-            elif str(value).isdigit():
+            #value_type = self.key_type_map.get(key, type(value))
+            if str(value).isdigit():
                 #globals()[key] = int(value)
                 setattr(self, key, int(value))
             else:
@@ -329,14 +331,16 @@ class ConfigManager:
 
     def quick_load_settings(self):
         for key in self.input_field_keys:
-            dpg.set_value(f"input_{key}", self.format_output_value(key, self.settings[key]))
+            dpg.set_value(f"input_{key}", self.settings[key])
         self.update_global_variables()
         self.logger.add_log("Settings quick loaded")
+        self.current_method_callback()  # Update method-specific UI elements
 
     def reset_to_program_default(self):
         
         for key in self.input_field_keys:
-            dpg.set_value(f"input_{key}", self.format_output_value(key, self.Default_settings_original[key]))
+            dpg.set_value(f"input_{key}", self.Default_settings_original[key])
+        self.current_method_callback()  # Update method-specific UI elements
         self.logger.add_log("Settings reset to program default")
 
     def update_limit_on_exit_setting(self, sender, app_data, user_data):
@@ -388,6 +392,22 @@ class ConfigManager:
                 self.logger.add_log(f"Profile '{profile_name}' not found. Defaulting to 'Global'.")
                 dpg.set_value("profile_dropdown", "Global")
                 self.load_profile_callback(None, "Global", None)
+
+    def current_method_callback(self, sender=None, app_data=None, user_data=None):
+
+        method = app_data if app_data else dpg.get_value("input_capmethod")
+
+        dpg.bind_item_theme("input_capratio", self.themes["enabled_text_theme"] if method == "ratio" else self.themes["disabled_text_theme"])
+        dpg.bind_item_theme("label_capratio", self.themes["enabled_text_theme"] if method == "ratio" else self.themes["disabled_text_theme"])
+        dpg.bind_item_theme("label_capstep", self.themes["enabled_text_theme"] if method == "step" else self.themes["disabled_text_theme"])
+        dpg.bind_item_theme("input_capstep", self.themes["enabled_text_theme"] if method == "step" else self.themes["disabled_text_theme"])
+        dpg.bind_item_theme("input_customfpslimits", self.themes["enabled_text_theme"] if method == "custom" else self.themes["disabled_text_theme"])
+        dpg.bind_item_theme("label_maxcap", self.themes["disabled_text_theme"] if method == "custom" else self.themes["enabled_text_theme"])
+        dpg.bind_item_theme("label_mincap", self.themes["disabled_text_theme"] if method == "custom" else self.themes["enabled_text_theme"])
+        dpg.bind_item_theme("input_maxcap", self.themes["disabled_text_theme"] if method == "custom" else self.themes["enabled_text_theme"])
+        dpg.bind_item_theme("input_mincap", self.themes["disabled_text_theme"] if method == "custom" else self.themes["enabled_text_theme"])
+
+        self.logger.add_log(f"Method selection changed: {method}")
 
 #TODO: Refactor this to use a more generic method for updating preference settings
     def update_launch_on_startup_setting(self, sender, app_data, user_data):

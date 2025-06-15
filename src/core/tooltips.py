@@ -14,10 +14,10 @@ def get_tooltips():
     "cpucutoffforincrease": "Defines the lower threshold for CPU usage. If CPU usage falls below this value, the FPS cap may increase to improve performance.",
     "minvalidgpu": "Sets the minimum valid GPU usage percentage required for adjusting the FPS. If the GPU usage is below this threshold, the FPS cap will not change. This helps prevent FPS fluctuations during loading screens.",
     "minvalidfps": "Defines the minimum valid FPS required for adjusting the FPS. If the FPS falls below this value, the FPS cap will not change. This helps prevent FPS fluctuations during loading screens.",
-    "quick_save": "Saves input values from memory. This is temporary storage.",
-    "quick_load": "Loads input values from memory. This is temporary storage.",
+    "quick_save": "Save settings to memory temporarily. Useful to copy settings between profiles.",
+    "quick_load": "Loads input values from memory.",
     "start_stop_button": "Starts maintaining the FPS cap dynamically based on GPU/CPU utilization.",
-    "luid_button": "Detects the render GPU based on highest 3D engine utilization, and sets it as the target GPU for FPS limiting. Click again to deselect.",
+    "luid_button": "Detects the render GPU based on CURRENT highest 3D engine utilization, and sets it as the target GPU for FPS limiting. Click again to deselect.",
     "exit_fps_input": "The specific FPS limit to apply globally when the application exits, if 'Set Global FPS Limit on Exit' is checked.",
     "SaveToProfile": "Saves the current settings to the selected profile.",
     "Reset_Default": "Resets all settings to the program's default values.",
@@ -26,6 +26,9 @@ def get_tooltips():
     "checkbox_globallimitonexit": "Enables or disables the application of a global FPS limit when exiting the program. When enabled, the specified FPS limit will be applied to all processes.",
     "autofill_fps_caps": "Click with the method set to 'ratio' or 'step' to copy the calculated limits.",
     "process_to_profile": "Add the current settings to a new profile based on the last used process.",
+    "button_cpucutofffordecrease": "(Optional) Set values below 100 to enable CPU-based FPS limiting.",
+    "button_cpucutoffforincrease": "(Optional) Set values below 100 to enable CPU-based FPS limiting.",
+    "rest_fps_cap_button": "Clears the input fields and resets to Min/Max values",
 }
 
 def add_tooltip(dpg, key, tooltips, ShowTooltip, cm, logger):
@@ -40,7 +43,7 @@ def add_tooltip(dpg, key, tooltips, ShowTooltip, cm, logger):
         # Only create tooltip if widget exists
         if dpg.does_item_exist(widget_id):
             tooltip_tag = f"{widget_id}_tooltip"
-            with dpg.tooltip(parent=widget_id, tag=tooltip_tag, show=ShowTooltip, delay=1):
+            with dpg.tooltip(parent=widget_id, tag=tooltip_tag, show=ShowTooltip, delay=0.5):
                 dpg.add_text(tooltips[key], wrap=200)
 
 def apply_all_tooltips(dpg, tooltips, ShowTooltip, cm, logger):

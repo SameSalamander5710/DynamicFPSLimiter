@@ -1,5 +1,5 @@
 # DFL_v4.py
-# Dynamic FPS Limiter v4.1.0
+# Dynamic FPS Limiter v4.2.0
 
 import ctypes
 ctypes.windll.shcore.SetProcessDpiAwareness(2)
@@ -12,6 +12,7 @@ import os
 import sys
 import csv
 import pywinstyles
+from decimal import Decimal, InvalidOperation
 
 # tweak path so "src/" (or wherever your modules live) is on sys.path
 _this_dir = os.path.abspath(os.path.dirname(__file__))
@@ -21,25 +22,26 @@ if _root not in sys.path:
 
 from core import logger
 from core.rtss_interface import RTSSInterface
-from core.rtss_cli import RTSSCLI
 from core.cpu_monitor import CPUUsageMonitor
 from core.gpu_monitor import GPUUsageMonitor
-from core.themes import create_themes
+from core.themes import ThemesManager
 from core.config_manager import ConfigManager
 from core.tooltips import get_tooltips, add_tooltip, apply_all_tooltips, update_tooltip_setting
 from core.warning import get_active_warnings
 from core.autostart import AutoStartManager
+from core.rtss_functions import RTSSController
 
 # Always get absolute path to EXE or script location
 Base_dir = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
-cm = ConfigManager(logger, dpg, Base_dir)
+rtss = RTSSController(logger)
+themes_manager = ThemesManager()
+cm = ConfigManager(logger, dpg, rtss, themes_manager, Base_dir)
 tooltips = get_tooltips()
 
 # Ensure the config folder exists in the parent directory of Base_dir
 parent_dir = os.path.dirname(Base_dir)
 
 # Paths to configuration files
-rtss_dll_path = os.path.join(Base_dir, "assets/rtss.dll")
 error_log_file = os.path.join(parent_dir, "error_log.txt")
 icon_path = os.path.join(Base_dir, 'assets/DynamicFPSLimiter.ico')
 font_path = os.path.join(os.environ["WINDIR"], "Fonts", "segoeui.ttf") #segoeui, Verdana, Tahoma, Calibri, micross
@@ -60,13 +62,12 @@ with open(faq_path, newline='', encoding='utf-8') as csvfile:
         FAQs[key] = row["answer"]
 
 def sort_customfpslimits_callback(sender, app_data, user_data):
-    # Get the current value from the input field
     value = dpg.get_value("input_customfpslimits")
-    # Parse to set of ints
     try:
-        numbers = set(int(x.strip()) for x in value.split(",") if x.strip().isdigit())
-        numbers = sorted(x for x in numbers if x > 0) 
-        sorted_str = ", ".join(str(x) for x in sorted(numbers))
+        # Use the new helper function to parse and sort
+        sorted_limits = cm.parse_and_normalize_string_to_decimal_set(value)
+        # Convert back to string, preserving user formatting if needed
+        sorted_str = ", ".join(str(x) for x in sorted_limits)
         dpg.set_value("input_customfpslimits", sorted_str)
     except Exception:
         # If parsing fails, do nothing or optionally reset to previous valid value
@@ -86,12 +87,13 @@ def current_stepped_limits():
 
     if use_custom == "custom":
         custom_limits = dpg.get_value("input_customfpslimits")
+        #logger.add_log(f"01 {custom_limits}")
         if custom_limits:
             try:
-                custom_limits = set(int(x.strip()) for x in custom_limits.split(",") if x.strip().isdigit())
-                custom_limits = sorted(x for x in custom_limits if x > 0)
+                custom_limits = cm.parse_and_normalize_string_to_decimal_set(custom_limits)
                 return custom_limits
             except Exception:
+                #pass  # silently ignore and fall through
                 logger.add_log("Error parsing custom FPS limits, using default stepped limits.")
     elif use_custom == "step":
         return make_stepped_values(maximum, minimum, step)
@@ -144,14 +146,18 @@ last_fps_limits = []
 def update_fps_cap_visualization():
 
     global last_fps_limits
-    
+
     fps_limits = current_stepped_limits()
     #logger.add_log(f"FPS limits: {fps_limits}")
+
+    # Exit early if fps_limits is empty or has fewer than 2 values
+    if not fps_limits or len(fps_limits) < 2:
+        return
 
     # Check if fps_limits has changed
     if fps_limits == last_fps_limits:
         return  # Exit if no change
-    
+
     # Store new fps_limits for next comparison
     last_fps_limits = fps_limits.copy()
 
@@ -203,22 +209,6 @@ def copy_from_plot_callback():
     fps_limits_str = ", ".join(str(int(round(x))) for x in fps_limits)
     dpg.set_value("input_customfpslimits", fps_limits_str)
 
-def current_method_callback(sender=None, app_data=None, user_data=None):
-
-    method = app_data if app_data else dpg.get_value("input_capmethod")
-
-    dpg.bind_item_theme("input_capratio", "enabled_text_theme") if method == "ratio" else dpg.bind_item_theme("input_capratio", "disabled_text_theme")
-    dpg.bind_item_theme("label_capratio", "enabled_text_theme") if method == "ratio" else dpg.bind_item_theme("label_capratio", "disabled_text_theme")
-    dpg.bind_item_theme("label_capstep", "enabled_text_theme") if method == "step" else dpg.bind_item_theme("label_capstep", "disabled_text_theme")
-    dpg.bind_item_theme("input_capstep", "enabled_text_theme") if method == "step" else dpg.bind_item_theme("input_capstep", "disabled_text_theme")
-    dpg.bind_item_theme("input_customfpslimits", "enabled_text_theme") if method == "custom" else dpg.bind_item_theme("input_customfpslimits", "disabled_text_theme")
-    dpg.bind_item_theme("label_maxcap", "disabled_text_theme") if method == "custom" else dpg.bind_item_theme("label_maxcap", "enabled_text_theme")
-    dpg.bind_item_theme("label_mincap", "disabled_text_theme") if method == "custom" else dpg.bind_item_theme("label_mincap", "enabled_text_theme")
-    dpg.bind_item_theme("input_maxcap", "disabled_text_theme") if method == "custom" else dpg.bind_item_theme("input_maxcap", "enabled_text_theme")
-    dpg.bind_item_theme("input_mincap", "disabled_text_theme") if method == "custom" else dpg.bind_item_theme("input_mincap", "enabled_text_theme")
-    
-    logger.add_log(f"Method selection changed: {method}")
-
 def tooltip_checkbox_callback(sender, app_data, user_data):
     update_tooltip_setting(dpg, sender, app_data, user_data, tooltips, cm, logger)
 
@@ -258,7 +248,7 @@ def start_stop_callback(sender, app_data, user_data):
     global running
     running = not running
     dpg.configure_item("start_stop_button", label="Stop" if running else "Start")
-    dpg.bind_item_theme("start_stop_button", "stop_button_theme" if running else "start_button_theme")
+    dpg.bind_item_theme("start_stop_button", themes_manager.themes["stop_button_theme"] if running else "start_button_theme")
     cm.apply_current_input_values()
     
     # Reset variables to zero or their default state
@@ -277,10 +267,6 @@ def start_stop_callback(sender, app_data, user_data):
         dpg.configure_item(tag, enabled=not running)
 
     if running:
-        # Initialize RTSS
-        rtss_cli.enable_limiter()
-        
-        # Apply current settings and start monitoring
         
         time_series.clear()
         fps_time_series.clear()
@@ -303,8 +289,10 @@ def start_stop_callback(sender, app_data, user_data):
         CurrentFPSOffset = 0
         
         logger.add_log("Monitoring stopped")
-    logger.add_log(f"Custom FPS limits: {current_stepped_limits()}")
-    rtss_cli.set_property(cm.current_profile, "FramerateLimit", int(max(current_stepped_limits())))
+    logger.add_log(f"Custom FPS limits: {cm.parse_decimal_set_to_string(current_stepped_limits())}")
+
+    rtss.set_fractional_fps_direct(cm.current_profile, Decimal(max(current_stepped_limits())))
+    rtss.set_fractional_framerate(cm.current_profile, Decimal(max(current_stepped_limits()))) #To update GUI
 
 def reset_stats():
     
@@ -358,8 +346,8 @@ def update_plot_FPS(fps_val, cap_val):
 
     current_mincap = min(fps_limit_list)
     current_maxcap = max(fps_limit_list)
-    min_ft = current_mincap - round((current_maxcap - current_mincap) * 0.1)
-    max_ft = current_maxcap + round((current_maxcap - current_mincap) * 0.1)
+    min_ft = current_mincap - round((current_maxcap - current_mincap) * Decimal('0.1'))
+    max_ft = current_maxcap + round((current_maxcap - current_mincap)* Decimal('0.1'))
 
     dpg.set_axis_limits("y_axis_right", min_ft, max_ft) 
 
@@ -409,7 +397,7 @@ def toggle_luid_selection():
         if luid:
             logger.add_log(f"Tracking LUID: {luid} | Current 3D engine Utilization: {usage}%")
             dpg.configure_item("luid_button", label="Revert to all GPUs")
-            dpg.bind_item_theme("luid_button", "revert_gpu_theme")  # Apply blue theme
+            dpg.bind_item_theme("luid_button", themes_manager.themes["revert_gpu_theme"])  # Apply blue theme
             luid_selected = True
         else:
             logger.add_log("Failed to detect active LUID.")
@@ -418,7 +406,7 @@ def toggle_luid_selection():
         luid = "All"
         logger.add_log("Tracking all GPU engines.")
         dpg.configure_item("luid_button", label="Detect Render GPU")
-        dpg.bind_item_theme("luid_button", "detect_gpu_theme")  # Apply default grey theme
+        dpg.bind_item_theme("luid_button", themes_manager.themes["detect_gpu_theme"])  # Apply default grey theme
         luid_selected = False
 
 fps_values = []
@@ -439,8 +427,8 @@ def monitoring_loop():
 
     current_mincap = min(fps_limit_list)
     current_maxcap = max(fps_limit_list)
-    min_ft = current_mincap - round((current_maxcap - current_mincap) * 0.1)
-    max_ft = current_maxcap + round((current_maxcap - current_mincap) * 0.1)
+    min_ft = current_mincap - round((current_maxcap - current_mincap) * Decimal('0.1'))
+    max_ft = current_maxcap + round((current_maxcap - current_mincap) * Decimal('0.1'))
 
     while running:
         current_profile = cm.current_profile
@@ -496,19 +484,19 @@ def monitoring_loop():
                                 if current_index < 0:
                                     next_fps = fps_limit_list[current_index - 1]
                                     CurrentFPSOffset = next_fps - current_maxcap
-                                    rtss_cli.set_property(current_profile, "FramerateLimit", next_fps)
+                                    rtss.set_fractional_framerate(current_profile, next_fps)
                             else:
                                 # Jump to highest value below fps_mean
                                 next_fps = max(lower_values)
                                 CurrentFPSOffset = next_fps - current_maxcap
-                                rtss_cli.set_property(current_profile, "FramerateLimit", next_fps)
+                                rtss.set_fractional_framerate(current_profile, next_fps)
                     except ValueError:
                         # If current FPS not in list, find nearest lower value
                         lower_values = [x for x in fps_limit_list if x < current_fps_cap]
                         if lower_values:
                             next_fps = max(lower_values)
                             CurrentFPSOffset = next_fps - current_maxcap
-                            rtss_cli.set_property(current_profile, "FramerateLimit", next_fps)
+                            rtss.set_fractional_framerate(current_profile, next_fps)
 
                 should_increase = False
                 gpu_increase_condition = (len(gpu_values) >= cm.delaybeforeincrease and
@@ -527,14 +515,14 @@ def monitoring_loop():
                         if current_index < len(fps_limit_list) - 1:  # Check if we can move up in the list
                             next_fps = fps_limit_list[current_index + 1]
                             CurrentFPSOffset = next_fps - current_maxcap
-                            rtss_cli.set_property(current_profile, "FramerateLimit", int(next_fps))
+                            rtss.set_fractional_framerate(current_profile, next_fps)
                     except ValueError:
                         # If current FPS not in list, find nearest higher value
                         higher_values = [x for x in fps_limit_list if x > current_fps]
                         if higher_values:
                             next_fps = min(higher_values)
                             CurrentFPSOffset = next_fps - current_maxcap
-                            rtss_cli.set_property(current_profile, "FramerateLimit", int(next_fps))
+                            rtss.set_fractional_framerate(current_profile, next_fps)
 
         if running:
             # Update legend labels with current values
@@ -547,8 +535,8 @@ def monitoring_loop():
             # Update plot if fps is valid
             if fps and process_name not in {"DynamicFPSLimiter.exe"}:
                 # Scaling FPS value to fit 0-100 axis
-                scaled_fps = ((fps - min_ft)/(max_ft - min_ft))*100
-                scaled_cap = ((current_maxcap + CurrentFPSOffset - min_ft)/(max_ft - min_ft))*100
+                scaled_fps = ((fps - min_ft)/(max_ft - min_ft)) * Decimal('100')
+                scaled_cap = ((Decimal(current_maxcap) + Decimal(CurrentFPSOffset) - min_ft)/(max_ft - min_ft)) * Decimal('100')
                 actual_cap = current_maxcap + CurrentFPSOffset
                 # Pass actual values, update_plot_FPS handles timing and lists
                 update_plot_FPS(scaled_fps, scaled_cap)
@@ -582,16 +570,17 @@ def gui_update_loop():
     while gui_running:  # Changed from True to gui_running
         if not running:
             try:
-                warnings = get_active_warnings(dpg, cm, rtss_manager, int(min(current_stepped_limits())))
-                warning_visible = bool(warnings)
-                warning_message = "\n".join(warnings)
+                if current_stepped_limits():
+                    warnings = get_active_warnings(dpg, cm, rtss_manager, int(min(current_stepped_limits())))
+                    warning_visible = bool(warnings)
+                    warning_message = "\n".join(warnings)
 
-                dpg.configure_item("warning_text", show=warning_visible)
-                dpg.configure_item("warning_tooltip", show=warning_visible)
-                dpg.set_value("warning_tooltip_text", warning_message)
+                    dpg.configure_item("warning_text", show=warning_visible)
+                    dpg.configure_item("warning_tooltip", show=warning_visible)
+                    dpg.set_value("warning_tooltip_text", warning_message)
 
                 # Update FPS limit visualization based on current input values
-                update_fps_cap_visualization()
+                    update_fps_cap_visualization()
             except Exception as e:
                 if gui_running:  # Only log if we're still supposed to be running
                     logger.add_log(f"Error in GUI update loop: {e}")
@@ -604,7 +593,7 @@ def exit_gui():
     running = False 
 
     if cm.globallimitonexit:
-        rtss_cli.set_property("Global", "FramerateLimit", int(cm.globallimitonexit_fps))
+        rtss.set_fractional_framerate("Global", Decimal(cm.globallimitonexit_fps))
 
     if gpu_monitor:
         gpu_monitor.cleanup()
@@ -638,12 +627,12 @@ def build_profile_section():
             with dpg.table_row():
                 dpg.add_text("Last active process:")
                 dpg.add_input_text(tag="LastProcess", multiline=False, readonly=True, width=260)
-                dpg.bind_item_theme("LastProcess", "transparent_input_theme_2")
+                dpg.bind_item_theme("LastProcess", themes_manager.themes["transparent_input_theme_2"])
                 dpg.add_button(tag="process_to_profile", label="Add process to Profiles", callback=cm.add_process_profile_callback, width=160)
 
 # GUI setup: Main Window
 dpg.create_context()
-create_themes()
+themes_manager.create_themes()
 
 with dpg.font_registry():
     try:
@@ -662,13 +651,12 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
     with dpg.group(horizontal=True):
         dpg.add_text("Dynamic FPS Limiter", tag="app_title")
         dpg.bind_item_font("app_title", bold_font)
-        dpg.add_text("v4.1.0")
-        dpg.add_spacer(width=30)
+        dpg.add_text("v4.2.0")
+        dpg.add_spacer(width=50)
         dpg.add_button(label="Detect Render GPU", callback=toggle_luid_selection, tag="luid_button", width=150)
-
         dpg.add_spacer(width=30)
         dpg.add_button(label="Start", tag="start_stop_button", callback=start_stop_callback, width=50, user_data=cm)
-        dpg.bind_item_theme("start_stop_button", "start_button_theme")  # Apply start button theme
+        dpg.bind_item_theme("start_stop_button", themes_manager.themes["start_button_theme"])  # Apply start button theme
         dpg.add_button(label="Exit", callback=exit_gui, width=50)  # Exit button
 
     # Profiles
@@ -707,7 +695,7 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                                             ("Lower limit", "cpucutoffforincrease")]:
                                 with dpg.table_row():
                                     dpg.add_button(label=label, tag=f"button_{key}", width=120)
-                                    dpg.bind_item_theme(f"button_{key}", "button_right")
+                                    dpg.bind_item_theme(f"button_{key}", themes_manager.themes["button_right_theme"])
                                     dpg.add_input_text(tag=f"input_{key}", default_value=str(cm.settings[key]), width=40)
                     
                     #dpg.add_spacer(width=1)
@@ -744,7 +732,7 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                     dpg.add_text("as default on startup. Currently set to:")
                     dpg.add_input_text(tag="profileonstartup_name", multiline=False, readonly=True, width=150,
                                        default_value=cm.profileonstartup_name)
-                    dpg.bind_item_theme("profileonstartup_name", "transparent_input_theme_2")
+                    dpg.bind_item_theme("profileonstartup_name", themes_manager.themes["transparent_input_theme_2"])
                 dpg.add_checkbox(label="Launch the app on Windows startup", tag="autostart_checkbox",
                                  default_value=cm.launchonstartup, callback=autostart_checkbox_callback)
 
@@ -754,7 +742,7 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
                 #2 dpg.add_spacer(height=2)
                 dpg.add_input_text(tag="LogText", multiline=True, readonly=True, width=-1, height=110)
 
-                dpg.bind_item_theme("LogText", "transparent_input_theme")
+                dpg.bind_item_theme("LogText", themes_manager.themes["transparent_input_theme"])
 
         with dpg.tab(label=" FAQs", tag="tab4"):
             with dpg.child_window(height=tab_height):
@@ -775,11 +763,11 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
             dpg.add_radio_button(
                 items=["ratio", "step", "custom"], 
                 horizontal=True,
-                callback=current_method_callback,
+                callback=cm.current_method_callback,
                 default_value="ratio",#settings["method"],
                 tag="input_capmethod"
                 )
-            dpg.bind_item_theme("input_capmethod", "radio_theme")
+            dpg.bind_item_theme("input_capmethod", themes_manager.themes["radio_theme"])
             #dpg.bind_item_font("input_capmethod", bold_font)
             dpg.add_text("Warning!", tag="warning_text", color=(190, 90, 90), 
                          pos=(500, 5),
@@ -803,13 +791,13 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
         with dpg.group(horizontal=True):
             dpg.add_input_text(
                 tag="input_customfpslimits",
-                default_value=", ".join(str(x) for x in sorted(cm.settings["customfpslimits"])),#", ".join(map(str, sorted(self.selected_fps_caps))),
-                width=draw_width - 205,
+                default_value=cm.settings["customfpslimits"],
+                width=draw_width - 215,
                 #pos=(10, 140),  # Center the input horizontally
                 callback=sort_customfpslimits_callback,
                 on_enter=True)
             dpg.add_button(label="Reset", tag="rest_fps_cap_button", width=80, callback=reset_customFPSLimits)
-            dpg.add_button(label="Copy from Plot", tag="autofill_fps_caps", width=110, callback=copy_from_plot_callback)
+            dpg.add_button(label="Copy from above", tag="autofill_fps_caps", width=120, callback=copy_from_plot_callback)
 
     # Fourth Row: Plot Section
     #dpg.add_spacer(height=5)
@@ -842,9 +830,9 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
             dpg.set_axis_limits("y_axis_right", min_ft, max_ft)  # FPS range
             
             # apply theme to series
-            dpg.bind_item_theme("line1", "fixed_greyline_theme")
-            dpg.bind_item_theme("line2", "fixed_greyline_theme")
-            dpg.bind_item_theme("cap_series", "fps_cap_theme")
+            dpg.bind_item_theme("line1", themes_manager.themes["fixed_greyline_theme"])
+            dpg.bind_item_theme("line2", themes_manager.themes["fixed_greyline_theme"])
+            dpg.bind_item_theme("cap_series", themes_manager.themes["fps_cap_theme"])
 
 dpg.create_viewport(title="Dynamic FPS Limiter", width=Viewport_width, height=Viewport_height, resizable=False)
 dpg.set_viewport_resizable(False)
@@ -861,8 +849,6 @@ logger.add_log("Initializing...")
 cm.update_profile_dropdown(select_first=True)
 cm.startup_profile_selection()
 
-
-
 gpu_monitor = GPUUsageMonitor(lambda: luid, lambda: running, logger, dpg, interval=(cm.gpupollinginterval/1000), max_samples=cm.gpupollingsamples, percentile=cm.gpupercentile)
 #logger.add_log(f"Current highed GPU core load: {gpu_monitor.gpu_percentile}%")
 
@@ -872,9 +858,8 @@ gpu_monitor = GPUUsageMonitor(lambda: luid, lambda: running, logger, dpg, interv
 cpu_monitor = CPUUsageMonitor(lambda: running, logger, dpg, interval=(cm.cpupollinginterval/1000), max_samples=cm.cpupollingsamples, percentile=cm.cpupercentile)
 #logger.add_log(f"Current highed CPU core load: {cpu_monitor.cpu_percentile}%")
 
-# Assuming logger and dpg are initialized, and rtss_dll_path is defined
-rtss_cli = RTSSCLI(logger, rtss_dll_path)
-rtss_cli.enable_limiter()
+# Assuming logger and dpg are initialized
+rtss.enable_limiter()
 
 rtss_manager = RTSSInterface(logger, dpg)
 
@@ -883,13 +868,13 @@ gui_update_thread = threading.Thread(target=gui_update_loop, daemon=True)
 gui_update_thread.start()
 
 apply_all_tooltips(dpg, tooltips, ShowTooltip, cm, logger)
-current_method_callback()
+cm.current_method_callback()
 
 autostart = AutoStartManager(app_path=os.path.join(os.path.dirname(Base_dir), "DynamicFPSLimiter.exe"))
 autostart.update_if_needed(cm.launchonstartup)
 
-dpg.bind_theme("main_theme")
-dpg.bind_item_theme("plot_childwindow", "plot_bg_theme")
+dpg.bind_theme(themes_manager.themes["main_theme"])
+dpg.bind_item_theme("plot_childwindow", themes_manager.themes["plot_bg_theme"])
 pywinstyles.apply_style(None, "acrylic")
 
 logger.add_log("Initialized successfully.")

@@ -8,6 +8,7 @@ from collections import defaultdict
 import dearpygui.dearpygui as dpg
 import threading
 import os # Added for os.path.dirname
+from decimal import Decimal, InvalidOperation
 
 # Assuming logger is imported correctly from the main script or passed in
 # from . import logger # Example if logger is in the same directory
@@ -79,7 +80,7 @@ class RTSSInterface:
                             self.last_dwTime0s[dwProcessID] = dwTime0
                             process_name = szName.decode(errors='ignore').rstrip('\x00')
                             process_name = process_name.split('\\')[-1]
-                            return fps, process_name
+                            return Decimal(fps), process_name
             return None, None
         except FileNotFoundError:
             # Shared memory doesn't exist (RTSS likely not running or OSD not enabled)

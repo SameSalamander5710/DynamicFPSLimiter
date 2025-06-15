@@ -1,4 +1,4 @@
-# Dynamic FPS Limiter v4.1
+# Dynamic FPS Limiter v4.2
 
 A lightweight companion app for RTSS that dynamically adjusts framerate limits based on real-time GPU and CPU usage. It's especially useful for reducing input latency when using frame generation tools like Lossless Scaling.
 
@@ -26,9 +26,10 @@ If you'd like to inspect or customize the source code, follow the instructions i
 > [!CAUTION]
 > - The executable in the release was packaged using PyInstaller and may be flagged by some antivirus software as a Trojan. 
 > - You can confirm whether the app is signed by me using the public certificate [here.](/src/Public_SameSalamander5710.cer).
-> - You can find the VirusTotal report on the app's behaviour for the latest release (v4.1.0):
->   - [DynamicFPSLimiter_v4.1.0.zip](https://www.virustotal.com/gui/file/71e90b87df5e18de4f16c15bd71e9b0f0ad0895ad65967db3f3965078b5d81a7/behavior)
->   - [DynamicFPSLimiter.exe](https://www.virustotal.com/gui/file/c2c517850a1be7e157605640ba5f35e54696b376e6fee779a00149d475c28b61/behavior)
+> - You can find the VirusTotal report on the app's behaviour for the latest release (v4.2.0):
+>   - [DynamicFPSLimiter_v4.2.0.zip](https://www.virustotal.com/gui/file/dc903369fefe8d6ab4fe168916f105ccb82384b08b759704a4185fd6366a6b96/behavior)
+>   - [DynamicFPSLimiter.exe](https://www.virustotal.com/gui/file/cf0d16a19889dd6cb86f9e1c6972e4da3dda195a92e434818635a8ae9c924aa9/behavior)
+
 
 ## The Concept
 This app was developed to enhance gaming experience in situations where the GPU load/demand varies greatly during a session. This is especially useful when using Lossless Scaling Frame Generation (LSFG). LSFG works best when the game runs with an FPS cap that leaves enough GPU headroom for frame generation. However, if GPU usage hits 100%—which may also cause the game’s base FPS to drop—you may experience input lag, which is undesirable.
