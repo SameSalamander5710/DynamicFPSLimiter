@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## [v4.2.0] - 2025-06-14
+## [v4.2.0] - 2025-06-15
 ### Added
 - Support for fractional framerate values in the custom FPS limit input.
 

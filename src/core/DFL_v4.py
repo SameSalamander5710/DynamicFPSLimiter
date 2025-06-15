@@ -1,8 +1,6 @@
 # DFL_v4.py
 # Dynamic FPS Limiter v4.2.0
 
-#TODO: Clean up print statements and logs
-
 import ctypes
 ctypes.windll.shcore.SetProcessDpiAwareness(2)
 
@@ -794,12 +792,12 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
             dpg.add_input_text(
                 tag="input_customfpslimits",
                 default_value=cm.settings["customfpslimits"],
-                width=draw_width - 205,
+                width=draw_width - 215,
                 #pos=(10, 140),  # Center the input horizontally
                 callback=sort_customfpslimits_callback,
                 on_enter=True)
             dpg.add_button(label="Reset", tag="rest_fps_cap_button", width=80, callback=reset_customFPSLimits)
-            dpg.add_button(label="Copy from Plot", tag="autofill_fps_caps", width=110, callback=copy_from_plot_callback)
+            dpg.add_button(label="Copy from above", tag="autofill_fps_caps", width=120, callback=copy_from_plot_callback)
 
     # Fourth Row: Plot Section
     #dpg.add_spacer(height=5)
