@@ -26,9 +26,10 @@ If you'd like to inspect or customize the source code, follow the instructions i
 > [!CAUTION]
 > - The executable in the release was packaged using PyInstaller and may be flagged by some antivirus software as a Trojan. 
 > - You can confirm whether the app is signed by me using the public certificate [here.](/src/Public_SameSalamander5710.cer).
-> - You can find the VirusTotal report on the app's behaviour for the latest release (v4.1.0):
+> - You can find the VirusTotal report on the app's behaviour for the latest release (v4.2.0):
 >   - [DynamicFPSLimiter_v4.2.0.zip](https://www.virustotal.com/gui/file/dc903369fefe8d6ab4fe168916f105ccb82384b08b759704a4185fd6366a6b96/behavior)
 >   - [DynamicFPSLimiter.exe](https://www.virustotal.com/gui/file/cf0d16a19889dd6cb86f9e1c6972e4da3dda195a92e434818635a8ae9c924aa9/behavior)
+
 
 ## The Concept
 This app was developed to enhance gaming experience in situations where the GPU load/demand varies greatly during a session. This is especially useful when using Lossless Scaling Frame Generation (LSFG). LSFG works best when the game runs with an FPS cap that leaves enough GPU headroom for frame generation. However, if GPU usage hits 100%—which may also cause the game’s base FPS to drop—you may experience input lag, which is undesirable.
