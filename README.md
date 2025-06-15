@@ -27,8 +27,8 @@ If you'd like to inspect or customize the source code, follow the instructions i
 > - The executable in the release was packaged using PyInstaller and may be flagged by some antivirus software as a Trojan. 
 > - You can confirm whether the app is signed by me using the public certificate [here.](/src/Public_SameSalamander5710.cer).
 > - You can find the VirusTotal report on the app's behaviour for the latest release (v4.2.0):
->   - [DynamicFPSLimiter_v4.2.0.zip](https://www.virustotal.com/gui/file/dc903369fefe8d6ab4fe168916f105ccb82384b08b759704a4185fd6366a6b96/behavior)
->   - [DynamicFPSLimiter.exe](https://www.virustotal.com/gui/file/cf0d16a19889dd6cb86f9e1c6972e4da3dda195a92e434818635a8ae9c924aa9/behavior)
+>   - [DynamicFPSLimiter_v4.2.0.zip](https://www.virustotal.com/gui/file/e76b8cd89b31b8f0e10070b9c71fc15f3fed730caaf36182d6998413f762c00b/behavior)
+>   - [DynamicFPSLimiter.exe](https://www.virustotal.com/gui/file/a62744f65fdb10f2646d625240b50a634fa4a3e59d73e14fac74380d18546c06/behavior)
 
 
 ## The Concept

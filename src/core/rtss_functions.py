@@ -61,8 +61,7 @@ class RTSSController:
                 path, _ = winreg.QueryValueEx(key, "InstallPath")
                 winreg.CloseKey(key)
             except FileNotFoundError:
-                raise FileNotFoundError("RTSS not found in registry.") #TODO: Add to logger
-            #TODO: Add example default path
+                path = r"C:\Program Files (x86)\RivaTuner Statistics Server"
         if path.lower().endswith("rtss.exe"):
             path = os.path.dirname(path)
         return path
