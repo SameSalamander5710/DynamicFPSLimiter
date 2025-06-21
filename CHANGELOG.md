@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## [v4.2.1] - 2025-XX-XX
+### Added
+- New feature specific for 'ratio' method. (Add explanation)
+- Popup if no RTSS; also info about downloading only from GitHub.
+
+### To Fix
+- Loss of green colour for start button after clicking it twice.
+
 ## [v4.2.0] - 2025-06-15
 ### Added
 - Support for fractional framerate values in the custom FPS limit input.
