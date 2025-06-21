@@ -20,7 +20,7 @@ If you'd like to inspect or customize the source code, follow the instructions i
 4. No additional configuration in RTSS is necessary.
 
 > [!NOTE]
-> - This app requires Rivatuner Statistics Server (RTSS) running in the background to function.
+> - This app requires Rivatuner Statistics Server (RTSS) running in the background to function. Ensure RTSS is installed before running the app!
 > - Since RTSS runs with elevated privileges, DynamicFPSLimiter must also be run as Administrator to function fully.
 
 > [!CAUTION]
