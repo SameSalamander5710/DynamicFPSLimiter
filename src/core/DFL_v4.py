@@ -248,7 +248,7 @@ def start_stop_callback(sender, app_data, user_data):
     global running
     running = not running
     dpg.configure_item("start_stop_button", label="Stop" if running else "Start")
-    dpg.bind_item_theme("start_stop_button", themes_manager.themes["stop_button_theme"] if running else "start_button_theme")
+    dpg.bind_item_theme("start_stop_button", themes_manager.themes["stop_button_theme"] if running else themes_manager.themes["start_button_theme"])
     cm.apply_current_input_values()
     
     # Reset variables to zero or their default state

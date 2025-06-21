@@ -5,7 +5,7 @@
 - New feature specific for 'ratio' method. (Add explanation)
 - Popup if no RTSS; also info about downloading only from GitHub.
 
-### To Fix
+### Fixed
 - Loss of green colour for start button after clicking it twice.
 
 ## [v4.2.0] - 2025-06-15
