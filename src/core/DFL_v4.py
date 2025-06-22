@@ -30,7 +30,7 @@ from core.tooltips import get_tooltips, add_tooltip, apply_all_tooltips, update_
 from core.warning import get_active_warnings
 from core.autostart import AutoStartManager
 from core.rtss_functions import RTSSController
-from core.tray_functions import TrayManager
+from core.tray_functions import TrayManager, minimize_watcher
 
 # Always get absolute path to EXE or script location
 Base_dir = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
@@ -626,6 +626,8 @@ tray = TrayManager(
     hover_text=app_title
 )
 
+#threading.Thread(target=minimize_watcher, args=(tray,), daemon=True).start()
+
 # Defining short sections of the GUI
 # TODO: Refactor main GUI into a separate module for better organization
 def build_profile_section():
@@ -679,6 +681,7 @@ with dpg.window(label=app_title, tag="Primary Window"):
         dpg.add_spacer(width=50)
         dpg.add_button(label="Detect Render GPU", callback=toggle_luid_selection, tag="luid_button", width=150)
         dpg.add_spacer(width=30)
+        dpg.add_button(label="Minimize to Tray", callback=tray.minimize_to_tray, width=150)
         dpg.add_button(label="Start", tag="start_stop_button", callback=start_stop_callback, width=50, user_data=cm)
         dpg.bind_item_theme("start_stop_button", themes_manager.themes["start_button_theme"])  # Apply start button theme
         dpg.add_button(label="Exit", callback=exit_gui, width=50)  # Exit button
@@ -907,4 +910,3 @@ logger.add_log("Initialized successfully.")
 #dpg.show_imgui_demo()
 
 dpg.start_dearpygui()
-
