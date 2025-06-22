@@ -74,14 +74,14 @@ class TrayManager:
         self.icon = Icon(self.app_name, image, self.hover_text, menu)
 
     def _restore_window(self, icon, item):
-        # Called from tray thread, so use dpg callback
-        dpg.run_async_callback(self.on_restore)
+        # Called from tray thread, so use a thread to call the GUI callback
+        threading.Thread(target=self.on_restore, daemon=True).start()
         self.is_tray_active = False
         if self.icon:
             self.icon.stop()
 
     def _exit_app(self, icon, item):
-        dpg.run_async_callback(self.on_exit)
+        threading.Thread(target=self.on_exit, daemon=True).start()
         self.is_tray_active = False
         if self.icon:
             self.icon.stop()
