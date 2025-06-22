@@ -7,16 +7,22 @@ from PIL import Image
 import dearpygui.dearpygui as dpg
 from pystray import Icon, MenuItem, Menu
 
-def get_hwnd():
-    # Get DearPyGui main window handle (HWND)
-    # This works for DPG >= 1.8 on Windows
-    try:
-        return dpg.get_viewport_platform_handle()
-    except Exception:
+app_title = "Dynamic FPS Limiter"
+
+def get_hwnd_by_title(window_title):
+    """
+    Returns the HWND (window handle) for a window with the given title.
+    Returns None if not found.
+    """
+    FindWindowW = ctypes.windll.user32.FindWindowW
+    FindWindowW.restype = ctypes.c_void_p
+    hwnd = FindWindowW(None, window_title)
+    if hwnd == 0:
         return None
+    return hwnd
 
 def hide_from_taskbar():
-    hwnd = get_hwnd()
+    hwnd = get_hwnd_by_title(app_title)
     if hwnd:
         style = ctypes.windll.user32.GetWindowLongW(hwnd, -20)
         style = style & ~0x08 | 0x80  # Remove APPWINDOW, add TOOLWINDOW
@@ -24,7 +30,7 @@ def hide_from_taskbar():
         ctypes.windll.user32.ShowWindow(hwnd, 0)  # SW_HIDE
 
 def show_to_taskbar():
-    hwnd = get_hwnd()
+    hwnd = get_hwnd_by_title(app_title)
     if hwnd:
         style = ctypes.windll.user32.GetWindowLongW(hwnd, -20)
         style = style & ~0x80 | 0x08  # Remove TOOLWINDOW, add APPWINDOW
@@ -33,26 +39,10 @@ def show_to_taskbar():
 
 def is_window_minimized():
     """Returns True if the DearPyGui window is minimized (iconic), else False."""
-    hwnd = get_hwnd()
+    hwnd = get_hwnd_by_title(app_title)
     if hwnd:
         return ctypes.windll.user32.IsIconic(hwnd)
     return False
-
-def minimize_watcher(tray_manager):
-    """
-    Watches for window minimize events and calls tray_manager.minimize_to_tray()
-    when the window is minimized by the user.
-    Intended to be run in a background thread.
-    """
-    was_minimized = False
-    while dpg.is_dearpygui_running():
-        if is_window_minimized():
-            if not was_minimized:
-                tray_manager.minimize_to_tray()
-                was_minimized = True
-        else:
-            was_minimized = False
-        time.sleep(0.2)  # Check 5 times per second
 
 class TrayManager:
     def __init__(self, app_name, icon_path, on_restore, on_exit, hover_text=None):
@@ -77,6 +67,7 @@ class TrayManager:
         # Called from tray thread, so use a thread to call the GUI callback
         threading.Thread(target=self.on_restore, daemon=True).start()
         self.is_tray_active = False
+        show_to_taskbar()
         if self.icon:
             self.icon.stop()
 
@@ -99,13 +90,11 @@ class TrayManager:
 
     def minimize_to_tray(self):
         # Hide the main window and show tray icon
-        dpg.configure_viewport(0, show=False)
         hide_from_taskbar()
         self.show_tray()
 
     def restore_from_tray(self):
         # Show the main window and stop tray icon
-        dpg.show_viewport()
         show_to_taskbar()
         self.is_tray_active = False
         if self.icon:
