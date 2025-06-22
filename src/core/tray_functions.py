@@ -7,6 +7,30 @@ from PIL import Image
 import dearpygui.dearpygui as dpg
 from pystray import Icon, MenuItem, Menu
 
+def get_hwnd():
+    # Get DearPyGui main window handle (HWND)
+    # This works for DPG >= 1.8 on Windows
+    try:
+        return dpg.get_viewport_platform_handle()
+    except Exception:
+        return None
+
+def hide_from_taskbar():
+    hwnd = get_hwnd()
+    if hwnd:
+        style = ctypes.windll.user32.GetWindowLongW(hwnd, -20)
+        style = style & ~0x08 | 0x80  # Remove APPWINDOW, add TOOLWINDOW
+        ctypes.windll.user32.SetWindowLongW(hwnd, -20, style)
+        ctypes.windll.user32.ShowWindow(hwnd, 0)  # SW_HIDE
+
+def show_to_taskbar():
+    hwnd = get_hwnd()
+    if hwnd:
+        style = ctypes.windll.user32.GetWindowLongW(hwnd, -20)
+        style = style & ~0x80 | 0x08  # Remove TOOLWINDOW, add APPWINDOW
+        ctypes.windll.user32.SetWindowLongW(hwnd, -20, style)
+        ctypes.windll.user32.ShowWindow(hwnd, 5)  # SW_SHOW
+
 class TrayManager:
     def __init__(self, app_name, icon_path, on_restore, on_exit, hover_text=None):
         self.app_name = app_name
@@ -53,11 +77,13 @@ class TrayManager:
     def minimize_to_tray(self):
         # Hide the main window and show tray icon
         dpg.hide_viewport()
+        hide_from_taskbar()
         self.show_tray()
 
     def restore_from_tray(self):
         # Show the main window and stop tray icon
         dpg.show_viewport()
+        show_to_taskbar()
         self.is_tray_active = False
         if self.icon:
             self.icon.stop()

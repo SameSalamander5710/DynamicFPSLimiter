@@ -30,6 +30,7 @@ from core.tooltips import get_tooltips, add_tooltip, apply_all_tooltips, update_
 from core.warning import get_active_warnings
 from core.autostart import AutoStartManager
 from core.rtss_functions import RTSSController
+from core.tray_functions import TrayManager
 
 # Always get absolute path to EXE or script location
 Base_dir = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
@@ -47,6 +48,8 @@ icon_path = os.path.join(Base_dir, 'assets/DynamicFPSLimiter.ico')
 font_path = os.path.join(os.environ["WINDIR"], "Fonts", "segoeui.ttf") #segoeui, Verdana, Tahoma, Calibri, micross
 bold_font_path = os.path.join(os.environ["WINDIR"], "Fonts", "segoeuib.ttf")
 faq_path = os.path.join(Base_dir, "assets/faqs.csv")
+
+app_title = "Dynamic FPS Limiter"
 
 logger.init_logging(error_log_file)
 rtss_manager = None
@@ -615,6 +618,14 @@ def exit_gui():
     if dpg.is_dearpygui_running():
         dpg.destroy_context()
 
+tray = TrayManager(
+    app_title,
+    icon_path,
+    on_restore=lambda: dpg.show_viewport(),
+    on_exit=exit_gui,
+    hover_text=app_title
+)
+
 # Defining short sections of the GUI
 # TODO: Refactor main GUI into a separate module for better organization
 def build_profile_section():
@@ -658,11 +669,11 @@ with dpg.font_registry():
         # Will use DearPyGui's default font as fallback
 
 #The actual GUI starts here
-with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
+with dpg.window(label=app_title, tag="Primary Window"):
     
     # Title and Start/Stop Button
     with dpg.group(horizontal=True):
-        dpg.add_text("Dynamic FPS Limiter", tag="app_title")
+        dpg.add_text(app_title, tag="app_title")
         dpg.bind_item_font("app_title", bold_font)
         dpg.add_text("v4.3.0")
         dpg.add_spacer(width=50)
