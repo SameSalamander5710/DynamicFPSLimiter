@@ -681,7 +681,7 @@ with dpg.window(label=app_title, tag="Primary Window"):
         dpg.add_spacer(width=50)
         dpg.add_button(label="Detect Render GPU", callback=toggle_luid_selection, tag="luid_button", width=150)
         dpg.add_spacer(width=30)
-        dpg.add_button(label="Minimize to Tray", callback=tray.minimize_to_tray, width=150)
+        dpg.add_button(label="Minimize", callback=tray.minimize_to_tray, width=150)
         dpg.add_button(label="Start", tag="start_stop_button", callback=start_stop_callback, width=50, user_data=cm)
         dpg.bind_item_theme("start_stop_button", themes_manager.themes["start_button_theme"])  # Apply start button theme
         dpg.add_button(label="Exit", callback=exit_gui, width=50)  # Exit button
@@ -863,8 +863,8 @@ with dpg.window(label=app_title, tag="Primary Window"):
 
 dpg.create_viewport(title="Dynamic FPS Limiter", width=Viewport_width, height=Viewport_height, resizable=False)
 dpg.set_viewport_resizable(False)
-dpg.set_viewport_max_width(Viewport_width*3)
-dpg.set_viewport_max_height(Viewport_height*3)
+dpg.set_viewport_max_width(Viewport_width)
+dpg.set_viewport_max_height(Viewport_height)
 dpg.set_viewport_small_icon(icon_path)
 dpg.setup_dearpygui()
 dpg.show_viewport()
