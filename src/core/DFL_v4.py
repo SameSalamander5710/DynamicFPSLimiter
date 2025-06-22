@@ -1,5 +1,5 @@
 # DFL_v4.py
-# Dynamic FPS Limiter v4.2.0
+# Dynamic FPS Limiter v4.3.0
 
 import ctypes
 ctypes.windll.shcore.SetProcessDpiAwareness(2)
@@ -664,7 +664,7 @@ with dpg.window(label="Dynamic FPS Limiter", tag="Primary Window"):
     with dpg.group(horizontal=True):
         dpg.add_text("Dynamic FPS Limiter", tag="app_title")
         dpg.bind_item_font("app_title", bold_font)
-        dpg.add_text("v4.2.0")
+        dpg.add_text("v4.3.0")
         dpg.add_spacer(width=50)
         dpg.add_button(label="Detect Render GPU", callback=toggle_luid_selection, tag="luid_button", width=150)
         dpg.add_spacer(width=30)
