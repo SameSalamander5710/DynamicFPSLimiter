@@ -507,20 +507,33 @@ def monitoring_loop():
                      should_increase = True
 
                 if CurrentFPSOffset < 0 and should_increase:
-                    # Get current index in the fps_limit_list
                     current_fps = current_maxcap + CurrentFPSOffset
+                    gpu_range = cm.gpucutofffordecrease - cm.gpucutoffforincrease
+                    last_gpu = gpu_values[-1] if gpu_values else 0
+
+                    # Determine how many steps to increase
+                    steps = 1
+                    threshold = cm.gpucutoffforincrease - gpu_range
+                    while last_gpu < threshold and (threshold > cm.minvalidgpu):
+                        steps += 1
+                        threshold = cm.gpucutoffforincrease - gpu_range * steps
+
                     try:
                         current_index = fps_limit_list.index(current_fps)
-                        # Move to next higher FPS value if available
-                        if current_index < len(fps_limit_list) - 1:  # Check if we can move up in the list
-                            next_fps = fps_limit_list[current_index + 1]
+                        next_index = min(current_index + steps, len(fps_limit_list) - 1)
+                        if next_index > current_index:
+                            next_fps = fps_limit_list[next_index]
                             CurrentFPSOffset = next_fps - current_maxcap
                             rtss.set_fractional_framerate(current_profile, next_fps)
                     except ValueError:
                         # If current FPS not in list, find nearest higher value
                         higher_values = [x for x in fps_limit_list if x > current_fps]
                         if higher_values:
-                            next_fps = min(higher_values)
+                            # Find the index of the smallest higher value
+                            min_higher = min(higher_values)
+                            min_higher_index = fps_limit_list.index(min_higher)
+                            next_index = min(min_higher_index + steps - 1, len(fps_limit_list) - 1)
+                            next_fps = fps_limit_list[next_index]
                             CurrentFPSOffset = next_fps - current_maxcap
                             rtss.set_fractional_framerate(current_profile, next_fps)
 
