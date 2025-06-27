@@ -52,7 +52,7 @@ faq_path = os.path.join(Base_dir, "assets/faqs.csv")
 app_title = "Dynamic FPS Limiter"
 # Default viewport size
 Viewport_width = 625
-Viewport_height = 730
+Viewport_height = 745
 
 logger.init_logging(error_log_file)
 rtss_manager = None
@@ -675,18 +675,18 @@ with dpg.window(label=app_title, tag="Primary Window"):
         dpg.add_text(app_title, tag="app_title")
         dpg.bind_item_font("app_title", bold_font)
         dpg.add_text("v4.3.0")
-        dpg.add_spacer(width=250)
-        dpg.add_button(label="Minimize", callback=tray.minimize_to_tray, width=70)
-        dpg.add_button(label="Exit", callback=exit_gui, width=50)  # Exit button
-
+        dpg.add_spacer(width=310)
+        dpg.add_button(label="-", callback=tray.minimize_to_tray, width=35)
+        dpg.add_button(label="X", callback=exit_gui, width=35)  # Exit button
 
     # Start/Stop Button +
-    with dpg.group(horizontal=True):
-        dpg.add_spacer(width=230)
-        dpg.add_button(label="Detect Render GPU", callback=toggle_luid_selection, tag="luid_button", width=150)
-        dpg.add_spacer(width=120)
-        dpg.add_button(label="Start", tag="start_stop_button", callback=start_stop_callback, width=50, user_data=cm)
-        dpg.bind_item_theme("start_stop_button", themes_manager.themes["start_button_theme"])  # Apply start button theme
+    dpg.add_spacer(height=1)
+    with dpg.child_window(width=-1, height=40):
+        with dpg.group(horizontal=True):
+            dpg.add_spacer(width=350)
+            dpg.add_button(label="Detect Render GPU", callback=toggle_luid_selection, tag="luid_button", width=150)
+            dpg.add_button(label="Start", tag="start_stop_button", callback=start_stop_callback, width=50, user_data=cm)
+            dpg.bind_item_theme("start_stop_button", themes_manager.themes["start_button_theme"])  # Apply start button theme
 
     # Profiles
     dpg.add_spacer(height=1)
