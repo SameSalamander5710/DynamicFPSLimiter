@@ -51,8 +51,8 @@ faq_path = os.path.join(Base_dir, "assets/faqs.csv")
 
 app_title = "Dynamic FPS Limiter"
 # Default viewport size
-Viewport_width = 625
-Viewport_height = 745
+Viewport_width = 610
+Viewport_height = 700
 
 logger.init_logging(error_log_file)
 rtss_manager = None
@@ -629,7 +629,6 @@ tray = TrayManager(
 # TODO: Refactor main GUI into a separate module for better organization
 def build_profile_section():
     with dpg.child_window(width=-1, height=145):
-
         with dpg.group(horizontal=True):
             #dpg.add_spacer(width=1)
             dpg.add_input_text(tag="game_name", multiline=False, readonly=False, width=350, height=10)
@@ -694,9 +693,11 @@ with dpg.window(label=app_title, tag="Primary Window"):
         dpg.add_button(tag="exit", label="X", callback=exit_gui, width=35)  # Exit button
         dpg.bind_item_theme("minimize", themes_manager.themes["titlebar_button_theme"])
         dpg.bind_item_theme("exit", themes_manager.themes["titlebar_button_theme"])
+        with dpg.handler_registry():
+            dpg.add_mouse_drag_handler(button=0, threshold=0.0, callback=tray.drag_viewport)
 
     # Profiles
-    dpg.add_spacer(height=1)
+    dpg.add_spacer(height=5)
     build_profile_section()
     
     #Tabs
@@ -872,7 +873,7 @@ with dpg.window(label=app_title, tag="Primary Window"):
 
 dpg.create_viewport(title="Dynamic FPS Limiter", 
                     width=Viewport_width, height=Viewport_height, 
-                    resizable=False, decorated=True)
+                    resizable=False, decorated=False)
 dpg.set_viewport_resizable(False)
 dpg.set_viewport_max_width(Viewport_width)
 dpg.set_viewport_max_height(Viewport_height)

@@ -55,6 +55,15 @@ class TrayManager:
         self.tray_thread = None
         self.is_tray_active = False
 
+    def drag_viewport(self, sender, app_data, user_data):
+        if dpg.get_mouse_pos(local=False)[1] < 50:  # only drag the viewport when dragging the logo
+            drag_deltas = app_data
+            viewport_current_pos = dpg.get_viewport_pos()
+            new_x_position = viewport_current_pos[0] + drag_deltas[1]
+            new_y_position = viewport_current_pos[1] + drag_deltas[2]
+            new_y_position = max(new_y_position, 0) # prevent the viewport to go off the top of the screen
+            dpg.set_viewport_pos([new_x_position, new_y_position])
+
     def _create_icon(self):
         image = Image.open(self.icon_path)
         menu = Menu(
