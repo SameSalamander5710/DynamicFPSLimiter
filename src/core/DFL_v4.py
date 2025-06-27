@@ -628,7 +628,20 @@ tray = TrayManager(
 # Defining short sections of the GUI
 # TODO: Refactor main GUI into a separate module for better organization
 def build_profile_section():
-    with dpg.child_window(width=-1, height=100):
+    with dpg.child_window(width=-1, height=145):
+
+        with dpg.group(horizontal=True):
+            #dpg.add_spacer(width=1)
+            dpg.add_input_text(tag="game_name", multiline=False, readonly=False, width=350, height=10)
+            #dpg.add_button(tag="game_name", label="", width=350)
+            dpg.bind_item_theme("game_name", themes_manager.themes["no_padding_theme"])
+            dpg.bind_item_font("game_name", bold_font_large)
+            dpg.add_button(label="Detect Render GPU", callback=toggle_luid_selection, tag="luid_button", width=150)
+            dpg.add_button(label="Start", tag="start_stop_button", callback=start_stop_callback, width=50, user_data=cm)
+            dpg.bind_item_theme("start_stop_button", themes_manager.themes["start_button_theme"])  # Apply start button theme
+
+        dpg.add_spacer(height=10)
+
         with dpg.table(header_row=False):
             dpg.add_table_column(init_width_or_weight=45)
             dpg.add_table_column(init_width_or_weight=100)
@@ -661,6 +674,7 @@ with dpg.font_registry():
     try:
         default_font = dpg.add_font(font_path, 18)
         bold_font = dpg.add_font(bold_font_path, 18)
+        bold_font_large = dpg.add_font(bold_font_path, 24)
         if default_font:
             dpg.bind_font(default_font)
     except Exception as e:
@@ -673,20 +687,13 @@ with dpg.window(label=app_title, tag="Primary Window"):
     # Title bar
     with dpg.group(horizontal=True):
         dpg.add_text(app_title, tag="app_title")
-        dpg.bind_item_font("app_title", bold_font)
+        #dpg.bind_item_font("app_title", bold_font)
         dpg.add_text("v4.3.0")
-        dpg.add_spacer(width=310)
-        dpg.add_button(label="-", callback=tray.minimize_to_tray, width=35)
-        dpg.add_button(label="X", callback=exit_gui, width=35)  # Exit button
-
-    # Start/Stop Button +
-    dpg.add_spacer(height=1)
-    with dpg.child_window(width=-1, height=40):
-        with dpg.group(horizontal=True):
-            dpg.add_spacer(width=350)
-            dpg.add_button(label="Detect Render GPU", callback=toggle_luid_selection, tag="luid_button", width=150)
-            dpg.add_button(label="Start", tag="start_stop_button", callback=start_stop_callback, width=50, user_data=cm)
-            dpg.bind_item_theme("start_stop_button", themes_manager.themes["start_button_theme"])  # Apply start button theme
+        dpg.add_spacer(width=320)
+        dpg.add_button(tag="minimize", label="-", callback=tray.minimize_to_tray, width=35)
+        dpg.add_button(tag="exit", label="X", callback=exit_gui, width=35)  # Exit button
+        dpg.bind_item_theme("minimize", themes_manager.themes["titlebar_button_theme"])
+        dpg.bind_item_theme("exit", themes_manager.themes["titlebar_button_theme"])
 
     # Profiles
     dpg.add_spacer(height=1)

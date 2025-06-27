@@ -159,6 +159,23 @@ class ThemesManager:
                 dpg.add_theme_style(dpg.mvStyleVar_FrameBorderSize, 0)
         self.themes["button_right_theme"] = button_right_theme
 
+        # Button right theme
+        with dpg.theme() as titlebar_button_theme:
+            with dpg.theme_component(dpg.mvButton):
+                dpg.add_theme_style(dpg.mvStyleVar_ButtonTextAlign, 0.50, 0.50, category=dpg.mvThemeCat_Core)
+                dpg.add_theme_color(dpg.mvThemeCol_Button, bg_colour_1_transparent, category=dpg.mvThemeCat_Core)
+                dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, bg_colour_4_buttonhover)
+                dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, bg_colour_5_buttonactive)
+                dpg.add_theme_style(dpg.mvStyleVar_FrameBorderSize, 0)
+        self.themes["titlebar_button_theme"] = titlebar_button_theme
+
+        with dpg.theme() as no_padding_theme:
+            with dpg.theme_component(dpg.mvAll):
+                dpg.add_theme_style(dpg.mvStyleVar_FramePadding, 0, 0)
+                dpg.add_theme_style(dpg.mvStyleVar_ItemSpacing, 0, 0)
+                dpg.add_theme_color(dpg.mvThemeCol_FrameBg, (0, 0, 0, 0), category=dpg.mvThemeCat_Core)
+        self.themes["no_padding_theme"] = no_padding_theme
+
         # Plot themes
         with dpg.theme() as fixed_greyline_theme:
             with dpg.theme_component(dpg.mvAll):

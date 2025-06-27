@@ -242,6 +242,8 @@ class ConfigManager:
             dpg.set_value(f"input_{key}", parsed_value)
         self.update_global_variables()
         dpg.set_value("new_profile_input", "")
+        dpg.set_value("game_name", profile_name)
+        #dpg.configure_item("game_name", label=profile_name)
         self.current_method_callback()  # Update method-specific UI elements
 
     def save_profile(self, profile_name):
