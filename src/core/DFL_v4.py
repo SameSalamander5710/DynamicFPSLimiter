@@ -679,24 +679,41 @@ with dpg.font_registry():
         logger.add_log(f"Failed to load system font: {e}")
         # Will use DearPyGui's default font as fallback
 
+# Load image data
+close_image_path = os.path.join(Base_dir, "assets/close_button.png")
+minimize_image_path = os.path.join(Base_dir, "assets/minimize_button.png")
+icon_png_path = os.path.join(Base_dir, "assets/DynamicFPSLimiter_icon.png")
+close_width, close_height, close_channels, close_data = dpg.load_image(close_image_path)
+min_width, min_height, min_channels, min_data = dpg.load_image(minimize_image_path)
+icon_width, icon_height, icon_channels, icon_data = dpg.load_image(icon_png_path)
+
+# Create static textures
+with dpg.texture_registry():
+    close_texture = dpg.add_static_texture(close_width, close_height, close_data, tag="close_texture")
+    minimize_texture = dpg.add_static_texture(min_width, min_height, min_data, tag="minimize_texture")
+    icon_texture = dpg.add_static_texture(icon_width, icon_height, icon_data, tag="icon_texture")
+
 #The actual GUI starts here
 with dpg.window(label=app_title, tag="Primary Window"):
 
     # Title bar
     with dpg.group(horizontal=True):
+        dpg.add_image(icon_texture, tag="icon", width=20, height=20)
         dpg.add_text(app_title, tag="app_title")
         #dpg.bind_item_font("app_title", bold_font)
         dpg.add_text("v4.3.0")
-        dpg.add_spacer(width=320)
-        dpg.add_button(tag="minimize", label="-", callback=tray.minimize_to_tray, width=35)
-        dpg.add_button(tag="exit", label="X", callback=exit_gui, width=35)  # Exit button
+        dpg.add_spacer(width=310)
+
+        dpg.add_image_button(texture_tag=minimize_texture, tag="minimize", callback=tray.minimize_to_tray, width=20, height=20)
+        dpg.add_image_button(texture_tag=close_texture, tag="exit", callback=exit_gui, width=20, height=20)
+
         dpg.bind_item_theme("minimize", themes_manager.themes["titlebar_button_theme"])
         dpg.bind_item_theme("exit", themes_manager.themes["titlebar_button_theme"])
         with dpg.handler_registry():
             dpg.add_mouse_drag_handler(button=0, threshold=0.0, callback=tray.drag_viewport)
 
     # Profiles
-    dpg.add_spacer(height=5)
+    dpg.add_spacer(height=1)
     build_profile_section()
     
     #Tabs

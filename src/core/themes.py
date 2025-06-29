@@ -161,12 +161,13 @@ class ThemesManager:
 
         # Button right theme
         with dpg.theme() as titlebar_button_theme:
-            with dpg.theme_component(dpg.mvButton):
-                dpg.add_theme_style(dpg.mvStyleVar_ButtonTextAlign, 0.50, 0.50, category=dpg.mvThemeCat_Core)
+            with dpg.theme_component(dpg.mvImageButton):
+                #dpg.add_theme_style(dpg.mvStyleVar_ButtonTextAlign, 0.50, 0.50, category=dpg.mvThemeCat_Core)
                 dpg.add_theme_color(dpg.mvThemeCol_Button, bg_colour_1_transparent, category=dpg.mvThemeCat_Core)
                 dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, bg_colour_4_buttonhover)
                 dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, bg_colour_5_buttonactive)
                 dpg.add_theme_style(dpg.mvStyleVar_FrameBorderSize, 0)
+                dpg.add_theme_style(dpg.mvStyleVar_FrameRounding, 0)
         self.themes["titlebar_button_theme"] = titlebar_button_theme
 
         with dpg.theme() as no_padding_theme:

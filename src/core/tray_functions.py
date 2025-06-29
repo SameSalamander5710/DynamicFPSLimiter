@@ -64,7 +64,7 @@ class TrayManager:
 
         if not self._dragging_viewport:
             # Only start dragging if mouse is in the top 50px
-            if mouse_y < 50 and dpg.is_mouse_button_down(0):
+            if mouse_y < 40 and dpg.is_mouse_button_down(0):
                 self._dragging_viewport = True
             else:
                 return
