@@ -11,7 +11,6 @@ import math
 import os
 import sys
 import csv
-import pywinstyles
 from decimal import Decimal, InvalidOperation
 
 # tweak path so "src/" (or wherever your modules live) is on sys.path
@@ -914,7 +913,6 @@ autostart.update_if_needed(cm.launchonstartup)
 
 dpg.bind_theme(themes_manager.themes["main_theme"])
 dpg.bind_item_theme("plot_childwindow", themes_manager.themes["plot_bg_theme"])
-pywinstyles.apply_style(None, "acrylic")
 
 logger.add_log("Initialized successfully.")
 
