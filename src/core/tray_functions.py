@@ -50,6 +50,10 @@ def get_mouse_screen_pos():
     ctypes.windll.user32.GetCursorPos(ctypes.byref(pt))
     return (pt.x, pt.y)
 
+def is_left_mouse_button_down():
+    VK_LBUTTON = 0x01
+    return (ctypes.windll.user32.GetAsyncKeyState(VK_LBUTTON) & 0x8000) != 0
+
 class TrayManager:
     def __init__(self, app_name, icon_path, on_restore, on_exit, hover_text=None):
         self.app_name = app_name
@@ -65,7 +69,10 @@ class TrayManager:
         self._drag_start_viewport_pos = None
 
     def drag_viewport(self, sender, app_data, user_data):
-        if not self._dragging_viewport:
+        if not self._dragging_viewport or not is_left_mouse_button_down():
+            self._dragging_viewport = False
+            self._drag_start_mouse_pos = None
+            self._drag_start_viewport_pos = None
             return
 
         mouse_pos_global = get_mouse_screen_pos()
