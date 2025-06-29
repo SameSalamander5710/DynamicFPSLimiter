@@ -55,39 +55,38 @@ class TrayManager:
         self.tray_thread = None
         self.is_tray_active = False
         self._dragging_viewport = False
-        
-    #FIXME: Prevent losing control of the viewport when dragging
-    #FIXME: two things: 1. prevent dragging when not in the top 50px of the window, 2. prevent viewport from losing control when dragging
-    # Issue: mouse handlers are not working properly when dragging the viewport
+        self._drag_start_mouse_y = None
 
     def drag_viewport(self, sender, app_data, user_data):
-        #mouse_y = dpg.get_mouse_pos(local=False)[1]
         mouse_pos = dpg.get_mouse_pos(local=False)
         mouse_y = mouse_pos[1]
-        print(f"Mouse clicked at: x={mouse_pos[0]}, y={mouse_y}")
-
-        if dpg.is_mouse_button_released(0):
-            self._dragging_viewport = False
-            print("Mouse released, stopping viewport dragging.")
-            print(f"_dragging_viewport {self._dragging_viewport}")
-            return
-
+        print(f"Mouse position: {mouse_pos}, dragging: {self._dragging_viewport}")
+        
         if not self._dragging_viewport:
-            # Only start dragging if mouse is in the top 50px
-            if mouse_y < 40 and dpg.is_mouse_button_down(0):
-                self._dragging_viewport = True
+            # Only start dragging if mouse is in the top 40px when button is pressed
+            if dpg.is_mouse_button_down(0):
+                self._drag_start_mouse_y = mouse_y
+                if self._drag_start_mouse_y < 40:
+                    self._dragging_viewport = True
+                else:
+                    self._drag_start_mouse_y = None
+                    return
             else:
                 return
-            
-        print(f"_dragging_viewport {self._dragging_viewport}")
 
         # If dragging, update viewport position
         drag_deltas = app_data
-
         viewport_current_pos = dpg.get_viewport_pos()
-        new_x_position = max(viewport_current_pos[0] + drag_deltas[1], 0)  # prevent off left
-        new_y_position = max(viewport_current_pos[1] + drag_deltas[2], 0)  # prevent off top
+        new_x_position = max(viewport_current_pos[0] + drag_deltas[1], 0)
+        new_y_position = max(viewport_current_pos[1] + drag_deltas[2], 0)
         dpg.set_viewport_pos([new_x_position, new_y_position])
+
+    def on_mouse_release(self, sender, app_data, user_data):
+        if self._dragging_viewport:
+            self._dragging_viewport = False
+            self._drag_start_mouse_y = None
+            print("Mouse released, stopping viewport dragging.")
+            print(f"_dragging_viewport {self._dragging_viewport}")
 
     def _create_icon(self):
         image = Image.open(self.icon_path)
