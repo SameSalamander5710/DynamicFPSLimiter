@@ -56,6 +56,7 @@ class TrayManager:
         self.is_tray_active = False
         self._dragging_viewport = False
         
+    #FIXME: Prevent losing control of the viewport when dragging
     def drag_viewport(self, sender, app_data, user_data):
         mouse_y = dpg.get_mouse_pos(local=False)[1]
         if dpg.is_mouse_button_released(0):
