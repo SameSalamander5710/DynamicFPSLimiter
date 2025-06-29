@@ -61,21 +61,18 @@ class TrayManager:
         mouse_pos = dpg.get_mouse_pos(local=False)
         mouse_y = mouse_pos[1]
         print(f"Mouse position: {mouse_pos}, dragging: {self._dragging_viewport}")
-        
+
         if not self._dragging_viewport:
             # Only start dragging if mouse is in the top 40px when button is pressed
             if dpg.is_mouse_button_down(0):
-                self._drag_start_mouse_y = mouse_y
-                if self._drag_start_mouse_y < 40:
-                    self._dragging_viewport = True
-                else:
-                    self._drag_start_mouse_y = None
-                    return
+                # Now handled in on_mouse_click
+                return
             else:
                 return
 
         # If dragging, update viewport position
         drag_deltas = app_data
+        print(f"Drag deltas: {drag_deltas}, start mouse Y: {self._drag_start_mouse_y}")
         viewport_current_pos = dpg.get_viewport_pos()
         new_x_position = max(viewport_current_pos[0] + drag_deltas[1], 0)
         new_y_position = max(viewport_current_pos[1] + drag_deltas[2], 0)
@@ -87,6 +84,19 @@ class TrayManager:
             self._drag_start_mouse_y = None
             print("Mouse released, stopping viewport dragging.")
             print(f"_dragging_viewport {self._dragging_viewport}")
+        else:
+            print("Mouse released normally")
+
+    def on_mouse_click(self, sender, app_data, user_data):
+        mouse_pos = dpg.get_mouse_pos(local=False)
+        mouse_y = mouse_pos[1]
+        if mouse_y < 40 and dpg.is_mouse_button_down(0):
+            self._dragging_viewport = True
+            self._drag_start_mouse_y = mouse_y
+            print(f"Started dragging viewport at y={mouse_y}")
+        else:
+            self._dragging_viewport = False
+            self._drag_start_mouse_y = None
 
     def _create_icon(self):
         image = Image.open(self.icon_path)

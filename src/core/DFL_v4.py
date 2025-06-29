@@ -713,6 +713,8 @@ with dpg.window(label=app_title, tag="Primary Window"):
         with dpg.handler_registry():
             dpg.add_mouse_drag_handler(button=0, threshold=0.0, callback=tray.drag_viewport)
             dpg.add_mouse_release_handler(callback=tray.on_mouse_release)
+            dpg.add_mouse_click_handler(callback=tray.on_mouse_click)
+
     # Profiles
     dpg.add_spacer(height=1)
     build_profile_section()
