@@ -693,6 +693,10 @@ with dpg.texture_registry():
     minimize_texture = dpg.add_static_texture(min_width, min_height, min_data, tag="minimize_texture")
     icon_texture = dpg.add_static_texture(icon_width, icon_height, icon_data, tag="icon_texture")
 
+def print_mouse_coordinates(sender, app_data, user_data):
+    mouse_pos = dpg.get_mouse_pos(local=False)
+    print(f"Mouse clicked at: x={mouse_pos[0]}, y={mouse_pos[1]}")
+
 #The actual GUI starts here
 with dpg.window(label=app_title, tag="Primary Window"):
 
@@ -711,7 +715,7 @@ with dpg.window(label=app_title, tag="Primary Window"):
         dpg.bind_item_theme("exit", themes_manager.themes["titlebar_button_theme"])
         with dpg.handler_registry():
             dpg.add_mouse_drag_handler(button=0, threshold=0.0, callback=tray.drag_viewport)
-
+            dpg.add_mouse_click_handler(callback=print_mouse_coordinates)  # <-- Add this line
     # Profiles
     dpg.add_spacer(height=1)
     build_profile_section()
