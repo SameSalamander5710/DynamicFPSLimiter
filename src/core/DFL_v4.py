@@ -621,6 +621,7 @@ tray = TrayManager(
     icon_path,
     on_restore=lambda: tray.restore_from_tray(),
     on_exit=exit_gui,
+    viewport_width=Viewport_width,
     hover_text=app_title
 )
 

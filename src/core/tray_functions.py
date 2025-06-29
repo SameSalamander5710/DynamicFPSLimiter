@@ -55,11 +55,12 @@ def is_left_mouse_button_down():
     return (ctypes.windll.user32.GetAsyncKeyState(VK_LBUTTON) & 0x8000) != 0
 
 class TrayManager:
-    def __init__(self, app_name, icon_path, on_restore, on_exit, hover_text=None):
+    def __init__(self, app_name, icon_path, on_restore, on_exit, viewport_width, hover_text=None):
         self.app_name = app_name
         self.icon_path = icon_path
         self.on_restore = on_restore
         self.on_exit = on_exit
+        self.viewport_width = viewport_width
         self.hover_text = hover_text or app_name
         self.icon = None
         self.tray_thread = None
@@ -103,7 +104,8 @@ class TrayManager:
         mouse_pos_global = get_mouse_screen_pos()
         mouse_pos_app = dpg.get_mouse_pos(local=False)
         mouse_y = mouse_pos_app[1]
-        if mouse_y < 40 and dpg.is_mouse_button_down(0):
+        mouse_x = mouse_pos_app[0]
+        if mouse_y < 40 and dpg.is_mouse_button_down(0) and mouse_x < (self.viewport_width - 75):
             self._dragging_viewport = True
             self._drag_start_mouse_pos = mouse_pos_global
             self._drag_start_viewport_pos = dpg.get_viewport_pos()
