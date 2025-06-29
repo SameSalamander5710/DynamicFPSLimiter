@@ -44,6 +44,12 @@ def is_window_minimized():
         return ctypes.windll.user32.IsIconic(hwnd)
     return False
 
+def get_mouse_screen_pos():
+    """Returns the mouse position as (x, y) in screen coordinates using Windows API."""
+    pt = ctypes.wintypes.POINT()
+    ctypes.windll.user32.GetCursorPos(ctypes.byref(pt))
+    return (pt.x, pt.y)
+
 class TrayManager:
     def __init__(self, app_name, icon_path, on_restore, on_exit, hover_text=None):
         self.app_name = app_name
@@ -62,20 +68,20 @@ class TrayManager:
         if not self._dragging_viewport:
             return
 
-        mouse_pos = dpg.get_mouse_pos(local=False)
+        mouse_pos_global = get_mouse_screen_pos()
         if self._drag_start_mouse_pos is None or self._drag_start_viewport_pos is None:
             return
 
-        dx = mouse_pos[0] - self._drag_start_mouse_pos[0]
-        dy = mouse_pos[1] - self._drag_start_mouse_pos[1]
+        dx = mouse_pos_global[0] - self._drag_start_mouse_pos[0]
+        dy = mouse_pos_global[1] - self._drag_start_mouse_pos[1]
         new_x = self._drag_start_viewport_pos[0] + dx
         new_y = self._drag_start_viewport_pos[1] + dy
         
-        print(f"Mouse position: {mouse_pos}, Start position: {self._drag_start_mouse_pos}")
+        print(f"Mouse position: {mouse_pos_global}, Start position: {self._drag_start_mouse_pos}")
         print(f"Dragging viewport by ({dx}, {dy}) to new position: ({new_x}, {new_y})")
-        current_viewport_pos = dpg.get_viewport_pos()
-        if (current_viewport_pos[0] != new_x) or (current_viewport_pos[1] != new_y):
-            dpg.set_viewport_pos([new_x, new_y])
+        #current_viewport_pos = dpg.get_viewport_pos()
+        #if (current_viewport_pos[0] != new_x) or (current_viewport_pos[1] != new_y):
+        dpg.set_viewport_pos([new_x, new_y])
 
     def on_mouse_release(self, sender, app_data, user_data):
         if self._dragging_viewport:
@@ -87,13 +93,14 @@ class TrayManager:
             print("Mouse released normally")
 
     def on_mouse_click(self, sender, app_data, user_data):
-        mouse_pos = dpg.get_mouse_pos(local=False)
-        mouse_y = mouse_pos[1]
+        mouse_pos_global = get_mouse_screen_pos()
+        mouse_pos_app = dpg.get_mouse_pos(local=False)
+        mouse_y = mouse_pos_app[1]
         if mouse_y < 40 and dpg.is_mouse_button_down(0):
             self._dragging_viewport = True
-            self._drag_start_mouse_pos = mouse_pos
+            self._drag_start_mouse_pos = mouse_pos_global
             self._drag_start_viewport_pos = dpg.get_viewport_pos()
-            print(f"Started dragging viewport at {mouse_pos}")
+            print(f"Started dragging viewport at {mouse_pos_global}")
         else:
             self._dragging_viewport = False
             self._drag_start_mouse_pos = None
