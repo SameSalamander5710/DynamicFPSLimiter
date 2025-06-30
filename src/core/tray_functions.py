@@ -140,15 +140,33 @@ class TrayManager:
         """Update running state and tray menu label."""
         self.running = running
         self._update_menu()
+        self._update_icon_image()
 
     def _create_icon(self):
-        image = Image.open(self.icon_path)
+        icon_file = self.icon_path
+        if self.running:
+            icon_file = self.icon_path.replace(".ico", "_red.ico")
+            if not os.path.exists(icon_file):
+                icon_file = self.icon_path
+        image = Image.open(icon_file)
         menu = Menu(
             MenuItem("Restore", self._restore_window),
             MenuItem("Start" if not self.running else "Stop", self._toggle_start_stop),
             MenuItem("Exit", self._exit_app)
         )
         self.icon = Icon(self.app_name, image, self.hover_text, menu)
+
+    def _update_icon_image(self):
+        """Update the tray icon image based on running state."""
+        icon_file = self.icon_path
+        # Use red icon if running, otherwise default
+        if self.running:
+            icon_file = self.icon_path.replace(".ico", "_red.ico")
+            if not os.path.exists(icon_file):
+                icon_file = self.icon_path  # fallback if red icon missing
+        if self.icon:
+            image = Image.open(icon_file)
+            self.icon.icon = image
 
     def _restore_window(self, icon, item):
         # Called from tray thread, so use a thread to call the GUI callback
