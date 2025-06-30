@@ -37,6 +37,7 @@ def build_executable():
         '--icon', 'src/core/assets/DynamicFPSLimiter.ico',
         '--version-file', 'src/metadata/version.txt',
         '--add-data', 'src/core/assets/DynamicFPSLimiter.ico:assets',
+        '--add-data', 'src/core/assets/DynamicFPSLimiter_red.ico:assets',
         '--add-data', 'src/core/assets/DynamicFPSLimiter_icon.png:assets',
         '--add-data', 'src/core/assets/close_button.png:assets',
         '--add-data', 'src/core/assets/minimize_button.png:assets',

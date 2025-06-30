@@ -131,7 +131,11 @@ class TrayManager:
         if self.icon:
             menu = Menu(
                 MenuItem("Restore", self._restore_window),
-                MenuItem("Start" if not self.running else "Stop", self._toggle_start_stop),
+                MenuItem(
+                    "Start" if not self.running else "Stop",
+                    self._toggle_start_stop,
+                    default=True  # <-- This makes it the default (left-click) action
+                ),
                 MenuItem("Exit", self._exit_app)
             )
             self.icon.menu = menu
@@ -151,7 +155,11 @@ class TrayManager:
         image = Image.open(icon_file)
         menu = Menu(
             MenuItem("Restore", self._restore_window),
-            MenuItem("Start" if not self.running else "Stop", self._toggle_start_stop),
+            MenuItem(
+                "Start" if not self.running else "Stop",
+                self._toggle_start_stop,
+                default=True  # <-- This makes it the default (left-click) action
+            ),
             MenuItem("Exit", self._exit_app)
         )
         self.icon = Icon(self.app_name, image, self.hover_text, menu)
