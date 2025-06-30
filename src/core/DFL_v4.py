@@ -25,7 +25,7 @@ from core.cpu_monitor import CPUUsageMonitor
 from core.gpu_monitor import GPUUsageMonitor
 from core.themes import ThemesManager
 from core.config_manager import ConfigManager
-from core.tooltips import get_tooltips, add_tooltip, apply_all_tooltips, update_tooltip_setting
+from core.tooltips import get_tooltips, add_tooltip, apply_all_tooltips, update_all_tooltip_visibility
 from core.warning import get_active_warnings
 from core.autostart import AutoStartManager
 from core.rtss_functions import RTSSController
@@ -36,7 +36,6 @@ Base_dir = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
 rtss = RTSSController(logger)
 themes_manager = ThemesManager()
 cm = ConfigManager(logger, dpg, rtss, themes_manager, Base_dir)
-tooltips = get_tooltips()
 
 # Ensure the config folder exists in the parent directory of Base_dir
 parent_dir = os.path.dirname(Base_dir)
@@ -215,10 +214,11 @@ def copy_from_plot_callback():
     dpg.set_value("input_customfpslimits", fps_limits_str)
 
 def tooltip_checkbox_callback(sender, app_data, user_data):
-    update_tooltip_setting(dpg, sender, app_data, user_data, tooltips, cm, logger)
+    cm.update_preference_setting('ShowTooltip', sender, app_data, user_data)
+    update_all_tooltip_visibility(dpg, app_data, get_tooltips(), cm, logger)
 
 def autostart_checkbox_callback(sender, app_data, user_data):
-    cm.update_launch_on_startup_setting(sender, app_data, user_data)
+    cm.update_preference_setting('launchonstartup', sender, app_data, user_data)
 
     is_checked = dpg.get_value("autostart_checkbox")
     if is_checked:
@@ -779,14 +779,18 @@ with dpg.window(label=app_title, tag="Primary Window"):
                 #2 dpg.add_spacer(height=3)
                 with dpg.group(horizontal=True):
                     dpg.add_checkbox(label="Reset RTSS Global Limit on Exit: ", tag="limit_on_exit_checkbox",
-                                    default_value=cm.globallimitonexit, callback=cm.update_limit_on_exit_setting)
+                                    default_value=cm.globallimitonexit, 
+                                    callback=lambda sender, app_data, user_data: cm.update_preference_setting('globallimitonexit', sender, app_data, user_data)
+                                    ) #TODO: Find a simpler way to do this
                     dpg.add_input_int(tag="exit_fps_input",
                                     default_value=cm.globallimitonexit_fps, callback=cm.update_exit_fps_value,
                                     width=100, step=1, step_fast=10)
                 
                 with dpg.group(horizontal=True):
                     dpg.add_checkbox(label="Set", tag="profile_on_startup_checkbox",
-                                    default_value=cm.profileonstartup, callback=cm.update_profile_on_startup_setting)
+                                    default_value=cm.profileonstartup, 
+                                    callback=lambda sender, app_data, user_data: cm.update_preference_setting('profileonstartup', sender, app_data, user_data)
+                                    )
                     dpg.add_button(label="Current Profile", tag="select_profile_button",
                                     callback=cm.select_default_profile_callback, width=105)
                     dpg.add_text("as default on startup. Currently set to:")
@@ -929,7 +933,7 @@ rtss_manager = RTSSInterface(logger, dpg)
 gui_update_thread = threading.Thread(target=gui_update_loop, daemon=True)
 gui_update_thread.start()
 
-apply_all_tooltips(dpg, tooltips, ShowTooltip, cm, logger)
+apply_all_tooltips(dpg, get_tooltips(), ShowTooltip, cm, logger)
 cm.current_method_callback()
 
 autostart = AutoStartManager(app_path=os.path.join(os.path.dirname(Base_dir), "DynamicFPSLimiter.exe"))

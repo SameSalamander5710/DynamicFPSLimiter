@@ -345,44 +345,6 @@ class ConfigManager:
         self.current_method_callback()  # Update method-specific UI elements
         self.logger.add_log("Settings reset to program default")
 
-    def update_limit_on_exit_setting(self, sender, app_data, user_data):
-
-        self.globallimitonexit = app_data
-        self.settings_config["Preferences"]["globallimitonexit"] = str(app_data)
-        with open(self.settings_path, 'w') as f:
-            self.settings_config.write(f)
-        self.logger.add_log(f"Global Limit on Exit set to: {self.globallimitonexit}")
-
-    def update_exit_fps_value(self, sender, app_data, user_data):
-
-        new_value = app_data
-
-        if isinstance(new_value, int) and new_value > 0:
-            self.globallimitonexit_fps = new_value
-            self.settings_config["GlobalSettings"]["globallimitonexit_fps"] = str(new_value)
-            with open(self.settings_path, 'w') as f:
-                self.settings_config.write(f)
-            self.logger.add_log(f"Global Limit on Exit FPS value set to: {self.globallimitonexit_fps}")
-        else:
-            self.logger.add_log(f"Invalid value entered for Global Limit on Exit FPS: {app_data}. Reverting.")
-            dpg.set_value(sender, self.globallimitonexit_fps)
-
-    def update_profile_on_startup_setting(self, sender, app_data, user_data):
-        self.profileonstartup = app_data
-        self.settings_config["Preferences"]["profileonstartup"] = str(app_data)
-        with open(self.settings_path, 'w') as f:
-            self.settings_config.write(f)
-        self.logger.add_log(f"Profile on Startup set to: {self.profileonstartup}")
-
-    def select_default_profile_callback(self, sender, app_data, user_data):
-
-        current_profile = dpg.get_value("profile_dropdown")
-        dpg.set_value("profileonstartup_name", current_profile)
-        self.settings_config["GlobalSettings"]["profileonstartup_name"] = current_profile
-        with open(self.settings_path, 'w') as f:
-            self.settings_config.write(f)
-        self.logger.add_log(f"Profile on Startup set to: {self.profileonstartup_name}")
-
     def startup_profile_selection(self):
 
         profile_name = self.settings_config["GlobalSettings"].get("profileonstartup_name", "Global")
@@ -412,9 +374,37 @@ class ConfigManager:
         self.logger.add_log(f"Method selection changed: {method}")
 
 #TODO: Refactor this to use a more generic method for updating preference settings
-    def update_launch_on_startup_setting(self, sender, app_data, user_data):
-        self.launchonstartup = app_data
-        self.settings_config["Preferences"]["launchonstartup"] = str(app_data)
+
+    def update_preference_setting(self, key, sender, app_data, user_data):
+        """
+        Generic method to update a boolean preference setting.
+        key: The attribute and config key to update (e.g., 'launchonstartup').
+        """
+        setattr(self, key, app_data)
+        self.settings_config["Preferences"][key] = str(app_data)
         with open(self.settings_path, 'w') as f:
             self.settings_config.write(f)
-        self.logger.add_log(f"Launch on Startup set to: {self.launchonstartup}")
+        self.logger.add_log(f"{key.replace('_', ' ').title()} set to: {getattr(self, key)}")
+
+    def update_exit_fps_value(self, sender, app_data, user_data):
+
+        new_value = app_data
+
+        if isinstance(new_value, int) and new_value > 0:
+            self.globallimitonexit_fps = new_value
+            self.settings_config["GlobalSettings"]["globallimitonexit_fps"] = str(new_value)
+            with open(self.settings_path, 'w') as f:
+                self.settings_config.write(f)
+            self.logger.add_log(f"Global Limit on Exit FPS value set to: {self.globallimitonexit_fps}")
+        else:
+            self.logger.add_log(f"Invalid value entered for Global Limit on Exit FPS: {app_data}. Reverting.")
+            dpg.set_value(sender, self.globallimitonexit_fps)
+
+    def select_default_profile_callback(self, sender, app_data, user_data):
+
+        current_profile = dpg.get_value("profile_dropdown")
+        dpg.set_value("profileonstartup_name", current_profile)
+        self.settings_config["GlobalSettings"]["profileonstartup_name"] = current_profile
+        with open(self.settings_path, 'w') as f:
+            self.settings_config.write(f)
+        self.logger.add_log(f"Profile on Startup set to: {self.profileonstartup_name}")
