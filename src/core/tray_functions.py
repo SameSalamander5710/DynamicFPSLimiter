@@ -122,7 +122,7 @@ class TrayManager:
         # Toggle running state and update menu label
         if self.start_stop_callback:
             self.start_stop_callback(None, None, self.user_data)
-            self.running = not self.running
+            #self.running = not self.running
             # Update menu label
             self._update_menu()
 
@@ -135,6 +135,11 @@ class TrayManager:
                 MenuItem("Exit", self._exit_app)
             )
             self.icon.menu = menu
+
+    def set_running_state(self, running: bool):
+        """Update running state and tray menu label."""
+        self.running = running
+        self._update_menu()
 
     def _create_icon(self):
         image = Image.open(self.icon_path)
