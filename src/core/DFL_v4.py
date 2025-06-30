@@ -622,7 +622,9 @@ tray = TrayManager(
     on_restore=lambda: tray.restore_from_tray(),
     on_exit=exit_gui,
     viewport_width=Viewport_width,
-    hover_text=app_title
+    hover_text=app_title,
+    start_stop_callback=start_stop_callback,  # Pass the callback
+    user_data=cm  # Pass user_data for start_stop_callback
 )
 
 # Defining short sections of the GUI

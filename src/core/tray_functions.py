@@ -55,7 +55,7 @@ def is_left_mouse_button_down():
     return (ctypes.windll.user32.GetAsyncKeyState(VK_LBUTTON) & 0x8000) != 0
 
 class TrayManager:
-    def __init__(self, app_name, icon_path, on_restore, on_exit, viewport_width, hover_text=None):
+    def __init__(self, app_name, icon_path, on_restore, on_exit, viewport_width, hover_text=None, start_stop_callback=None, user_data=None):
         self.app_name = app_name
         self.icon_path = icon_path
         self.on_restore = on_restore
@@ -68,6 +68,9 @@ class TrayManager:
         self._dragging_viewport = False
         self._drag_start_mouse_pos = None
         self._drag_start_viewport_pos = None
+        self.start_stop_callback = start_stop_callback
+        self.user_data = user_data
+        self.running = False  # Track running state for menu
 
     def drag_viewport(self, sender, app_data, user_data):
         if not self._dragging_viewport or not is_left_mouse_button_down():
@@ -115,10 +118,29 @@ class TrayManager:
             self._drag_start_mouse_pos = None
             self._drag_start_viewport_pos = None
 
+    def _toggle_start_stop(self, icon, item):
+        # Toggle running state and update menu label
+        if self.start_stop_callback:
+            self.start_stop_callback(None, None, self.user_data)
+            self.running = not self.running
+            # Update menu label
+            self._update_menu()
+
+    def _update_menu(self):
+        # Rebuild the menu with updated Start/Stop label
+        if self.icon:
+            menu = Menu(
+                MenuItem("Restore", self._restore_window),
+                MenuItem("Start" if not self.running else "Stop", self._toggle_start_stop),
+                MenuItem("Exit", self._exit_app)
+            )
+            self.icon.menu = menu
+
     def _create_icon(self):
         image = Image.open(self.icon_path)
         menu = Menu(
             MenuItem("Restore", self._restore_window),
+            MenuItem("Start" if not self.running else "Stop", self._toggle_start_stop),
             MenuItem("Exit", self._exit_app)
         )
         self.icon = Icon(self.app_name, image, self.hover_text, menu)
