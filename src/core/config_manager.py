@@ -40,7 +40,7 @@ class ConfigManager:
         self.settings_config = configparser.ConfigParser()
         self.profiles_config = configparser.ConfigParser()
         self.load_or_init_configs()
-
+        self.load_preferences()
 
     def load_or_init_configs(self):
         # Settings
@@ -48,7 +48,7 @@ class ConfigManager:
             self.settings_config.read(self.settings_path)
         else:
             self.settings_config["Preferences"] = {
-                'ShowTooltip': 'True',
+                'showtooltip': 'True',
                 'globallimitonexit': 'False',
                 'profileonstartup': 'True',
                 'launchonstartup': 'False',
@@ -117,7 +117,7 @@ class ConfigManager:
             "gpupercentile": int,
             "gpupollinginterval": int,
             "gpupollingsamples": int,
-            'ShowTooltip': bool,
+            'showtooltip': bool,
             'globallimitonexit': bool,
             'profileonstartup': bool,
             'profileonstartup_name': str,
@@ -131,6 +131,16 @@ class ConfigManager:
             for key in self.Default_settings_original
         }
         self.settings = self.Default_settings.copy()
+
+    def load_preferences(self):
+        for key in self.settings_config["Preferences"]:
+            value = self.settings_config["Preferences"][key]
+            value_type = self.key_type_map.get(key, str)
+            if value_type is bool:
+                value = str(value).strip().lower() == "true"
+            else:
+                value = value_type(value)
+            setattr(self, key, value)
 
     def parse_input_value(self, key, value):
         value_type = self.key_type_map.get(key, int)

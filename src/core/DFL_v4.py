@@ -214,7 +214,7 @@ def copy_from_plot_callback():
     dpg.set_value("input_customfpslimits", fps_limits_str)
 
 def tooltip_checkbox_callback(sender, app_data, user_data):
-    cm.update_preference_setting('ShowTooltip', sender, app_data, user_data)
+    cm.update_preference_setting('showtooltip', sender, app_data, user_data)
     update_all_tooltip_visibility(dpg, app_data, get_tooltips(), cm, logger)
 
 def autostart_checkbox_callback(sender, app_data, user_data):
@@ -225,12 +225,6 @@ def autostart_checkbox_callback(sender, app_data, user_data):
         autostart.create() 
     else:
         autostart.delete() 
-
-ShowTooltip = str(cm.settings_config["Preferences"].get("ShowTooltip", "True")).strip().lower() == "true"
-cm.globallimitonexit = str(cm.settings_config["Preferences"].get("globallimitonexit", "True")).strip().lower() == "true"
-cm.profileonstartup = str(cm.settings_config["Preferences"].get("profileonstartup", "True")).strip().lower() == "true"
-cm.launchonstartup = str(cm.settings_config["Preferences"].get("launchonstartup", "True")).strip().lower() == "true"
-cm.minimizeonstartup = str(cm.settings_config["Preferences"].get("minimizeonstartup", "True")).strip().lower() == "true"
 
 #Check: Do I need this after setattr?
 for key in cm.settings_config["GlobalSettings"]:
@@ -801,7 +795,7 @@ with dpg.window(label=app_title, tag="Primary Window"):
                                     default_value=cm.globallimitonexit_fps, callback=cm.update_exit_fps_value,
                                     width=100, step=1, step_fast=10)
                 dpg.add_checkbox(label="Show Tooltips", tag="tooltip_checkbox",
-                                 default_value=ShowTooltip, callback=tooltip_checkbox_callback)
+                                 default_value=cm.showtooltip, callback=tooltip_checkbox_callback)
 
         with dpg.tab(label=" Log", tag="tab3"):
             with dpg.child_window(tag="LogWindow", autosize_x=True, height=tab_height, border=True):
@@ -936,7 +930,7 @@ rtss_manager = RTSSInterface(logger, dpg)
 gui_update_thread = threading.Thread(target=gui_update_loop, daemon=True)
 gui_update_thread.start()
 
-apply_all_tooltips(dpg, get_tooltips(), ShowTooltip, cm, logger)
+apply_all_tooltips(dpg, get_tooltips(), cm.showtooltip, cm, logger)
 cm.current_method_callback()
 
 autostart = AutoStartManager(app_path=os.path.join(os.path.dirname(Base_dir), "DynamicFPSLimiter.exe"))
