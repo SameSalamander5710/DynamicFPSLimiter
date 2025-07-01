@@ -4,10 +4,11 @@ import dearpygui.dearpygui as dpg
 from decimal import Decimal, InvalidOperation
 
 class ConfigManager:
-    def __init__(self, logger_instance, dpg_instance, rtss_instance, themes_manager, base_dir):
+    def __init__(self, logger_instance, dpg_instance, rtss_instance, tray_instance, themes_manager, base_dir):
         self.logger = logger_instance
         self.dpg = dpg_instance
         self.rtss = rtss_instance
+        self.tray = tray_instance
         self.themes = themes_manager.themes
         self.config_dir = os.path.join(os.path.dirname(base_dir), "config")
         os.makedirs(self.config_dir, exist_ok=True)
@@ -382,6 +383,13 @@ class ConfigManager:
         dpg.bind_item_theme("label_mincap", self.themes["disabled_text_theme"] if method == "custom" else self.themes["enabled_text_theme"])
         dpg.bind_item_theme("input_maxcap", self.themes["disabled_text_theme"] if method == "custom" else self.themes["enabled_text_theme"])
         dpg.bind_item_theme("input_mincap", self.themes["disabled_text_theme"] if method == "custom" else self.themes["enabled_text_theme"])
+
+        profile_name = dpg.get_value("profile_dropdown")
+
+        if self.tray:
+            self.tray.update_hover_text(profile_name, method) #Add  max_fps if easy
+            self.logger.add_log(f"Tray hover text updated for profile '{profile_name}' with method '{method}'")
+            # self.tray.update_hover_text(self.tray.app_name, profile_name, method, self.tray.running)
 
         self.logger.add_log(f"Method selection changed: {method}")
 

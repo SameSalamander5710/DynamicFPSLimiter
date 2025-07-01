@@ -35,7 +35,7 @@ from core.tray_functions import TrayManager
 Base_dir = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
 rtss = RTSSController(logger)
 themes_manager = ThemesManager()
-cm = ConfigManager(logger, dpg, rtss, themes_manager, Base_dir)
+cm = ConfigManager(logger, dpg, rtss, None, themes_manager, Base_dir)
 
 # Ensure the config folder exists in the parent directory of Base_dir
 parent_dir = os.path.dirname(Base_dir)
@@ -622,6 +622,8 @@ tray = TrayManager(
     start_stop_callback=start_stop_callback,  # Pass the callback
     user_data=cm  # Pass user_data for start_stop_callback
 )
+
+cm.tray = tray  # Set tray manager in ConfigManager
 
 # Defining short sections of the GUI
 # TODO: Refactor main GUI into a separate module for better organization

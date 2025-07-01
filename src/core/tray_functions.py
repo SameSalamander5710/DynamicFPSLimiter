@@ -164,6 +164,21 @@ class TrayManager:
         )
         self.icon = Icon(self.app_name, image, self.hover_text, menu)
 
+    def update_hover_text(self, profile_name, method):
+        """
+        Update the tray icon hover text with current profile, method, max FPS, and running status.
+        """
+        #status = "Running" if running else "Stopped"
+        self.hover_text = (
+            f"{self.app_name}\n"
+            f"Profile: {profile_name}\n"
+            f"Method: {method}"
+            #f"Max FPS: {max_fps}\n"
+            #f"Status: {status}"
+        )
+        if self.icon:
+            self.icon.title = self.hover_text
+
     def _update_icon_image(self):
         """Update the tray icon image based on running state."""
         icon_file = self.icon_path
