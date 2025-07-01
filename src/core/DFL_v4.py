@@ -779,12 +779,12 @@ with dpg.window(label=app_title, tag="Primary Window"):
                                  default_value=cm.launchonstartup, callback=autostart_checkbox_callback)
                 dpg.add_checkbox(label="Minimze on Launch", tag="minimizeonstartup_checkbox",
                                  default_value=cm.minimizeonstartup, 
-                                callback=lambda sender, app_data, user_data: cm.update_preference_setting('minimizeonstartup', sender, app_data, user_data)
-                                ) #TODO: Find a simpler way to do this
+                                callback=cm.make_update_preference_callback('minimizeonstartup')
+                                ) 
                 with dpg.group(horizontal=True):
                     dpg.add_checkbox(label="Set", tag="profile_on_startup_checkbox",
                                     default_value=cm.profileonstartup, 
-                                    callback=lambda sender, app_data, user_data: cm.update_preference_setting('profileonstartup', sender, app_data, user_data)
+                                    callback=cm.make_update_preference_callback('profileonstartup')
                                     )
                     dpg.add_button(label="Current Profile", tag="select_profile_button",
                                     callback=cm.select_default_profile_callback, width=105)
@@ -795,8 +795,8 @@ with dpg.window(label=app_title, tag="Primary Window"):
                 with dpg.group(horizontal=True):
                     dpg.add_checkbox(label="Reset RTSS Global Limit on Exit: ", tag="limit_on_exit_checkbox",
                                     default_value=cm.globallimitonexit, 
-                                    callback=lambda sender, app_data, user_data: cm.update_preference_setting('globallimitonexit', sender, app_data, user_data)
-                                    ) #TODO: Find a simpler way to do this
+                                    callback=cm.make_update_preference_callback('globallimitonexit')
+                                    ) # instead of: lambda sender, app_data, user_data: cm.update_preference_setting('globallimitonexit', sender, app_data, user_data)
                     dpg.add_input_int(tag="exit_fps_input",
                                     default_value=cm.globallimitonexit_fps, callback=cm.update_exit_fps_value,
                                     width=100, step=1, step_fast=10)

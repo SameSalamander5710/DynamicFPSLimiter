@@ -388,6 +388,11 @@ class ConfigManager:
             self.settings_config.write(f)
         self.logger.add_log(f"{key.replace('_', ' ').title()} set to: {getattr(self, key)}")
 
+    def make_update_preference_callback(self, key):
+        def callback(sender, app_data, user_data):
+            self.update_preference_setting(key, sender, app_data, user_data)
+        return callback
+
     def update_exit_fps_value(self, sender, app_data, user_data):
 
         new_value = app_data
