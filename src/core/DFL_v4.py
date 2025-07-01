@@ -944,4 +944,6 @@ logger.add_log("Initialized successfully.")
 #dpg.show_style_editor()
 #dpg.show_imgui_demo()
 
+dpg.set_frame_callback(1, lambda: tray.minimize_on_startup_if_needed(cm.minimizeonstartup))
+
 dpg.start_dearpygui()

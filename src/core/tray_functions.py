@@ -213,6 +213,13 @@ class TrayManager:
         if self.icon:
             self.icon.stop()
 
+    def minimize_on_startup_if_needed(self, minimize: bool):
+        """
+        Minimizes the app to tray if minimize is True.
+        """
+        if minimize:
+            self.minimize_to_tray()
+
 # Example usage in your main file:
 # import threading
 # from core.tray_functions import TrayManager, minimize_watcher
