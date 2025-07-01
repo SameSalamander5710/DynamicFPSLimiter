@@ -230,6 +230,7 @@ ShowTooltip = str(cm.settings_config["Preferences"].get("ShowTooltip", "True")).
 cm.globallimitonexit = str(cm.settings_config["Preferences"].get("globallimitonexit", "True")).strip().lower() == "true"
 cm.profileonstartup = str(cm.settings_config["Preferences"].get("profileonstartup", "True")).strip().lower() == "true"
 cm.launchonstartup = str(cm.settings_config["Preferences"].get("launchonstartup", "True")).strip().lower() == "true"
+cm.minimizeonstartup = str(cm.settings_config["Preferences"].get("minimizeonstartup", "True")).strip().lower() == "true"
 
 #Check: Do I need this after setattr?
 for key in cm.settings_config["GlobalSettings"]:
@@ -774,18 +775,12 @@ with dpg.window(label=app_title, tag="Primary Window"):
     
         with dpg.tab(label="  Preferences", tag="tab2"): 
             with dpg.child_window(height=tab_height):
-                dpg.add_checkbox(label="Show Tooltips", tag="tooltip_checkbox",
-                                 default_value=ShowTooltip, callback=tooltip_checkbox_callback)
-                #2 dpg.add_spacer(height=3)
-                with dpg.group(horizontal=True):
-                    dpg.add_checkbox(label="Reset RTSS Global Limit on Exit: ", tag="limit_on_exit_checkbox",
-                                    default_value=cm.globallimitonexit, 
-                                    callback=lambda sender, app_data, user_data: cm.update_preference_setting('globallimitonexit', sender, app_data, user_data)
-                                    ) #TODO: Find a simpler way to do this
-                    dpg.add_input_int(tag="exit_fps_input",
-                                    default_value=cm.globallimitonexit_fps, callback=cm.update_exit_fps_value,
-                                    width=100, step=1, step_fast=10)
-                
+                dpg.add_checkbox(label="Launch the app on Windows startup", tag="autostart_checkbox",
+                                 default_value=cm.launchonstartup, callback=autostart_checkbox_callback)
+                dpg.add_checkbox(label="Minimze on Launch", tag="minimizeonstartup_checkbox",
+                                 default_value=cm.minimizeonstartup, 
+                                callback=lambda sender, app_data, user_data: cm.update_preference_setting('minimizeonstartup', sender, app_data, user_data)
+                                ) #TODO: Find a simpler way to do this
                 with dpg.group(horizontal=True):
                     dpg.add_checkbox(label="Set", tag="profile_on_startup_checkbox",
                                     default_value=cm.profileonstartup, 
@@ -797,8 +792,16 @@ with dpg.window(label=app_title, tag="Primary Window"):
                     dpg.add_input_text(tag="profileonstartup_name", multiline=False, readonly=True, width=150,
                                        default_value=cm.profileonstartup_name)
                     dpg.bind_item_theme("profileonstartup_name", themes_manager.themes["transparent_input_theme_2"])
-                dpg.add_checkbox(label="Launch the app on Windows startup", tag="autostart_checkbox",
-                                 default_value=cm.launchonstartup, callback=autostart_checkbox_callback)
+                with dpg.group(horizontal=True):
+                    dpg.add_checkbox(label="Reset RTSS Global Limit on Exit: ", tag="limit_on_exit_checkbox",
+                                    default_value=cm.globallimitonexit, 
+                                    callback=lambda sender, app_data, user_data: cm.update_preference_setting('globallimitonexit', sender, app_data, user_data)
+                                    ) #TODO: Find a simpler way to do this
+                    dpg.add_input_int(tag="exit_fps_input",
+                                    default_value=cm.globallimitonexit_fps, callback=cm.update_exit_fps_value,
+                                    width=100, step=1, step_fast=10)
+                dpg.add_checkbox(label="Show Tooltips", tag="tooltip_checkbox",
+                                 default_value=ShowTooltip, callback=tooltip_checkbox_callback)
 
         with dpg.tab(label=" Log", tag="tab3"):
             with dpg.child_window(tag="LogWindow", autosize_x=True, height=tab_height, border=True):

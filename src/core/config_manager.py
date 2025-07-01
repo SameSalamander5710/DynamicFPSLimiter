@@ -52,6 +52,7 @@ class ConfigManager:
                 'globallimitonexit': 'False',
                 'profileonstartup': 'True',
                 'launchonstartup': 'False',
+                'minimizeonstartup': 'False',
             }
             self.settings_config["GlobalSettings"] = {
                 'delaybeforedecrease': '2',
@@ -121,6 +122,7 @@ class ConfigManager:
             'profileonstartup': bool,
             'profileonstartup_name': str,
             'launchonstartup': bool,
+            'minimizeonstartup': bool,
         }
 
         self.current_profile = "Global"
