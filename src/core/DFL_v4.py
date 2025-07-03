@@ -81,13 +81,6 @@ def sort_customfpslimits_callback(sender, app_data, user_data):
         # If parsing fails, do nothing or optionally reset to previous valid value
         pass
 
-last_fps_limits = []
-
-#TODO: ?
-def update_fps_cap_visualization():
-    global last_fps_limits
-    last_fps_limits = fps_utils.update_fps_cap_visualization(last_fps_limits)
-
 def tooltip_checkbox_callback(sender, app_data, user_data):
     cm.update_preference_setting('showtooltip', sender, app_data, user_data)
     update_all_tooltip_visibility(dpg, app_data, get_tooltips(), cm, logger)
@@ -459,7 +452,7 @@ def gui_update_loop():
                     dpg.set_value("warning_tooltip_text", warning_message)
 
                 # Update FPS limit visualization based on current input values
-                    update_fps_cap_visualization()
+                    fps_utils.update_fps_cap_visualization()
             except Exception as e:
                 if gui_running:  # Only log if we're still supposed to be running
                     logger.add_log(f"Error in GUI update loop: {e}")

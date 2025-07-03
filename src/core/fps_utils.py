@@ -6,6 +6,7 @@ class FPSUtils:
         self.logger = logger
         self.dpg = dpg or dpg  # fallback to global if not passed
         self.viewport_width = viewport_width
+        self.last_fps_limits = []
 
     def current_stepped_limits(self):
         maximum = int(dpg.get_value("input_maxcap"))
@@ -65,18 +66,18 @@ class FPSUtils:
         custom_limits = sorted(x for x in set(values) if x >= minimum)
         return custom_limits
 
-    def update_fps_cap_visualization(self, last_fps_limits):
+    def update_fps_cap_visualization(self):
         dpg = self.dpg
         Viewport_width = self.viewport_width
 
         fps_limits = self.current_stepped_limits()
         if not fps_limits or len(fps_limits) < 2:
-            return last_fps_limits
+            return
 
-        if fps_limits == last_fps_limits:
-            return last_fps_limits
+        if fps_limits == self.last_fps_limits:
+            return
 
-        last_fps_limits = fps_limits.copy()
+        self.last_fps_limits = fps_limits.copy()
         dpg.delete_item("Foreground")
         with dpg.draw_layer(tag="Foreground", parent="fps_cap_drawlist"):
             draw_width = Viewport_width - 67
@@ -89,20 +90,17 @@ class FPSUtils:
                 x_pos = margin + int((cap - min_fps) / fps_range * (draw_width - margin))
                 y_pos = layer2_height // 2
                 dpg.draw_circle(
-                    (x_pos, y_pos),  # Center point
-                    7,  # Radius
-                    #thickness=2,
-                    #color=(128, 128, 128),  # Border color (grey)
-                    fill=(200, 200, 200),  # Fill color (white)
+                    (x_pos, y_pos),
+                    7,
+                    fill=(200, 200, 200),
                     parent="Foreground"
                 )
                 if len(fps_limits) < 20:
-                    dpg.draw_text((x_pos - 10, y_pos + 8), 
-                                  str(cap), 
-                                  color=(200, 200, 200), 
-                                  size=16, 
+                    dpg.draw_text((x_pos - 10, y_pos + 8),
+                                  str(cap),
+                                  color=(200, 200, 200),
+                                  size=16,
                                   parent="Foreground")
-        return last_fps_limits
 
     def copy_from_plot(self):
         fps_limits = sorted(set(self.current_stepped_limits()))
