@@ -88,8 +88,8 @@ class TrayManager:
         new_x = self._drag_start_viewport_pos[0] + dx
         new_y = self._drag_start_viewport_pos[1] + dy
         
-        print(f"Mouse position: {mouse_pos_global}, Start position: {self._drag_start_mouse_pos}")
-        print(f"Dragging viewport by ({dx}, {dy}) to new position: ({new_x}, {new_y})")
+        #print(f"Mouse position: {mouse_pos_global}, Start position: {self._drag_start_mouse_pos}")
+        #print(f"Dragging viewport by ({dx}, {dy}) to new position: ({new_x}, {new_y})")
         #current_viewport_pos = dpg.get_viewport_pos()
         #if (current_viewport_pos[0] != new_x) or (current_viewport_pos[1] != new_y):
         dpg.set_viewport_pos([new_x, new_y])
@@ -99,9 +99,9 @@ class TrayManager:
             self._dragging_viewport = False
             self._drag_start_mouse_pos = None
             self._drag_start_viewport_pos = None
-            print("Mouse released, stopping viewport dragging.")
-        else:
-            print("Mouse released normally")
+            #print("Mouse released, stopping viewport dragging.")
+        #else:
+            #print("Mouse released normally")
 
     def on_mouse_click(self, sender, app_data, user_data):
         mouse_pos_global = get_mouse_screen_pos()
@@ -164,11 +164,16 @@ class TrayManager:
         )
         self.icon = Icon(self.app_name, image, self.hover_text, menu)
 
-    def update_hover_text(self, profile_name, method):
+    def update_hover_text(self):
         """
         Update the tray icon hover text with current profile, method, max FPS, and running status.
+        Currently called within cm.current_method_callback()
         """
         #status = "Running" if running else "Stopped"
+
+        profile_name = dpg.get_value("profile_dropdown")
+        method = dpg.get_value("input_capmethod")
+
         self.hover_text = (
             f"{self.app_name}\n"
             f"Profile: {profile_name}\n"
