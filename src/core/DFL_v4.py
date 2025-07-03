@@ -29,6 +29,7 @@ from core.tooltips import get_tooltips, add_tooltip, apply_all_tooltips, update_
 from core.warning import get_active_warnings
 from core.autostart import AutoStartManager
 from core.rtss_functions import RTSSController
+from core.fps_utils import FPSUtils
 from core.tray_functions import TrayManager
 
 # Always get absolute path to EXE or script location
@@ -36,6 +37,7 @@ Base_dir = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
 rtss = RTSSController(logger)
 themes_manager = ThemesManager()
 cm = ConfigManager(logger, dpg, rtss, None, themes_manager, Base_dir)
+fps_utils = FPSUtils(cm, logger)
 
 # Ensure the config folder exists in the parent directory of Base_dir
 parent_dir = os.path.dirname(Base_dir)
@@ -77,81 +79,13 @@ def sort_customfpslimits_callback(sender, app_data, user_data):
         # If parsing fails, do nothing or optionally reset to previous valid value
         pass
 
-def current_stepped_limits():
-
-    maximum = int(dpg.get_value("input_maxcap"))
-    minimum = int(dpg.get_value("input_mincap"))
-    step = int(dpg.get_value("input_capstep"))
-    ratio = int(dpg.get_value("input_capratio"))
-
-    use_custom  = dpg.get_value("input_capmethod")
-    #logger.add_log(f"Stepped limits: {make_stepped_values(maximum, minimum, step)}")
-    #logger.add_log(f"Ratio limits: {make_ratioed_values(maximum, minimum, ratio)}")
-    #logger.add_log(f"Method selection: {use_custom}")
-
-    if use_custom == "custom":
-        custom_limits = dpg.get_value("input_customfpslimits")
-        #logger.add_log(f"01 {custom_limits}")
-        if custom_limits:
-            try:
-                custom_limits = cm.parse_and_normalize_string_to_decimal_set(custom_limits)
-                return custom_limits
-            except Exception:
-                #pass  # silently ignore and fall through
-                logger.add_log("Error parsing custom FPS limits, using default stepped limits.")
-    elif use_custom == "step":
-        return make_stepped_values(maximum, minimum, step)
-    elif use_custom == "ratio":
-        return make_ratioed_values(maximum, minimum, ratio)
-    #logger.add_log(f"Default stepped limits: {maximum}, {minimum}, {step}")
-    #logger.add_log(f"Stepped limits: {make_stepped_values(maximum, minimum, step)}")
-
-def make_stepped_values(maximum, minimum, step):
-    values = list(range(maximum, minimum - 1, -step))
-    if minimum not in values:
-        values.append(minimum)
-    return sorted(set(values))
-
-def make_ratioed_values(maximum, minimum, ratio):
-    values = []
-    current = maximum
-    ratio_factor = 1 - (ratio / 100.0)
-    if ratio_factor <= 0 or ratio_factor >= 1:
-        return sorted(set([maximum, minimum]))
-    prev_diff = None
-    values.append(int(round(current)))
-
-    while current >= minimum:
-        current = current * ratio_factor
-        rounded_current = int(round(current))
-        if len(values) >= 3:
-            prev_diff = abs(values[-1] - values[-2])
-        if prev_diff is not None and abs(rounded_current - values[-1]) > prev_diff:
-            rounded_current = values[-1] - prev_diff
-
-        # Duplicate detection and correction
-        while rounded_current in values and rounded_current > minimum:
-            rounded_current -= 1
-
-        values.append(rounded_current)
-        current = rounded_current
-
-        if rounded_current <= minimum:
-            break
-    if minimum not in values:
-        values.append(minimum)
-
-    custom_limits = sorted(x for x in set(values) if x >= minimum)
-    
-    return custom_limits
-
 last_fps_limits = []
 
 def update_fps_cap_visualization():
 
     global last_fps_limits
 
-    fps_limits = current_stepped_limits()
+    fps_limits = fps_utils.current_stepped_limits()
     #logger.add_log(f"FPS limits: {fps_limits}")
 
     # Exit early if fps_limits is empty or has fewer than 2 values
@@ -209,7 +143,7 @@ def update_fps_cap_visualization():
 
 def copy_from_plot_callback():
     
-    fps_limits = sorted(set(current_stepped_limits()))
+    fps_limits = sorted(set(fps_utils.current_stepped_limits()))
     fps_limits_str = ", ".join(str(int(round(x))) for x in fps_limits)
     dpg.set_value("input_customfpslimits", fps_limits_str)
 
@@ -286,10 +220,10 @@ def start_stop_callback(sender, app_data, user_data):
         CurrentFPSOffset = 0
         
         logger.add_log("Monitoring stopped")
-    logger.add_log(f"Custom FPS limits: {cm.parse_decimal_set_to_string(current_stepped_limits())}")
+    logger.add_log(f"Custom FPS limits: {cm.parse_decimal_set_to_string(fps_utils.current_stepped_limits())}")
 
-    rtss.set_fractional_fps_direct(cm.current_profile, Decimal(max(current_stepped_limits())))
-    rtss.set_fractional_framerate(cm.current_profile, Decimal(max(current_stepped_limits()))) #To update GUI
+    rtss.set_fractional_fps_direct(cm.current_profile, Decimal(max(fps_utils.current_stepped_limits())))
+    rtss.set_fractional_framerate(cm.current_profile, Decimal(max(fps_utils.current_stepped_limits()))) #To update GUI
 
 def reset_stats():
     
@@ -339,7 +273,7 @@ def update_plot_FPS(fps_val, cap_val):
     dpg.set_value("fps_series", [fps_time_series, fps_series])
     dpg.set_value("cap_series", [fps_time_series, cap_series])  
 
-    fps_limit_list = current_stepped_limits()
+    fps_limit_list = fps_utils.current_stepped_limits()
 
     current_mincap = min(fps_limit_list)
     current_maxcap = max(fps_limit_list)
@@ -420,7 +354,7 @@ def monitoring_loop():
     
     gpu_monitor.reinitialize()
 
-    fps_limit_list = current_stepped_limits()
+    fps_limit_list = fps_utils.current_stepped_limits()
 
     current_mincap = min(fps_limit_list)
     current_maxcap = max(fps_limit_list)
@@ -580,8 +514,8 @@ def gui_update_loop():
     while gui_running:  # Changed from True to gui_running
         if not running:
             try:
-                if current_stepped_limits():
-                    warnings = get_active_warnings(dpg, cm, rtss_manager, int(min(current_stepped_limits())))
+                if fps_utils.current_stepped_limits():
+                    warnings = get_active_warnings(dpg, cm, rtss_manager, int(min(fps_utils.current_stepped_limits())))
                     warning_visible = bool(warnings)
                     warning_message = "\n".join(warnings)
 
@@ -620,7 +554,8 @@ tray = TrayManager(
     viewport_width=Viewport_width,
     hover_text=app_title,
     start_stop_callback=start_stop_callback,  # Pass the callback
-    user_data=cm  # Pass user_data for start_stop_callback
+    user_data=cm,  # Pass user_data for start_stop_callback
+    fps_utils=fps_utils
 )
 
 cm.tray = tray  # Set tray manager in ConfigManager

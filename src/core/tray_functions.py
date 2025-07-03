@@ -55,7 +55,7 @@ def is_left_mouse_button_down():
     return (ctypes.windll.user32.GetAsyncKeyState(VK_LBUTTON) & 0x8000) != 0
 
 class TrayManager:
-    def __init__(self, app_name, icon_path, on_restore, on_exit, viewport_width, hover_text=None, start_stop_callback=None, user_data=None):
+    def __init__(self, app_name, icon_path, on_restore, on_exit, viewport_width, hover_text=None, start_stop_callback=None, user_data=None, fps_utils=None):
         self.app_name = app_name
         self.icon_path = icon_path
         self.on_restore = on_restore
@@ -71,6 +71,7 @@ class TrayManager:
         self.start_stop_callback = start_stop_callback
         self.user_data = user_data
         self.running = False  # Track running state for menu
+        self.fps_utils = fps_utils
 
     def drag_viewport(self, sender, app_data, user_data):
         if not self._dragging_viewport or not is_left_mouse_button_down():
@@ -170,7 +171,7 @@ class TrayManager:
         """
         Update the tray icon hover text with current profile, method, max FPS, and running status.
         Currently called within:
-        1) cm.current_method_callback()
+        1) cm.current_method_callback(), since its called when loading profile and changing method
         2) _toggle_start_stop
         3) _create_icon
         """
@@ -178,13 +179,13 @@ class TrayManager:
 
         profile_name = dpg.get_value("profile_dropdown")
         method = dpg.get_value("input_capmethod")
-        max_fps = max(current_stepped_limits()) #TODO: make new module for fps calculation related functions
-
+        max_fps = max(self.fps_utils.current_stepped_limits()) if self.fps_utils else "?"
+        
         self.hover_text = (
             f"{self.app_name}\n"
             f"Profile: {profile_name}\n"
-            f"Method: {method}, Max FPS: {max_fps}\n"
-            #f"Max FPS: {max_fps}\n"
+            f"Method: {method}\n"
+            f"Max FPS: {max_fps}\n"
             f"{status}"
         )
         if self.icon:
