@@ -178,11 +178,12 @@ class TrayManager:
 
         profile_name = dpg.get_value("profile_dropdown")
         method = dpg.get_value("input_capmethod")
+        max_fps = max(current_stepped_limits()) #TODO: make new module for fps calculation related functions
 
         self.hover_text = (
             f"{self.app_name}\n"
             f"Profile: {profile_name}\n"
-            f"Method: {method}\n"
+            f"Method: {method}, Max FPS: {max_fps}\n"
             #f"Max FPS: {max_fps}\n"
             f"{status}"
         )
