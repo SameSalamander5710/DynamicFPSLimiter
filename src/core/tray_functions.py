@@ -125,6 +125,7 @@ class TrayManager:
             #self.running = not self.running
             # Update menu label
             self._update_menu()
+            self.update_hover_text()
 
     def _update_menu(self):
         # Rebuild the menu with updated Start/Stop label
@@ -147,6 +148,7 @@ class TrayManager:
         self._update_icon_image()
 
     def _create_icon(self):
+        self.update_hover_text()
         icon_file = self.icon_path
         if self.running:
             icon_file = self.icon_path.replace(".ico", "_red.ico")
@@ -167,9 +169,12 @@ class TrayManager:
     def update_hover_text(self):
         """
         Update the tray icon hover text with current profile, method, max FPS, and running status.
-        Currently called within cm.current_method_callback()
+        Currently called within:
+        1) cm.current_method_callback()
+        2) _toggle_start_stop
+        3) _create_icon
         """
-        #status = "Running" if running else "Stopped"
+        status = "Click to Start" if not self.running else "Click to Stop"
 
         profile_name = dpg.get_value("profile_dropdown")
         method = dpg.get_value("input_capmethod")
@@ -177,9 +182,9 @@ class TrayManager:
         self.hover_text = (
             f"{self.app_name}\n"
             f"Profile: {profile_name}\n"
-            f"Method: {method}"
+            f"Method: {method}\n"
             #f"Max FPS: {max_fps}\n"
-            #f"Status: {status}"
+            f"{status}"
         )
         if self.icon:
             self.icon.title = self.hover_text
