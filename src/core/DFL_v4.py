@@ -32,12 +32,16 @@ from core.rtss_functions import RTSSController
 from core.fps_utils import FPSUtils
 from core.tray_functions import TrayManager
 
+# Default viewport size
+Viewport_width = 610
+Viewport_height = 700
+
 # Always get absolute path to EXE or script location
 Base_dir = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
 rtss = RTSSController(logger)
 themes_manager = ThemesManager()
 cm = ConfigManager(logger, dpg, rtss, None, themes_manager, Base_dir)
-fps_utils = FPSUtils(cm, logger)
+fps_utils = FPSUtils(cm, logger, dpg, Viewport_width)
 
 # Ensure the config folder exists in the parent directory of Base_dir
 parent_dir = os.path.dirname(Base_dir)
@@ -50,9 +54,7 @@ bold_font_path = os.path.join(os.environ["WINDIR"], "Fonts", "segoeuib.ttf")
 faq_path = os.path.join(Base_dir, "assets/faqs.csv")
 
 app_title = "Dynamic FPS Limiter"
-# Default viewport size
-Viewport_width = 610
-Viewport_height = 700
+
 
 logger.init_logging(error_log_file)
 rtss_manager = None
@@ -81,71 +83,10 @@ def sort_customfpslimits_callback(sender, app_data, user_data):
 
 last_fps_limits = []
 
+#TODO: ?
 def update_fps_cap_visualization():
-
     global last_fps_limits
-
-    fps_limits = fps_utils.current_stepped_limits()
-    #logger.add_log(f"FPS limits: {fps_limits}")
-
-    # Exit early if fps_limits is empty or has fewer than 2 values
-    if not fps_limits or len(fps_limits) < 2:
-        return
-
-    # Check if fps_limits has changed
-    if fps_limits == last_fps_limits:
-        return  # Exit if no change
-
-    # Store new fps_limits for next comparison
-    last_fps_limits = fps_limits.copy()
-
-    # Clear existing items in drawlist
-    dpg.delete_item("Foreground")
-    
-    with dpg.draw_layer(tag="Foreground", parent="fps_cap_drawlist"):
-        # Get current FPS limits
-        
-        if fps_limits:
-            draw_width = Viewport_width - 67  # Width of drawlist
-            layer2_height = 30  # Height of drawlist
-            margin = 10  # Margin around drawlist
-            
-            # Calculate min and max for scaling
-            min_fps = min(fps_limits)
-            max_fps = max(fps_limits)
-            fps_range = max_fps - min_fps
-            
-            # Draw rectangles for each FPS limit
-            for cap in fps_limits:
-                # Map the FPS cap value to the drawlist width
-                x_pos = margin + int((cap - min_fps) / fps_range * (draw_width - margin))
-                y_pos = layer2_height // 2
-                
-                # Draw FPS marker
-                dpg.draw_circle(
-                    (x_pos, y_pos),  # Center point
-                    7,  # Radius
-                    #thickness=2,
-                    #color=(128, 128, 128),  # Border color (grey)
-                    fill=(200, 200, 200),  # Fill color (white)
-                    parent="Foreground"
-                )
-                
-                if len(fps_limits) < 20:
-                    # Add FPS value text above rectangle
-                    dpg.draw_text(
-                        (x_pos - 10, y_pos + 8),
-                        str(cap),
-                        color=(200, 200, 200),
-                        size=16,
-                        parent="Foreground"
-                    )
-
-def copy_from_plot_callback():
-    
-    fps_limits = sorted(set(fps_utils.current_stepped_limits()))
-    fps_limits_str = ", ".join(str(int(round(x))) for x in fps_limits)
-    dpg.set_value("input_customfpslimits", fps_limits_str)
+    last_fps_limits = fps_utils.update_fps_cap_visualization(last_fps_limits)
 
 def tooltip_checkbox_callback(sender, app_data, user_data):
     cm.update_preference_setting('showtooltip', sender, app_data, user_data)
@@ -239,12 +180,6 @@ def reset_stats():
     cap_series.clear()
     global elapsed_time
     elapsed_time = 0
-
-def reset_customFPSLimits():
-
-    lowerlimit = dpg.get_value(f"input_mincap")
-    upperlimit = dpg.get_value(f"input_maxcap")
-    dpg.set_value("input_customfpslimits", f"{lowerlimit}, {upperlimit}")
 
 time_series = []
 fps_time_series = []
@@ -794,8 +729,8 @@ with dpg.window(label=app_title, tag="Primary Window"):
                 #pos=(10, 140),  # Center the input horizontally
                 callback=sort_customfpslimits_callback,
                 on_enter=True)
-            dpg.add_button(label="Reset", tag="rest_fps_cap_button", width=80, callback=reset_customFPSLimits)
-            dpg.add_button(label="Copy from above", tag="autofill_fps_caps", width=120, callback=copy_from_plot_callback)
+            dpg.add_button(label="Reset", tag="rest_fps_cap_button", width=80, callback=fps_utils.reset_custom_limits)
+            dpg.add_button(label="Copy from above", tag="autofill_fps_caps", width=120, callback=fps_utils.copy_from_plot)
 
     # Fourth Row: Plot Section
     #dpg.add_spacer(height=5)
