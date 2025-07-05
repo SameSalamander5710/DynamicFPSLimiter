@@ -55,12 +55,13 @@ def is_left_mouse_button_down():
     return (ctypes.windll.user32.GetAsyncKeyState(VK_LBUTTON) & 0x8000) != 0
 
 class TrayManager:
-    def __init__(self, app_name, icon_path, on_restore, on_exit, viewport_width, hover_text=None, start_stop_callback=None, user_data=None, fps_utils=None):
+    def __init__(self, app_name, icon_path, on_restore, on_exit, viewport_width, config_manager_instance, hover_text=None, start_stop_callback=None, fps_utils=None):
         self.app_name = app_name
         self.icon_path = icon_path
         self.on_restore = on_restore
         self.on_exit = on_exit
         self.viewport_width = viewport_width
+        self.cm = config_manager_instance
         self.hover_text = hover_text or app_name
         self.icon = None
         self.tray_thread = None
@@ -69,7 +70,6 @@ class TrayManager:
         self._drag_start_mouse_pos = None
         self._drag_start_viewport_pos = None
         self.start_stop_callback = start_stop_callback
-        self.user_data = user_data
         self.running = False  # Track running state for menu
         self.fps_utils = fps_utils
 
@@ -122,21 +122,28 @@ class TrayManager:
     def _toggle_start_stop(self, icon, item):
         # Toggle running state and update menu label
         if self.start_stop_callback:
-            self.start_stop_callback(None, None, self.user_data)
+            self.start_stop_callback(None, None, self.cm)
             #self.running = not self.running
             # Update menu label
             self._update_menu()
             self.update_hover_text()
 
     def _update_menu(self):
-        # Rebuild the menu with updated Start/Stop label
         if self.icon:
             menu = Menu(
                 MenuItem("Restore", self._restore_window),
                 MenuItem(
                     "Start" if not self.running else "Stop",
                     self._toggle_start_stop,
-                    default=True  # <-- This makes it the default (left-click) action
+                    default=True
+                ),
+                MenuItem(
+                    "Profiles",
+                    Menu(*self._profile_menu_items())
+                ),
+                MenuItem(
+                    "Method",
+                    Menu(*list(self._method_menu_items()))
                 ),
                 MenuItem("Exit", self._exit_app)
             )
@@ -147,6 +154,48 @@ class TrayManager:
         self.running = running
         self._update_menu()
         self._update_icon_image()
+
+    def _profile_menu_items(self):
+        """Return a list of MenuItems for each profile."""
+        profiles = []
+        if hasattr(self.cm, "profiles_config"):
+            for profile in self.cm.profiles_config.sections():
+                profiles.append(MenuItem(
+                    profile,
+                    lambda icon, item, p=profile: self._select_profile_from_tray(p),
+                    checked=(self.cm.current_profile == profile)
+                ))
+        return profiles
+    
+    def _method_menu_items(self):
+        """Return a list of MenuItems for each method."""
+        methods = ["ratio", "step", "custom"]
+        current_method = None
+        if hasattr(self.cm, "dpg"):
+            try:
+                current_method = self.cm.dpg.get_value("input_capmethod")
+            except Exception:
+                pass
+        for m in methods:
+            yield MenuItem(
+                m.capitalize(),
+                lambda icon, item, method=m: self._select_method_from_tray(method),
+                checked=(current_method == m)
+            )
+
+    def _select_profile_from_tray(self, profile_name):
+        """Callback for selecting a profile from the tray menu."""
+        if hasattr(self.cm, "load_profile_callback"):
+            self.cm.load_profile_callback(None, profile_name, None)
+            self._update_menu()
+            self.update_hover_text()
+
+    def _select_method_from_tray(self, method):
+        """Callback for selecting a method from the tray menu."""
+        if hasattr(self.cm, "current_method_callback"):
+            self.cm.current_method_callback(None, method, None)
+            self._update_menu()
+            self.update_hover_text()
 
     def _create_icon(self):
         self.update_hover_text()
@@ -161,7 +210,15 @@ class TrayManager:
             MenuItem(
                 "Start" if not self.running else "Stop",
                 self._toggle_start_stop,
-                default=True  # <-- This makes it the default (left-click) action
+                default=True
+            ),
+            MenuItem(
+                "Profiles",
+                Menu(*self._profile_menu_items())
+            ),
+            MenuItem(
+                "Method",
+                Menu(*list(self._method_menu_items()))
             ),
             MenuItem("Exit", self._exit_app)
         )

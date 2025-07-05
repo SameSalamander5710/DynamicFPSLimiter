@@ -461,9 +461,9 @@ tray = TrayManager(
     on_restore=lambda: tray.restore_from_tray(),
     on_exit=exit_gui,
     viewport_width=Viewport_width,
+    config_manager_instance=cm,  # Pass ConfigManager instance
     hover_text=app_title,
     start_stop_callback=start_stop_callback,  # Pass the callback
-    user_data=cm,  # Pass user_data for start_stop_callback
     fps_utils=fps_utils
 )
 
