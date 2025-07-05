@@ -69,18 +69,6 @@ with open(faq_path, newline='', encoding='utf-8') as csvfile:
         questions.append(row["question"])
         FAQs[key] = row["answer"]
 
-def sort_customfpslimits_callback(sender, app_data, user_data):
-    value = dpg.get_value("input_customfpslimits")
-    try:
-        # Use the new helper function to parse and sort
-        sorted_limits = cm.parse_and_normalize_string_to_decimal_set(value)
-        # Convert back to string, preserving user formatting if needed
-        sorted_str = ", ".join(str(x) for x in sorted_limits)
-        dpg.set_value("input_customfpslimits", sorted_str)
-    except Exception:
-        # If parsing fails, do nothing or optionally reset to previous valid value
-        pass
-
 def tooltip_checkbox_callback(sender, app_data, user_data):
     cm.update_preference_setting('showtooltip', sender, app_data, user_data)
     update_all_tooltip_visibility(dpg, app_data, get_tooltips(), cm, logger)
@@ -93,13 +81,6 @@ def autostart_checkbox_callback(sender, app_data, user_data):
         autostart.create() 
     else:
         autostart.delete() 
-
-#Check: Do I need this after setattr?
-for key in cm.settings_config["GlobalSettings"]:
-    value_type = cm.key_type_map.get(key, str)
-    value = cm.get_setting(key, value_type)
-    if value is not None:
-        globals()[key] = value
 
 running = False  # Flag to control the monitoring loop
 
@@ -720,7 +701,7 @@ with dpg.window(label=app_title, tag="Primary Window"):
                 default_value=cm.settings["customfpslimits"],
                 width=draw_width - 215,
                 #pos=(10, 140),  # Center the input horizontally
-                callback=sort_customfpslimits_callback,
+                callback=cm.sort_customfpslimits_callback,
                 on_enter=True)
             dpg.add_button(label="Reset", tag="rest_fps_cap_button", width=80, callback=fps_utils.reset_custom_limits)
             dpg.add_button(label="Copy from above", tag="autofill_fps_caps", width=120, callback=fps_utils.copy_from_plot)

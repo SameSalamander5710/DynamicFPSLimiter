@@ -181,6 +181,15 @@ class ConfigManager:
         original_string = ', '.join(str(d) for d in decimal_set)
         return  original_string
 
+    def sort_customfpslimits_callback(self, sender, app_data, user_data):
+        value = self.dpg.get_value("input_customfpslimits")
+        try:
+            sorted_limits = self.parse_and_normalize_string_to_decimal_set(value)
+            sorted_str = ", ".join(str(x) for x in sorted_limits)
+            self.dpg.set_value("input_customfpslimits", sorted_str)
+        except Exception:
+            pass
+
     # Function to get values with correct types
     def get_setting(self, key, value_type=None):
         """Get setting from appropriate config section based on key type."""
@@ -390,8 +399,6 @@ class ConfigManager:
             # self.tray.update_hover_text(self.tray.app_name, profile_name, method, self.tray.running)
 
         self.logger.add_log(f"Method selection changed: {method}")
-
-#TODO: Refactor this to use a more generic method for updating preference settings
 
     def update_preference_setting(self, key, sender, app_data, user_data):
         """
