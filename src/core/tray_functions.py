@@ -156,31 +156,28 @@ class TrayManager:
         self._update_icon_image()
 
     def _profile_menu_items(self):
-        """Return a list of MenuItems for each profile."""
+        """Return a list of MenuItems for each profile (no checkmarks)."""
         profiles = []
         if hasattr(self.cm, "profiles_config"):
             for profile in self.cm.profiles_config.sections():
+                # Use a lambda factory to bind profile
+                def make_callback(profile_name):
+                    return lambda icon, item: self._select_profile_from_tray(profile_name)
                 profiles.append(MenuItem(
                     profile,
-                    lambda icon, item, p=profile: self._select_profile_from_tray(p),
-                    checked=(self.cm.current_profile == profile)
+                    make_callback(profile)
                 ))
         return profiles
-    
+
     def _method_menu_items(self):
-        """Return a list of MenuItems for each method."""
+        """Return a list of MenuItems for each method (no checkmarks)."""
         methods = ["ratio", "step", "custom"]
-        current_method = None
-        if hasattr(self.cm, "dpg"):
-            try:
-                current_method = self.cm.dpg.get_value("input_capmethod")
-            except Exception:
-                pass
         for m in methods:
+            def make_callback(method_name):
+                return lambda icon, item: self._select_method_from_tray(method_name)
             yield MenuItem(
                 m.capitalize(),
-                lambda icon, item, method=m: self._select_method_from_tray(method),
-                checked=(current_method == m)
+                make_callback(m)
             )
 
     def _select_profile_from_tray(self, profile_name):
