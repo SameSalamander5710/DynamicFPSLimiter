@@ -160,9 +160,11 @@ class TrayManager:
         profiles = []
         if hasattr(self.cm, "profiles_config"):
             for profile in self.cm.profiles_config.sections():
-                # Use a lambda factory to bind profile
                 def make_callback(profile_name):
-                    return lambda icon, item: self._select_profile_from_tray(profile_name)
+                    return lambda icon, item: (
+                        dpg.set_value("profile_dropdown", profile_name),
+                        self._select_profile_from_tray(profile_name)
+                    )
                 profiles.append(MenuItem(
                     profile,
                     make_callback(profile)
