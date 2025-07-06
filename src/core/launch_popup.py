@@ -14,6 +14,26 @@ if _src_dir not in sys.path:
 from core.themes import ThemesManager
 from core.tray_functions import TrayManager
 
+def get_centered_viewport_position(viewport_width, viewport_height):
+    """
+    Calculate the center position for a viewport based on screen dimensions.
+    
+    Args:
+        viewport_width (int): Width of the viewport
+        viewport_height (int): Height of the viewport
+    
+    Returns:
+        tuple: (x_pos, y_pos) coordinates for centering the viewport
+    """
+    user32 = ctypes.windll.user32
+    screen_width = user32.GetSystemMetrics(0)
+    screen_height = user32.GetSystemMetrics(1)
+    
+    x_pos = (screen_width - viewport_width) // 2
+    y_pos = (screen_height - viewport_height) // 2
+    
+    return x_pos, y_pos
+
 class PopupDragHandler:
     """Simple drag handler that uses TrayManager's drag functionality for popups."""
     def __init__(self, viewport_width=420):
@@ -61,7 +81,7 @@ def show_missing_rtss_popup(message="Could not find RTSSHooks64.dll. Please ensu
         if themes_manager:
             themes_manager.bind_font_to_item(notice_text, "bold_font")
             
-        dpg.add_text("Please ensure that the DynamicFPSLimiter app is downloaded from:", wrap=400)
+        dpg.add_text("Please also ensure that the DynamicFPSLimiter app is downloaded from:", wrap=400)
         dpg.add_spacer(height=5)
         dpg.add_input_text(tag="notice_link", multiline=False, readonly=True, width=400)
         dpg.set_value("notice_link", "https://github.com/SameSalamander5710/DynamicFPSLimiter")
@@ -116,7 +136,13 @@ def show_rtss_error_and_exit(rtss_path):
     # Apply the main theme to the popup
     dpg.bind_theme(themes_manager.themes["main_theme"])
     
-    dpg.create_viewport(title="Dynamic FPS Limiter - Error", width=420, height=320, resizable=False, decorated=False)
+    # Calculate center position for the viewport
+    viewport_width = 420
+    viewport_height = 320
+    x_pos, y_pos = get_centered_viewport_position(viewport_width, viewport_height)
+    
+    dpg.create_viewport(title="Dynamic FPS Limiter - Error", width=viewport_width, height=viewport_height, 
+                       resizable=False, decorated=False, x_pos=x_pos, y_pos=y_pos)
     dpg.setup_dearpygui()
     dpg.show_viewport()
     dpg.set_primary_window("Primary Window", True)
@@ -146,7 +172,13 @@ if __name__ == "__main__":
     # Apply theme
     dpg.bind_theme(themes_manager.themes["main_theme"])
     
-    dpg.create_viewport(title="Dynamic FPS Limiter - Error", width=420, height=320, resizable=False, decorated=False)
+    # Calculate center position for the viewport
+    viewport_width = 420
+    viewport_height = 320
+    x_pos, y_pos = get_centered_viewport_position(viewport_width, viewport_height)
+    
+    dpg.create_viewport(title="Dynamic FPS Limiter - Error", width=viewport_width, height=viewport_height, 
+                       resizable=False, decorated=False, x_pos=x_pos, y_pos=y_pos)
     dpg.setup_dearpygui()
     dpg.show_viewport()
     dpg.set_primary_window("Primary Window", True)
