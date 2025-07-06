@@ -139,11 +139,13 @@ class TrayManager:
                 ),
                 MenuItem(
                     "Profiles",
-                    Menu(*self._profile_menu_items())
+                    Menu(*self._profile_menu_items()),
+                    enabled=not self.running  # Disable if running
                 ),
                 MenuItem(
                     "Method",
-                    Menu(*list(self._method_menu_items()))
+                    Menu(*list(self._method_menu_items())),
+                    enabled=not self.running  # Disable if running
                 ),
                 MenuItem("Exit", self._exit_app)
             )
@@ -216,11 +218,13 @@ class TrayManager:
             ),
             MenuItem(
                 "Profiles",
-                Menu(*self._profile_menu_items())
+                Menu(*self._profile_menu_items()),
+                enabled=not self.running  # Disable if running
             ),
             MenuItem(
                 "Method",
-                Menu(*list(self._method_menu_items()))
+                Menu(*list(self._method_menu_items())),
+                enabled=not self.running  # Disable if running
             ),
             MenuItem("Exit", self._exit_app)
         )
