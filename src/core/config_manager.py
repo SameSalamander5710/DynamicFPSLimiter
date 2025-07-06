@@ -4,10 +4,11 @@ import dearpygui.dearpygui as dpg
 from decimal import Decimal, InvalidOperation
 
 class ConfigManager:
-    def __init__(self, logger_instance, dpg_instance, rtss_instance, themes_manager, base_dir):
+    def __init__(self, logger_instance, dpg_instance, rtss_instance, tray_instance, themes_manager, base_dir):
         self.logger = logger_instance
         self.dpg = dpg_instance
         self.rtss = rtss_instance
+        self.tray = tray_instance
         self.themes = themes_manager.themes
         self.config_dir = os.path.join(os.path.dirname(base_dir), "config")
         os.makedirs(self.config_dir, exist_ok=True)
@@ -40,7 +41,7 @@ class ConfigManager:
         self.settings_config = configparser.ConfigParser()
         self.profiles_config = configparser.ConfigParser()
         self.load_or_init_configs()
-
+        self.load_preferences()
 
     def load_or_init_configs(self):
         # Settings
@@ -48,10 +49,11 @@ class ConfigManager:
             self.settings_config.read(self.settings_path)
         else:
             self.settings_config["Preferences"] = {
-                'ShowTooltip': 'True',
+                'showtooltip': 'True',
                 'globallimitonexit': 'False',
                 'profileonstartup': 'True',
                 'launchonstartup': 'False',
+                'minimizeonstartup': 'False',
             }
             self.settings_config["GlobalSettings"] = {
                 'delaybeforedecrease': '2',
@@ -116,11 +118,12 @@ class ConfigManager:
             "gpupercentile": int,
             "gpupollinginterval": int,
             "gpupollingsamples": int,
-            'ShowTooltip': bool,
+            'showtooltip': bool,
             'globallimitonexit': bool,
             'profileonstartup': bool,
             'profileonstartup_name': str,
             'launchonstartup': bool,
+            'minimizeonstartup': bool,
         }
 
         self.current_profile = "Global"
@@ -129,6 +132,16 @@ class ConfigManager:
             for key in self.Default_settings_original
         }
         self.settings = self.Default_settings.copy()
+
+    def load_preferences(self):
+        for key in self.settings_config["Preferences"]:
+            value = self.settings_config["Preferences"][key]
+            value_type = self.key_type_map.get(key, str)
+            if value_type is bool:
+                value = str(value).strip().lower() == "true"
+            else:
+                value = value_type(value)
+            setattr(self, key, value)
 
     def parse_input_value(self, key, value):
         value_type = self.key_type_map.get(key, int)
@@ -167,6 +180,15 @@ class ConfigManager:
     def parse_decimal_set_to_string(self, decimal_set):
         original_string = ', '.join(str(d) for d in decimal_set)
         return  original_string
+
+    def sort_customfpslimits_callback(self, sender, app_data, user_data):
+        value = self.dpg.get_value("input_customfpslimits")
+        try:
+            sorted_limits = self.parse_and_normalize_string_to_decimal_set(value)
+            sorted_str = ", ".join(str(x) for x in sorted_limits)
+            self.dpg.set_value("input_customfpslimits", sorted_str)
+        except Exception:
+            pass
 
     # Function to get values with correct types
     def get_setting(self, key, value_type=None):
@@ -242,6 +264,8 @@ class ConfigManager:
             dpg.set_value(f"input_{key}", parsed_value)
         self.update_global_variables()
         dpg.set_value("new_profile_input", "")
+        dpg.set_value("game_name", profile_name)
+        #dpg.configure_item("game_name", label=profile_name)
         self.current_method_callback()  # Update method-specific UI elements
 
     def save_profile(self, profile_name):
@@ -343,44 +367,6 @@ class ConfigManager:
         self.current_method_callback()  # Update method-specific UI elements
         self.logger.add_log("Settings reset to program default")
 
-    def update_limit_on_exit_setting(self, sender, app_data, user_data):
-
-        self.globallimitonexit = app_data
-        self.settings_config["Preferences"]["globallimitonexit"] = str(app_data)
-        with open(self.settings_path, 'w') as f:
-            self.settings_config.write(f)
-        self.logger.add_log(f"Global Limit on Exit set to: {self.globallimitonexit}")
-
-    def update_exit_fps_value(self, sender, app_data, user_data):
-
-        new_value = app_data
-
-        if isinstance(new_value, int) and new_value > 0:
-            self.globallimitonexit_fps = new_value
-            self.settings_config["GlobalSettings"]["globallimitonexit_fps"] = str(new_value)
-            with open(self.settings_path, 'w') as f:
-                self.settings_config.write(f)
-            self.logger.add_log(f"Global Limit on Exit FPS value set to: {self.globallimitonexit_fps}")
-        else:
-            self.logger.add_log(f"Invalid value entered for Global Limit on Exit FPS: {app_data}. Reverting.")
-            dpg.set_value(sender, self.globallimitonexit_fps)
-
-    def update_profile_on_startup_setting(self, sender, app_data, user_data):
-        self.profileonstartup = app_data
-        self.settings_config["Preferences"]["profileonstartup"] = str(app_data)
-        with open(self.settings_path, 'w') as f:
-            self.settings_config.write(f)
-        self.logger.add_log(f"Profile on Startup set to: {self.profileonstartup}")
-
-    def select_default_profile_callback(self, sender, app_data, user_data):
-
-        current_profile = dpg.get_value("profile_dropdown")
-        dpg.set_value("profileonstartup_name", current_profile)
-        self.settings_config["GlobalSettings"]["profileonstartup_name"] = current_profile
-        with open(self.settings_path, 'w') as f:
-            self.settings_config.write(f)
-        self.logger.add_log(f"Profile on Startup set to: {self.profileonstartup_name}")
-
     def startup_profile_selection(self):
 
         profile_name = self.settings_config["GlobalSettings"].get("profileonstartup_name", "Global")
@@ -407,12 +393,48 @@ class ConfigManager:
         dpg.bind_item_theme("input_maxcap", self.themes["disabled_text_theme"] if method == "custom" else self.themes["enabled_text_theme"])
         dpg.bind_item_theme("input_mincap", self.themes["disabled_text_theme"] if method == "custom" else self.themes["enabled_text_theme"])
 
+        if self.tray:
+            self.tray.update_hover_text() #Add  max_fps if easy
+            
+            # self.tray.update_hover_text(self.tray.app_name, profile_name, method, self.tray.running)
+
         self.logger.add_log(f"Method selection changed: {method}")
 
-#TODO: Refactor this to use a more generic method for updating preference settings
-    def update_launch_on_startup_setting(self, sender, app_data, user_data):
-        self.launchonstartup = app_data
-        self.settings_config["Preferences"]["launchonstartup"] = str(app_data)
+    def update_preference_setting(self, key, sender, app_data, user_data):
+        """
+        Generic method to update a boolean preference setting.
+        key: The attribute and config key to update (e.g., 'launchonstartup').
+        """
+        setattr(self, key, app_data)
+        self.settings_config["Preferences"][key] = str(app_data)
         with open(self.settings_path, 'w') as f:
             self.settings_config.write(f)
-        self.logger.add_log(f"Launch on Startup set to: {self.launchonstartup}")
+        self.logger.add_log(f"{key.replace('_', ' ').title()} set to: {getattr(self, key)}")
+
+    def make_update_preference_callback(self, key):
+        def callback(sender, app_data, user_data):
+            self.update_preference_setting(key, sender, app_data, user_data)
+        return callback
+
+    def update_exit_fps_value(self, sender, app_data, user_data):
+
+        new_value = app_data
+
+        if isinstance(new_value, int) and new_value > 0:
+            self.globallimitonexit_fps = new_value
+            self.settings_config["GlobalSettings"]["globallimitonexit_fps"] = str(new_value)
+            with open(self.settings_path, 'w') as f:
+                self.settings_config.write(f)
+            self.logger.add_log(f"Global Limit on Exit FPS value set to: {self.globallimitonexit_fps}")
+        else:
+            self.logger.add_log(f"Invalid value entered for Global Limit on Exit FPS: {app_data}. Reverting.")
+            dpg.set_value(sender, self.globallimitonexit_fps)
+
+    def select_default_profile_callback(self, sender, app_data, user_data):
+
+        current_profile = dpg.get_value("profile_dropdown")
+        dpg.set_value("profileonstartup_name", current_profile)
+        self.settings_config["GlobalSettings"]["profileonstartup_name"] = current_profile
+        with open(self.settings_path, 'w') as f:
+            self.settings_config.write(f)
+        self.logger.add_log(f"Profile on Startup set to: {self.profileonstartup_name}")

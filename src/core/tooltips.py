@@ -54,13 +54,10 @@ def apply_all_tooltips(dpg, tooltips, ShowTooltip, cm, logger):
         except Exception as e:
             logger.add_log(f"Failed to add tooltip for {key}: {e}")
 
-def update_tooltip_setting(dpg, sender, app_data, user_data, tooltips, cm, logger):
-    ShowTooltip = app_data
-    cm.settings_config["Preferences"]["ShowTooltip"] = str(app_data)
-    with open(cm.settings_path, 'w') as f:
-        cm.settings_config.write(f)
-    logger.add_log(f"Tooltip visibility set to: {ShowTooltip}")
-
+def update_all_tooltip_visibility(dpg, ShowTooltip, tooltips, cm, logger):
+    """
+    Updates the visibility of all tooltips based on ShowTooltip value.
+    """
     for key in tooltips.keys():
         parent_tag = f"input_{key}" if key in cm.input_field_keys else key
         tooltip_specific_tag = f"{parent_tag}_tooltip"
@@ -70,4 +67,3 @@ def update_tooltip_setting(dpg, sender, app_data, user_data, tooltips, cm, logge
                 dpg.configure_item(tooltip_specific_tag, show=ShowTooltip)
             except SystemError as e:
                 logger.add_log(f"Minor issue configuring tooltip '{tooltip_specific_tag}' for key '{key}': {e}")
-

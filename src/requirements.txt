@@ -1,4 +1,4 @@
 dearpygui==2.0.0
 psutil==7.0.0
 pyinstaller==6.13.0
-pywinstyles==1.8
+pystray==0.19.5

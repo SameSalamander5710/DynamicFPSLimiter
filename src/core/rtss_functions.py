@@ -2,6 +2,7 @@ import ctypes
 import os
 import winreg
 from decimal import Decimal, InvalidOperation
+from core.launch_popup import show_rtss_error_and_exit
 
 class RTSSController:
     RTSSHOOKSFLAG_LIMITER_DISABLED = 4
@@ -9,8 +10,11 @@ class RTSSController:
     def __init__(self, logger_instance):
         self.rtss_install_path = self.get_rtss_install_path()
         self.rtss_path = os.path.join(self.rtss_install_path, "RTSSHooks64.dll")
-        self.dll = ctypes.WinDLL(self.rtss_path)
         self.logger = logger_instance
+        try:
+            self.dll = ctypes.WinDLL(self.rtss_path)
+        except OSError as e:
+            show_rtss_error_and_exit(self.rtss_path)
         self._setup_functions()
 
     def _setup_functions(self):

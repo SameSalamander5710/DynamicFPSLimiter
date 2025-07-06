@@ -1,6 +1,6 @@
-# Dynamic FPS Limiter v4.2
+# Dynamic FPS Limiter v4.3
 
-A lightweight companion app for RTSS that dynamically adjusts framerate limits based on real-time GPU and CPU usage. It's especially useful for reducing input latency when using frame generation tools like Lossless Scaling.
+A lightweight companion app for RTSS that uses it's profile modification API to dynamically adjusts framerate limits based on real-time GPU and CPU usage. It's especially useful for reducing input latency when using frame generation tools like Lossless Scaling.
 
 <p align="center">
   <img src="docs/Images/v4.1.0_2025-05-31-09-50-18.gif" width="45%" />
@@ -25,10 +25,10 @@ If you'd like to inspect or customize the source code, follow the instructions i
 
 > [!CAUTION]
 > - The executable in the release was packaged using PyInstaller and may be flagged by some antivirus software as a Trojan. 
-> - You can confirm whether the app is signed by me using the public certificate [here.](/src/Public_SameSalamander5710.cer).
-> - You can find the VirusTotal report on the app's behaviour for the latest release (v4.2.0):
->   - [DynamicFPSLimiter_v4.2.0.zip](https://www.virustotal.com/gui/file/e76b8cd89b31b8f0e10070b9c71fc15f3fed730caaf36182d6998413f762c00b/behavior)
->   - [DynamicFPSLimiter.exe](https://www.virustotal.com/gui/file/a62744f65fdb10f2646d625240b50a634fa4a3e59d73e14fac74380d18546c06/behavior)
+> - You can confirm whether the app is signed by me using the public certificate [here](/src/Public_SameSalamander5710.cer).
+> - You can find the VirusTotal report for the latest release (v4.3.0):
+>   - [DynamicFPSLimiter_v4.3.0.zip](https://www.virustotal.com/gui/file/dd0664e6819d9ef2c7c4243167fd3e541ea8223fb8090d29033df81642e23402/detection)
+>   - [DynamicFPSLimiter.exe](https://www.virustotal.com/gui/file/9a6db2df4805bca8e3b3174b957c91b8dd104eac81e275744cb6522d968a2c27/detection)
 
 
 ## The Concept
