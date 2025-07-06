@@ -12,8 +12,34 @@ if _src_dir not in sys.path:
     sys.path.insert(0, _src_dir)
 
 from core.themes import ThemesManager
+from core.tray_functions import TrayManager
+
+class PopupDragHandler:
+    """Simple drag handler that uses TrayManager's drag functionality for popups."""
+    def __init__(self, viewport_width=420):
+        # Create a minimal TrayManager instance just for drag functionality
+        self.tray_manager = TrayManager(
+            app_name="DynamicFPSLimiter",
+            icon_path="",  # Not needed for drag functionality
+            on_restore=None,
+            on_exit=None,
+            viewport_width=viewport_width,
+            config_manager_instance=None
+        )
+    
+    def on_mouse_click(self, sender, app_data, user_data):
+        self.tray_manager.on_mouse_click(sender, app_data, user_data)
+    
+    def drag_viewport(self, sender, app_data, user_data):
+        self.tray_manager.drag_viewport(sender, app_data, user_data)
+    
+    def on_mouse_release(self, sender, app_data, user_data):
+        self.tray_manager.on_mouse_release(sender, app_data, user_data)
 
 def show_missing_rtss_popup(message="Could not find RTSSHooks64.dll. Please ensure RivaTuner Statistics Server is installed before running this app.", exit_callback=None, themes_manager=None):
+    # Create drag handler for the popup
+    drag_handler = PopupDragHandler(viewport_width=420)
+    
     with dpg.window(label="Error", modal=True, no_close=True, tag="Primary Window"):
         # Split the message to handle "Error:" separately
         if message.startswith("Error:"):
@@ -57,8 +83,14 @@ def show_missing_rtss_popup(message="Could not find RTSSHooks64.dll. Please ensu
                 dpg.destroy_context()
                 sys.exit(1)
         with dpg.group(horizontal=True):
-            dpg.add_spacer(width=140)
+            dpg.add_spacer(width=132)
             dpg.add_button(label="Close", width=120, callback=lambda: _exit_app())
+        
+        # Set up drag handlers for the popup
+        with dpg.handler_registry():
+            dpg.add_mouse_click_handler(callback=drag_handler.on_mouse_click)
+            dpg.add_mouse_drag_handler(callback=drag_handler.drag_viewport)
+            dpg.add_mouse_release_handler(callback=drag_handler.on_mouse_release)
 
 def show_rtss_error_and_exit(rtss_path):
     """
