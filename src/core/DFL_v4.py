@@ -53,7 +53,6 @@ faq_path = os.path.join(Base_dir, "assets/faqs.csv")
 
 app_title = "Dynamic FPS Limiter"
 
-
 logger.init_logging(error_log_file)
 rtss_manager = None
 
@@ -738,9 +737,11 @@ with dpg.window(label=app_title, tag="Primary Window"):
             dpg.bind_item_theme("line2", themes_manager.themes["fixed_greyline_theme"])
             dpg.bind_item_theme("cap_series", themes_manager.themes["fps_cap_theme"])
 
+viewport_x_pos, viewport_y_pos = TrayManager.get_centered_viewport_position(Viewport_width, Viewport_height)
+
 dpg.create_viewport(title="Dynamic FPS Limiter", 
                     width=Viewport_width, height=Viewport_height, 
-                    resizable=False, decorated=False)
+                    resizable=False, decorated=False, x_pos=viewport_x_pos, y_pos=viewport_y_pos)
 dpg.set_viewport_resizable(False)
 dpg.set_viewport_max_width(Viewport_width)
 dpg.set_viewport_max_height(Viewport_height)
