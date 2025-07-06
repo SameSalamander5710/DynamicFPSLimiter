@@ -33,6 +33,11 @@
 - Start button color issue
     - Resolved a bug where the green color of the Start button was lost after clicking it twice.
 
+### Known issues
+- Profile display name appears editable
+    - Although the profile name field looks editable, changes are not saved.
+    - This is currently only a temporary cosmetic change and has no functional effect.
+
 ## [v4.2.0] - 2025-06-15
 ### Added
 - Support for fractional framerate values in the custom FPS limit input.
