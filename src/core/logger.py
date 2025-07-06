@@ -28,4 +28,20 @@ def error_log_exception(exc_type, exc_value, exc_traceback):
 def add_log(message):
     log_messages.insert(0, message)  # Add message at the top
     log_messages[:] = log_messages[:50]  # Keep only the latest 50 messages
-    dpg.set_value("LogText", "\n".join(log_messages))
+    
+    # Only update the GUI if the LogText widget exists
+    try:
+        if dpg.does_item_exist("LogText"):
+            dpg.set_value("LogText", "\n".join(log_messages))
+    except Exception:
+        # If there's any issue with the GUI update, just continue silently
+        # The log messages are still stored in log_messages list
+        pass
+
+def refresh_log_display():
+    """Refresh the log display widget with current messages."""
+    try:
+        if dpg.does_item_exist("LogText"):
+            dpg.set_value("LogText", "\n".join(log_messages))
+    except Exception:
+        pass

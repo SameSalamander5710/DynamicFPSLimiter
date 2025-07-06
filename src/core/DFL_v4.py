@@ -39,7 +39,7 @@ Viewport_height = 700
 # Always get absolute path to EXE or script location
 Base_dir = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
 rtss = RTSSController(logger)
-themes_manager = ThemesManager()
+themes_manager = ThemesManager(Base_dir)
 cm = ConfigManager(logger, dpg, rtss, None, themes_manager, Base_dir)
 fps_utils = FPSUtils(cm, logger, dpg, Viewport_width)
 
@@ -49,8 +49,6 @@ parent_dir = os.path.dirname(Base_dir)
 # Paths to configuration files
 error_log_file = os.path.join(parent_dir, "error_log.txt")
 icon_path = os.path.join(Base_dir, 'assets/DynamicFPSLimiter.ico')
-font_path = os.path.join(os.environ["WINDIR"], "Fonts", "segoeui.ttf") #segoeui, Verdana, Tahoma, Calibri, micross
-bold_font_path = os.path.join(os.environ["WINDIR"], "Fonts", "segoeuib.ttf")
 faq_path = os.path.join(Base_dir, "assets/faqs.csv")
 
 app_title = "Dynamic FPS Limiter"
@@ -478,7 +476,8 @@ def build_profile_section():
             dpg.add_input_text(tag="game_name", multiline=False, readonly=False, width=350, height=10)
             #dpg.add_button(tag="game_name", label="", width=350)
             dpg.bind_item_theme("game_name", themes_manager.themes["no_padding_theme"])
-            dpg.bind_item_font("game_name", bold_font_large)
+            # Use ThemesManager to bind font
+            themes_manager.bind_font_to_item("game_name", "bold_font_large")
             dpg.add_button(label="Detect Render GPU", callback=toggle_luid_selection, tag="luid_button", width=150)
             dpg.add_button(label="Start", tag="start_stop_button", callback=start_stop_callback, width=50, user_data=cm)
             dpg.bind_item_theme("start_stop_button", themes_manager.themes["start_button_theme"])  # Apply start button theme
@@ -513,16 +512,11 @@ def build_profile_section():
 dpg.create_context()
 themes_manager.create_themes()
 
-with dpg.font_registry():
-    try:
-        default_font = dpg.add_font(font_path, 18)
-        bold_font = dpg.add_font(bold_font_path, 18)
-        bold_font_large = dpg.add_font(bold_font_path, 24)
-        if default_font:
-            dpg.bind_font(default_font)
-    except Exception as e:
-        logger.add_log(f"Failed to load system font: {e}")
-        # Will use DearPyGui's default font as fallback
+# Create fonts using ThemesManager
+fonts = themes_manager.create_fonts(logger)
+default_font = fonts.get("default_font")
+bold_font = fonts.get("bold_font")
+bold_font_large = fonts.get("bold_font_large")
 
 # Load image data
 close_image_path = os.path.join(Base_dir, "assets/close_button.png")
@@ -650,6 +644,9 @@ with dpg.window(label=app_title, tag="Primary Window"):
                 dpg.add_input_text(tag="LogText", multiline=True, readonly=True, width=-1, height=110)
 
                 dpg.bind_item_theme("LogText", themes_manager.themes["transparent_input_theme"])
+                
+                # Refresh log display with any messages that were logged before GUI was ready
+                logger.refresh_log_display()
 
         with dpg.tab(label=" FAQs", tag="tab4"):
             with dpg.child_window(height=tab_height):

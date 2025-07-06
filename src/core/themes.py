@@ -1,4 +1,5 @@
 import dearpygui.dearpygui as dpg
+import os
 
 bg_colour = (21, 20, 21, 255)
 bg_colour_1_transparent = (21, 20, 21, 0)
@@ -15,8 +16,14 @@ bg_colour_9_text_disabled = (150, 152, 161, 150)
 bg_colour_10_button_disabled = (31, 35, 42, 255) 
 
 class ThemesManager:
-    def __init__(self):
+    def __init__(self, Base_dir):
         self.themes = {}
+        self.base_dir = Base_dir
+        self.fonts = {}
+        
+        # Font paths
+        self.font_path = os.path.join(os.environ["WINDIR"], "Fonts", "segoeui.ttf")
+        self.bold_font_path = os.path.join(os.environ["WINDIR"], "Fonts", "segoeuib.ttf")
 
     def create_themes(self):
         with dpg.theme() as main_theme:
@@ -231,3 +238,40 @@ class ThemesManager:
             with dpg.theme_component(dpg.mvAll):
                 dpg.add_theme_color(dpg.mvThemeCol_Text, (190, 90, 90))
         self.themes["warning_text_theme"] = warning_text_theme
+
+    def create_fonts(self, logger=None):
+        """
+        Create and register fonts for the application.
+        Returns a dictionary of font references.
+        """
+        try:
+            with dpg.font_registry():
+                self.fonts["default_font"] = dpg.add_font(self.font_path, 18)
+                self.fonts["bold_font"] = dpg.add_font(self.bold_font_path, 18)
+                self.fonts["bold_font_large"] = dpg.add_font(self.bold_font_path, 24)
+                
+                # Bind the default font globally
+                if self.fonts["default_font"]:
+                    dpg.bind_font(self.fonts["default_font"])
+                    
+            if logger:
+                logger.add_log("Fonts loaded successfully")
+            return self.fonts
+            
+        except Exception as e:
+            if logger:
+                logger.add_log(f"Failed to load system font: {e}")
+            # Will use DearPyGui's default font as fallback
+            return self.fonts
+
+    def get_font(self, font_name):
+        """Get a specific font by name"""
+        return self.fonts.get(font_name, None)
+        
+    def bind_font_to_item(self, item_id, font_name):
+        """Bind a font to a specific item"""
+        font = self.get_font(font_name)
+        if font:
+            dpg.bind_item_font(item_id, font)
+            return True
+        return False
