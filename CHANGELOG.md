@@ -1,16 +1,37 @@
 # CHANGELOG
 
-## [v4.2.1] - 2025-XX-XX
-
-### To Add
-- Popup if no RTSS; also info about downloading only from GitHub.
-- Tray functions
+## [v4.3.0] - 2025-07-06
 
 ### Added
-- New feature specific for 'ratio' method. (Add explanation)
+- Minimize to Tray and Tray Features
+    - Option to start the app minimized to the system tray.
+    - Tray icon now supports click-to-toggle:
+        - Green arrow: App is stopped — click to Start.
+        - Red arrow: App is running — click to Stop.
+    - Hovering over the tray icon shows the current status, including:
+        - Selected profile
+        - Active limit method
+        - Maximum FPS defined by that method
+    - Right-clicking the tray icon opens a menu to switch profiles and limit methods directly.
+- Improved FPS limit ramp-up for 'ratio' method
+    - When transitioning from high GPU usage (demanding scenes) to low GPU usage (light scenes), the FPS limit now increases more quickly (-> in lesser number of steps).
+    - Previously, the app would raise the FPS limit in single steps, causing multiple adjustments (and therefore mini-stutters) before reaching the optimal value.
+    - With this update, the FPS limit can now increase in larger steps when appropriate, reducing the number of transitions needed to reach the maximum cap. This is dictated by how low the GPU usage is when the increase limit conditions are triggered.
+    - The behavior remains conservative to avoid overshooting and triggering limit reductions right after.
+- RTSS installation prompt and download warning
+    - If RTSSHooks64.dll is missing, the app now shows a pop-up guiding the user to install RTSS.
+    - A warning message has also been added, recommending users download the app only from the official GitHub page, as third-party sites may host outdated or unsafe versions.
+
+### Changed
+- Custom title bar implemented
+    - Replaced the default OS title bar with a custom one.
+    - The maximize button has been removed, as maximizing previously caused layout issues.
+- Code cleanup
+    - Refactored various functions into separate modules for better organization and maintainability.
 
 ### Fixed
-- Loss of green colour for start button after clicking it twice.
+- Start button color issue
+    - Resolved a bug where the green color of the Start button was lost after clicking it twice.
 
 ## [v4.2.0] - 2025-06-15
 ### Added
