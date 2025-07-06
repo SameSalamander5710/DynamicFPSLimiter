@@ -7,11 +7,8 @@ import time
 from collections import defaultdict
 import dearpygui.dearpygui as dpg
 import threading
-import os # Added for os.path.dirname
+import os
 from decimal import Decimal, InvalidOperation
-
-# Assuming logger is imported correctly from the main script or passed in
-# from . import logger # Example if logger is in the same directory
 
 user32 = WinDLL('user32', use_last_error=True)
 
