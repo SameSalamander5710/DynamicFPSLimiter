@@ -14,26 +14,6 @@ if _src_dir not in sys.path:
 from core.themes import ThemesManager
 from core.tray_functions import TrayManager
 
-def get_centered_viewport_position(viewport_width, viewport_height):
-    """
-    Calculate the center position for a viewport based on screen dimensions.
-    
-    Args:
-        viewport_width (int): Width of the viewport
-        viewport_height (int): Height of the viewport
-    
-    Returns:
-        tuple: (x_pos, y_pos) coordinates for centering the viewport
-    """
-    user32 = ctypes.windll.user32
-    screen_width = user32.GetSystemMetrics(0)
-    screen_height = user32.GetSystemMetrics(1)
-    
-    x_pos = (screen_width - viewport_width) // 2
-    y_pos = (screen_height - viewport_height) // 2
-    
-    return x_pos, y_pos
-
 class PopupDragHandler:
     """Simple drag handler that uses TrayManager's drag functionality for popups."""
     def __init__(self, viewport_width=420):
@@ -139,7 +119,7 @@ def show_rtss_error_and_exit(rtss_path):
     # Calculate center position for the viewport
     viewport_width = 420
     viewport_height = 320
-    x_pos, y_pos = get_centered_viewport_position(viewport_width, viewport_height)
+    x_pos, y_pos = TrayManager.get_centered_viewport_position(viewport_width, viewport_height)
     
     dpg.create_viewport(title="Dynamic FPS Limiter - Error", width=viewport_width, height=viewport_height, 
                        resizable=False, decorated=False, x_pos=x_pos, y_pos=y_pos)
@@ -175,7 +155,7 @@ if __name__ == "__main__":
     # Calculate center position for the viewport
     viewport_width = 420
     viewport_height = 320
-    x_pos, y_pos = get_centered_viewport_position(viewport_width, viewport_height)
+    x_pos, y_pos = TrayManager.get_centered_viewport_position(viewport_width, viewport_height)
     
     dpg.create_viewport(title="Dynamic FPS Limiter - Error", width=viewport_width, height=viewport_height, 
                        resizable=False, decorated=False, x_pos=x_pos, y_pos=y_pos)

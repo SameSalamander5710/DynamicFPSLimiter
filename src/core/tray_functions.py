@@ -73,6 +73,27 @@ class TrayManager:
         self.running = False  # Track running state for menu
         self.fps_utils = fps_utils
 
+    @staticmethod
+    def get_centered_viewport_position(viewport_width, viewport_height):
+        """
+        Calculate the center position for a viewport based on screen dimensions.
+        
+        Args:
+            viewport_width (int): Width of the viewport
+            viewport_height (int): Height of the viewport
+        
+        Returns:
+            tuple: (x_pos, y_pos) coordinates for centering the viewport
+        """
+        user32 = ctypes.windll.user32
+        screen_width = user32.GetSystemMetrics(0)
+        screen_height = user32.GetSystemMetrics(1)
+        
+        x_pos = (screen_width - viewport_width) // 2
+        y_pos = (screen_height - viewport_height) // 2
+        
+        return x_pos, y_pos
+
     def drag_viewport(self, sender, app_data, user_data):
         if not self._dragging_viewport or not is_left_mouse_button_down():
             self._dragging_viewport = False
