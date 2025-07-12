@@ -1,4 +1,4 @@
-def autopilot_check(cm, rtss_manager, dpg, logger, running, start_stop_callback):
+def autopilot_on_check(cm, rtss_manager, dpg, logger, running, start_stop_callback):
     """
     Checks if the active process matches a profile and switches profile/running state if needed.
     """
@@ -21,4 +21,3 @@ def autopilot_check(cm, rtss_manager, dpg, logger, running, start_stop_callback)
         if not running:
             logger.add_log(f"AutoPilot: Switched to profile '{process_name}' and started monitoring.")
             start_stop_callback(None, None, cm)  # Call with expected arguments
-            

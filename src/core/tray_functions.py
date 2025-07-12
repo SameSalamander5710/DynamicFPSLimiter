@@ -177,6 +177,7 @@ class TrayManager:
         self.running = running
         self._update_menu()
         self._update_icon_image()
+        self.update_hover_text() 
 
     def _profile_menu_items(self):
         """Return a list of MenuItems for each profile (no checkmarks)."""

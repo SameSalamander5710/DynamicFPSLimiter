@@ -31,7 +31,7 @@ from core.autostart import AutoStartManager
 from core.rtss_functions import RTSSController
 from core.fps_utils import FPSUtils
 from core.tray_functions import TrayManager
-from core.autopilot import autopilot_check
+from core.autopilot import autopilot_on_check
 
 # Default viewport size
 Viewport_width = 610
@@ -400,7 +400,7 @@ def gui_update_loop():
         if not running:
             try:
                 if cm.autopilot:  # Only run autopilot if enabled
-                    autopilot_check(cm, rtss_manager, dpg, logger, running, start_stop_callback)
+                    autopilot_on_check(cm, rtss_manager, dpg, logger, running, start_stop_callback)
                 if fps_utils.current_stepped_limits():
                     warnings = get_active_warnings(dpg, cm, rtss_manager, int(min(fps_utils.current_stepped_limits())))
                     warning_visible = bool(warnings)
