@@ -80,6 +80,18 @@ def autostart_checkbox_callback(sender, app_data, user_data):
     else:
         autostart.delete() 
 
+def autopilot_checkbox_callback(sender, app_data, user_data): #TODO: run callback at startup (for disablng elements)
+    cm.update_preference_setting('autopilot', sender, app_data, user_data)
+
+    if cm.autopilot:
+        dpg.configure_item("profile_dropdown", enabled=False)
+        dpg.configure_item("start_stop_button", enabled=False)
+        dpg.bind_item_theme("start_stop_button", themes_manager.themes["disabled_button_theme"]) #TODO: add actual theme
+    else:
+        dpg.configure_item("profile_dropdown", enabled=True)
+        dpg.configure_item("start_stop_button", enabled=True)
+        dpg.bind_item_theme("start_stop_button", themes_manager.themes["start_button_theme"])
+
 running = False  # Flag to control the monitoring loop
 
 cm.update_global_variables()
@@ -255,9 +267,6 @@ def monitoring_loop():
             selected_game = dpg.get_value("profile_dropdown")
             if get_foreground_process_name() != selected_game and running:
                 start_stop_callback(None, None, cm)
-
-#TODO: remove process name functionality from RTSSInterface?
-#TODO: replace process_name with get_foreground_process_name()?
 
 #TODO: if autopilot is enabled, disable start stop buttons. change profile to non-global, disable chosing global profile, change display name to Autopilot
 
@@ -522,7 +531,7 @@ bold_font_large = fonts.get("bold_font_large")
 # Load image data
 close_image_path = os.path.join(Base_dir, "assets/close_button.png")
 minimize_image_path = os.path.join(Base_dir, "assets/minimize_button.png")
-icon_png_path = os.path.join(Base_dir, "assets/DynamicFPSLimiter_icon.png")
+icon_png_path = os.path.join(Base_dir, "assets/DynamicFPSLimiter_icon.png") #TODO: Add autopilot icon versions
 close_width, close_height, close_channels, close_data = dpg.load_image(close_image_path)
 min_width, min_height, min_channels, min_data = dpg.load_image(minimize_image_path)
 icon_width, icon_height, icon_channels, icon_data = dpg.load_image(icon_png_path)
@@ -618,7 +627,7 @@ with dpg.window(label=app_title, tag="Primary Window"):
                 )
                 dpg.add_checkbox(label="Turn on Autopilot", tag="autopilot_checkbox",
                                  default_value=cm.autopilot, 
-                                callback=cm.make_update_preference_callback('autopilot')
+                                callback=autopilot_checkbox_callback
                 )
                 with dpg.group(horizontal=True):
                     dpg.add_checkbox(label="Set", tag="profile_on_startup_checkbox",
