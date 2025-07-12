@@ -222,30 +222,6 @@ def update_plot_usage(time_val, gpu_val, cpu_val):
     else:
         dpg.set_axis_limits_auto("x_axis")
 
-luid_selected = False  # default state
-luid = "All"
-
-def toggle_luid_selection():
-    global luid_selected, luid
-
-    if not luid_selected:
-        # First click: detect top LUID
-        usage, luid = gpu_monitor.get_gpu_usage(engine_type="engtype_3D")
-        if luid:
-            logger.add_log(f"Tracking LUID: {luid} | Current 3D engine Utilization: {usage}%")
-            dpg.configure_item("luid_button", label="Revert to all GPUs")
-            dpg.bind_item_theme("luid_button", themes_manager.themes["revert_gpu_theme"])  # Apply blue theme
-            luid_selected = True
-        else:
-            logger.add_log("Failed to detect active LUID.")
-    else:
-        # Second click: deselect
-        luid = "All"
-        logger.add_log("Tracking all GPU engines.")
-        dpg.configure_item("luid_button", label="Detect Render GPU")
-        dpg.bind_item_theme("luid_button", themes_manager.themes["detect_gpu_theme"])  # Apply default grey theme
-        luid_selected = False
-
 fps_values = []
 gpu_values = []
 cpu_values = []
@@ -254,7 +230,7 @@ fps_mean = 0
 
 def monitoring_loop():
     global running, fps_values, CurrentFPSOffset, fps_mean, gpu_values, cpu_values
-    global max_points, luid_selected, luid
+    global max_points
 
     last_process_name = None
     
@@ -465,6 +441,15 @@ tray = TrayManager(
 )
 
 cm.tray = tray  # Set tray manager in ConfigManager
+
+def toggle_luid_selection():
+    """
+    Wrapper function to prevent a 'gpu_monitor' not found error when DearPyGui builds the UI.
+
+    This function is defined early so that it can be referenced as a callback in the UI layout,
+    before the actual gpu_monitor instance is initialized later in the script.
+    """
+    gpu_monitor.toggle_luid_selection()
 
 # Defining short sections of the GUI
 # TODO: Refactor main GUI into a separate module for better organization
@@ -756,14 +741,8 @@ logger.add_log("Initializing...")
 cm.update_profile_dropdown(select_first=True)
 cm.startup_profile_selection()
 
-gpu_monitor = GPUUsageMonitor(lambda: luid, lambda: running, logger, dpg, interval=(cm.gpupollinginterval/1000), max_samples=cm.gpupollingsamples, percentile=cm.gpupercentile)
-#logger.add_log(f"Current highed GPU core load: {gpu_monitor.gpu_percentile}%")
-
-#usage, luid = gpu_monitor.get_gpu_usage(engine_type="engtype_3D")
-#logger.add_log(f"Current Top LUID: {luid}, 3D engine usage: {usage}%")
-
+gpu_monitor = GPUUsageMonitor(lambda: "All", lambda: running, logger, dpg, themes_manager, interval=(cm.gpupollinginterval/1000), max_samples=cm.gpupollingsamples, percentile=cm.gpupercentile)
 cpu_monitor = CPUUsageMonitor(lambda: running, logger, dpg, interval=(cm.cpupollinginterval/1000), max_samples=cm.cpupollingsamples, percentile=cm.cpupercentile)
-#logger.add_log(f"Current highed CPU core load: {cpu_monitor.cpu_percentile}%")
 
 # Assuming logger and dpg are initialized
 rtss.enable_limiter()

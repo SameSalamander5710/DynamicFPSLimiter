@@ -1,4 +1,4 @@
-# To-do: Change prints to runtime errors
+# TODO: Change prints to runtime errors
 
 import ctypes
 import time
@@ -16,7 +16,7 @@ class PDH_FMT_COUNTERVALUE(ctypes.Structure):
     _fields_ = [("CStatus", ctypes.c_ulong), ("doubleValue", ctypes.c_double)]
 
 class GPUUsageMonitor:
-    def __init__(self, get_luid, get_running, logger_instance, dpg_instance, interval=0.1, max_samples=20, percentile=70):
+    def __init__(self, get_luid, get_running, logger_instance, dpg_instance, themes_instance, interval=0.1, max_samples=20, percentile=70):
         self.interval = interval
         self.max_samples = max_samples
         self.samples = []
@@ -24,11 +24,15 @@ class GPUUsageMonitor:
         self.percentile = percentile
         self.logger = logger_instance
         self.dpg = dpg_instance
+        self.themes_manager = themes_instance
         self.query_handle = None
         self.counter_handles = {}
         self.instances = []  # Add this line
         self.initialize()
         self.get_luid = get_luid
+        self.luid_selected = False
+        self.luid = "All"
+
         # Start background thread
         self._running = get_running
         self.looping = True
@@ -234,6 +238,31 @@ class GPUUsageMonitor:
 
                 except Exception as e:
                     self.logger.add_log(f"GPU monitor error: {e}")
+
+    def toggle_luid_selection(self):
+        """
+        Toggle between tracking all GPUs and the most active LUID.
+        Updates internal state and returns the new luid and selection state.
+        """
+        if not self.luid_selected:
+            # First click: detect top LUID
+            usage, luid = self.get_gpu_usage(engine_type="engtype_3D")
+            if luid:
+                self.logger.add_log(f"Tracking LUID: {luid} | Current 3D engine Utilization: {usage}%")
+                self.dpg.configure_item("luid_button", label="Revert to all GPUs")
+                self.dpg.bind_item_theme("luid_button", self.themes_manager.themes["revert_gpu_theme"])  # Apply blue theme
+                self.luid = luid
+                self.luid_selected = True
+            else:
+                self.logger.add_log("Failed to detect active LUID.")
+        else:
+            # Second click: deselect
+            self.luid = "All"
+            self.logger.add_log("Tracking all GPU engines.")
+            self.dpg.configure_item("luid_button", label="Detect Render GPU")
+            self.dpg.bind_item_theme("luid_button", self.themes_manager.themes["detect_gpu_theme"])  # Apply default grey theme
+            self.luid_selected = False
+        return self.luid, self.luid_selected
 
     def reinitialize(self, engine_type: str = "engtype_3D"):
         self.logger.add_log("Reinitializing GPU monitor.")
