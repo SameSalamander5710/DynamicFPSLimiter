@@ -394,13 +394,12 @@ gui_running = True
 
 def gui_update_loop():
     global gui_running, running
-    
-    while gui_running:  # Changed from True to gui_running
 
-        running = autopilot_check(cm, rtss_manager, dpg, logger, running)
+    while gui_running:  # Changed from True to gui_running
 
         if not running:
             try:
+                autopilot_check(cm, rtss_manager, dpg, logger, running, start_stop_callback)
                 if fps_utils.current_stepped_limits():
                     warnings = get_active_warnings(dpg, cm, rtss_manager, int(min(fps_utils.current_stepped_limits())))
                     warning_visible = bool(warnings)

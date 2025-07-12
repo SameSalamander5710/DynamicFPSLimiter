@@ -1,18 +1,17 @@
-def autopilot_check(cm, rtss_manager, dpg, logger, running):
+def autopilot_check(cm, rtss_manager, dpg, logger, running, start_stop_callback):
     """
     Checks if the active process matches a profile and switches profile/running state if needed.
-    Returns possibly updated running value.
     """
     if not (cm and rtss_manager and rtss_manager.is_rtss_running()):
-        return running
+        return
 
     result = rtss_manager.get_fps_for_active_window()
     if not result or len(result) < 2:
-        return running
+        return
 
     fps, process_name = result
     if not process_name:
-        return running
+        return
 
     profiles = cm.profiles_config.sections() if hasattr(cm, "profiles_config") else []
     if process_name in profiles:
@@ -21,5 +20,5 @@ def autopilot_check(cm, rtss_manager, dpg, logger, running):
         cm.load_profile_callback(None, process_name, None)
         if not running:
             logger.add_log(f"AutoPilot: Switched to profile '{process_name}' and started monitoring.")
-        return True  # Set running to True
-    return running
+            start_stop_callback(None, None, cm)  # Call with expected arguments
+            
