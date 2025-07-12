@@ -598,7 +598,11 @@ with dpg.window(label=app_title, tag="Primary Window"):
                 dpg.add_checkbox(label="Minimze on Launch", tag="minimizeonstartup_checkbox",
                                  default_value=cm.minimizeonstartup, 
                                 callback=cm.make_update_preference_callback('minimizeonstartup')
-                                ) 
+                )
+                dpg.add_checkbox(label="Turn on Autopilot", tag="autopilot_checkbox",
+                                 default_value=cm.autopilot, 
+                                callback=cm.make_update_preference_callback('autopilot')
+                )
                 with dpg.group(horizontal=True):
                     dpg.add_checkbox(label="Set", tag="profile_on_startup_checkbox",
                                     default_value=cm.profileonstartup, 
