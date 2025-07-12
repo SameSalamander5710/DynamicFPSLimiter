@@ -267,10 +267,11 @@ def monitoring_loop():
 
         if cm.autopilot:
             selected_game = dpg.get_value("profile_dropdown")
-            if get_foreground_process_name() != selected_game and running:
+            if selected_game != "Global" and get_foreground_process_name() != selected_game and running:
                 start_stop_callback(None, None, cm)
 
-#TODO: if autopilot is enabled, disable start stop buttons. change profile to non-global, disable chosing global profile, change display name to Autopilot
+#TODO: if autopilot is enabled, disable start stop buttons
+#TODO: if autopilot is enabled, disable start stop tray button, change icon to dark mode start and stop
 
         if process_name and process_name != last_process_name:
             last_process_name = process_name
