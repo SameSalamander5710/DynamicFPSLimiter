@@ -84,13 +84,13 @@ def autopilot_checkbox_callback(sender, app_data, user_data): #TODO: run callbac
     cm.update_preference_setting('autopilot', sender, app_data, user_data)
 
     if cm.autopilot:
-        dpg.configure_item("profile_dropdown", enabled=False)
+        #dpg.configure_item("profile_dropdown", enabled=False)
         dpg.configure_item("start_stop_button", enabled=False)
-        dpg.bind_item_theme("start_stop_button", themes_manager.themes["disabled_button_theme"]) #TODO: add actual theme
+        #dpg.bind_item_theme("start_stop_button", themes_manager.themes["disabled_button_theme"]) #TODO: add actual theme
     else:
-        dpg.configure_item("profile_dropdown", enabled=True)
+        #dpg.configure_item("profile_dropdown", enabled=True)
         dpg.configure_item("start_stop_button", enabled=True)
-        dpg.bind_item_theme("start_stop_button", themes_manager.themes["start_button_theme"])
+        #dpg.bind_item_theme("start_stop_button", themes_manager.themes["start_button_theme"])
 
 running = False  # Flag to control the monitoring loop
 
@@ -121,6 +121,8 @@ def start_stop_callback(sender, app_data, user_data):
 
     for tag in cm.input_button_tags:
         dpg.configure_item(tag, enabled=not running)
+
+    dpg.configure_item("profile_dropdown", enabled=not running)
 
     if running:
         
