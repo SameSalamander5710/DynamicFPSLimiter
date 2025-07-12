@@ -16,7 +16,7 @@ class PDH_FMT_COUNTERVALUE(ctypes.Structure):
     _fields_ = [("CStatus", ctypes.c_ulong), ("doubleValue", ctypes.c_double)]
 
 class GPUUsageMonitor:
-    def __init__(self, get_luid, get_running, logger_instance, dpg_instance, themes_instance, interval=0.1, max_samples=20, percentile=70):
+    def __init__(self, get_running, logger_instance, dpg_instance, themes_instance, interval=0.1, max_samples=20, percentile=70):
         self.interval = interval
         self.max_samples = max_samples
         self.samples = []
@@ -29,7 +29,6 @@ class GPUUsageMonitor:
         self.counter_handles = {}
         self.instances = []  # Add this line
         self.initialize()
-        self.get_luid = get_luid
         self.luid_selected = False
         self.luid = "All"
 
@@ -201,7 +200,7 @@ class GPUUsageMonitor:
                     pdh.PdhCollectQueryData(self.query_handle)
 
                     usage_by_luid = {}
-                    target_luid = self.get_luid()
+                    target_luid = self.luid
                     handles_to_use = (
                         {target_luid: self.counter_handles[target_luid]}
                         if target_luid and target_luid in self.counter_handles

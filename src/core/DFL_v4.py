@@ -741,7 +741,7 @@ logger.add_log("Initializing...")
 cm.update_profile_dropdown(select_first=True)
 cm.startup_profile_selection()
 
-gpu_monitor = GPUUsageMonitor(lambda: "All", lambda: running, logger, dpg, themes_manager, interval=(cm.gpupollinginterval/1000), max_samples=cm.gpupollingsamples, percentile=cm.gpupercentile)
+gpu_monitor = GPUUsageMonitor(lambda: running, logger, dpg, themes_manager, interval=(cm.gpupollinginterval/1000), max_samples=cm.gpupollingsamples, percentile=cm.gpupercentile)
 cpu_monitor = CPUUsageMonitor(lambda: running, logger, dpg, interval=(cm.cpupollinginterval/1000), max_samples=cm.cpupollingsamples, percentile=cm.cpupercentile)
 
 # Assuming logger and dpg are initialized
