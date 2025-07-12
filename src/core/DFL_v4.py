@@ -31,6 +31,7 @@ from core.autostart import AutoStartManager
 from core.rtss_functions import RTSSController
 from core.fps_utils import FPSUtils
 from core.tray_functions import TrayManager
+from core.autopilot import autopilot_check
 
 # Default viewport size
 Viewport_width = 610
@@ -392,8 +393,12 @@ def plotting_loop():
 gui_running = True
 
 def gui_update_loop():
-    global gui_running
+    global gui_running, running
+    
     while gui_running:  # Changed from True to gui_running
+
+        running = autopilot_check(cm, rtss_manager, dpg, logger, running)
+
         if not running:
             try:
                 if fps_utils.current_stepped_limits():
