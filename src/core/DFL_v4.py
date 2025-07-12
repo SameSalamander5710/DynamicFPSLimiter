@@ -31,7 +31,7 @@ from core.autostart import AutoStartManager
 from core.rtss_functions import RTSSController
 from core.fps_utils import FPSUtils
 from core.tray_functions import TrayManager
-from core.autopilot import autopilot_on_check
+from core.autopilot import autopilot_on_check, get_foreground_process_name
 
 # Default viewport size
 Viewport_width = 610
@@ -248,7 +248,19 @@ def monitoring_loop():
         current_profile = cm.current_profile
         fps, process_name = rtss_manager.get_fps_for_active_window()
         #logger.add_log(f"Current highed CPU core load: {cpu_monitor.cpu_percentile}%")
-        
+
+        #logger.add_log(f"get_foreground_process_name {get_foreground_process_name()}")
+
+        if cm.autopilot:
+            selected_game = dpg.get_value("profile_dropdown")
+            if get_foreground_process_name() != selected_game and running:
+                start_stop_callback(None, None, cm)
+
+#TODO: remove process name functionality from RTSSInterface?
+#TODO: replace process_name with get_foreground_process_name()?
+
+#TODO: if autopilot is enabled, disable start stop buttons. change profile to non-global, disable chosing global profile, change display name to Autopilot
+
         if process_name and process_name != last_process_name:
             last_process_name = process_name
             logger.add_log(f"Active window changed to: {last_process_name}") 

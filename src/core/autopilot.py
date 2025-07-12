@@ -1,3 +1,39 @@
+import ctypes
+import os
+
+def get_foreground_process_name():
+    """
+    Returns the process name of the currently focused (foreground) window.
+    Works for any application, not just 3D apps.
+    """
+    user32 = ctypes.windll.user32
+    kernel32 = ctypes.windll.kernel32
+    psapi = ctypes.windll.psapi
+
+    hwnd = user32.GetForegroundWindow()
+    if not hwnd:
+        return None
+
+    pid = ctypes.c_ulong()
+    user32.GetWindowThreadProcessId(hwnd, ctypes.byref(pid))
+    process_id = pid.value
+    if not process_id:
+        return None
+
+    PROCESS_QUERY_INFORMATION = 0x0400
+    PROCESS_VM_READ = 0x0010
+    h_process = kernel32.OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, False, process_id)
+    if not h_process:
+        return None
+
+    exe_name = (ctypes.c_wchar * 260)()
+    if psapi.GetModuleBaseNameW(h_process, None, exe_name, 260) == 0:
+        kernel32.CloseHandle(h_process)
+        return None
+
+    kernel32.CloseHandle(h_process)
+    return os.path.basename(exe_name.value)
+
 def autopilot_on_check(cm, rtss_manager, dpg, logger, running, start_stop_callback):
     """
     Checks if the active process matches a profile and switches profile/running state if needed.
