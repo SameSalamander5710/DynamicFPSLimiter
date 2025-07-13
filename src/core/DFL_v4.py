@@ -486,11 +486,16 @@ def build_profile_section():
     with dpg.child_window(width=-1, height=145):
         with dpg.group(horizontal=True):
             #dpg.add_spacer(width=1)
-            dpg.add_input_text(tag="game_name", multiline=False, readonly=False, width=350, height=10)
+            dpg.add_input_text(tag="game_name", multiline=False, readonly=False, width=260, height=10)
             #dpg.add_button(tag="game_name", label="", width=350)
             dpg.bind_item_theme("game_name", themes_manager.themes["no_padding_theme"])
             # Use ThemesManager to bind font
             themes_manager.bind_font_to_item("game_name", "bold_font_large")
+
+            dpg.add_checkbox(label="Autopilot", tag="autopilot_checkbox",
+                                default_value=cm.autopilot, 
+                            callback=autopilot_checkbox_callback
+            )
             dpg.add_button(label="Detect Render GPU", callback=toggle_luid_selection, tag="luid_button", width=150)
             dpg.add_button(label="Start", tag="start_stop_button", callback=start_stop_callback, width=50, user_data=cm)
             dpg.bind_item_theme("start_stop_button", themes_manager.themes["start_button_theme"])  # Apply start button theme
@@ -507,7 +512,8 @@ def build_profile_section():
                 dpg.add_text("Select Profile:")
                 dpg.add_combo(tag="profile_dropdown", callback=cm.load_profile_callback, width=260, default_value="Global")
                 dpg.add_button(label="Delete Profile", callback=cm.delete_selected_profile_callback, width=160)
-
+                #TODO: Add toggle to delete in RTSS or not
+                #TODO: Update display text on delete (or more fundamental, on profile change) 
             # Second row
             with dpg.table_row():
                 dpg.add_text("New RTSS Profile:")
@@ -627,10 +633,6 @@ with dpg.window(label=app_title, tag="Primary Window"):
                 dpg.add_checkbox(label="Minimze on Launch", tag="minimizeonstartup_checkbox",
                                  default_value=cm.minimizeonstartup, 
                                 callback=cm.make_update_preference_callback('minimizeonstartup')
-                )
-                dpg.add_checkbox(label="Turn on Autopilot", tag="autopilot_checkbox",
-                                 default_value=cm.autopilot, 
-                                callback=autopilot_checkbox_callback
                 )
                 with dpg.group(horizontal=True):
                     dpg.add_checkbox(label="Set", tag="profile_on_startup_checkbox",
@@ -791,6 +793,10 @@ cm.current_method_callback()
 
 autostart = AutoStartManager(app_path=os.path.join(os.path.dirname(Base_dir), "DynamicFPSLimiter.exe"))
 autostart.update_if_needed(cm.launchonstartup)
+
+if cm.autopilot:
+    #dpg.configure_item("profile_dropdown", enabled=False)
+    dpg.configure_item("start_stop_button", enabled=False)
 
 dpg.bind_theme(themes_manager.themes["main_theme"])
 dpg.bind_item_theme("plot_childwindow", themes_manager.themes["plot_bg_theme"])
