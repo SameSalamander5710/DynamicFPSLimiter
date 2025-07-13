@@ -483,7 +483,7 @@ def build_profile_section():
     with dpg.child_window(width=-1, height=145):
         with dpg.group(horizontal=True):
             #dpg.add_spacer(width=1)
-            dpg.add_input_text(tag="game_name", multiline=False, readonly=False, width=260, height=10)
+            dpg.add_input_text(tag="game_name", multiline=False, readonly=True, width=260, height=10)
             #dpg.add_button(tag="game_name", label="", width=350)
             dpg.bind_item_theme("game_name", themes_manager.themes["no_padding_theme"])
             # Use ThemesManager to bind font
