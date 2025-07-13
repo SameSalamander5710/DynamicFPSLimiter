@@ -142,6 +142,8 @@ class TrayManager:
 
     def _toggle_start_stop(self, icon, item):
         # Toggle running state and update menu label
+        if self.cm and getattr(self.cm, "autopilot", False):
+            return
         if self.start_stop_callback:
             self.start_stop_callback(None, None, self.cm)
             #self.running = not self.running
@@ -156,7 +158,8 @@ class TrayManager:
                 MenuItem(
                     "Start" if not self.running else "Stop",
                     self._toggle_start_stop,
-                    default=True
+                    default=True,
+                    enabled=not self.cm.autopilot # Disable if autopilot is on
                 ),
                 MenuItem(
                     "Profiles",

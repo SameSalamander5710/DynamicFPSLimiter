@@ -80,7 +80,7 @@ def autostart_checkbox_callback(sender, app_data, user_data):
     else:
         autostart.delete() 
 
-def autopilot_checkbox_callback(sender, app_data, user_data): #TODO: run callback at startup (for disablng elements)
+def autopilot_checkbox_callback(sender, app_data, user_data):
     cm.update_preference_setting('autopilot', sender, app_data, user_data)
 
     if cm.autopilot:
@@ -270,7 +270,6 @@ def monitoring_loop():
             if selected_game != "Global" and get_foreground_process_name() != selected_game and running:
                 start_stop_callback(None, None, cm)
 
-#TODO: if autopilot is enabled, disable start stop buttons
 #TODO: if autopilot is enabled, disable start stop tray button, change icon to dark mode start and stop
 
         if process_name and process_name != last_process_name:
@@ -794,6 +793,7 @@ cm.current_method_callback()
 autostart = AutoStartManager(app_path=os.path.join(os.path.dirname(Base_dir), "DynamicFPSLimiter.exe"))
 autostart.update_if_needed(cm.launchonstartup)
 
+#TODO: run callback at startup (for disablng elements)
 if cm.autopilot:
     #dpg.configure_item("profile_dropdown", enabled=False)
     dpg.configure_item("start_stop_button", enabled=False)
