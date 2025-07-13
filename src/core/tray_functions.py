@@ -158,7 +158,7 @@ class TrayManager:
                 MenuItem(
                     "Start" if not self.running else "Stop",
                     self._toggle_start_stop,
-                    default=True,
+                    default=not self.cm.autopilot,
                     enabled=not self.cm.autopilot # Disable if autopilot is on
                 ),
                 MenuItem(
@@ -239,7 +239,8 @@ class TrayManager:
             MenuItem(
                 "Start" if not self.running else "Stop",
                 self._toggle_start_stop,
-                default=True
+                default=not self.cm.autopilot,
+                enabled=not self.cm.autopilot  # Disable if autopilot is on
             ),
             MenuItem(
                 "Profiles",
@@ -263,7 +264,10 @@ class TrayManager:
         2) _toggle_start_stop
         3) _create_icon
         """
-        status = "Click to Start" if not self.running else "Click to Stop"
+        if getattr(self.cm, "autopilot", False):
+            status = "Autopilot Mode"
+        else:
+            status = "Click to Start" if not self.running else "Click to Stop"
 
         profile_name = dpg.get_value("profile_dropdown")
         method = dpg.get_value("input_capmethod")
