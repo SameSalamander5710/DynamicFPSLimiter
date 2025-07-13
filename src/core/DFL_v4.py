@@ -510,7 +510,6 @@ def build_profile_section():
                 dpg.add_combo(tag="profile_dropdown", callback=cm.load_profile_callback, width=260, default_value="Global")
                 dpg.add_button(label="Delete Profile", callback=cm.delete_selected_profile_callback, width=160)
                 #TODO: Add toggle to delete in RTSS or not
-                #TODO: Update display text on delete (or more fundamental, on profile change) 
             # Second row
             with dpg.table_row():
                 dpg.add_text("New RTSS Profile:")

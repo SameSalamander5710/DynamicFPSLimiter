@@ -252,7 +252,10 @@ class ConfigManager:
 
         if select_first and profiles:
             dpg.set_value("profile_dropdown", profiles[0])  # Set combo selection
-    
+
+        current_profile = dpg.get_value("profile_dropdown")
+        dpg.set_value("game_name", current_profile)
+
     def load_profile_callback(self, sender, app_data, user_data):
         
         self.current_profile = app_data
