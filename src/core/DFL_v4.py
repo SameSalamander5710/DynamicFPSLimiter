@@ -270,8 +270,6 @@ def monitoring_loop():
             if selected_game != "Global" and get_foreground_process_name() != selected_game and running:
                 start_stop_callback(None, None, cm)
 
-#TODO: if autopilot is enabled, disable start stop tray button, change icon to dark mode start and stop
-
         if process_name and process_name != last_process_name:
             last_process_name = process_name
             logger.add_log(f"Active window changed to: {last_process_name}") 
@@ -539,7 +537,7 @@ bold_font_large = fonts.get("bold_font_large")
 # Load image data
 close_image_path = os.path.join(Base_dir, "assets/close_button.png")
 minimize_image_path = os.path.join(Base_dir, "assets/minimize_button.png")
-icon_png_path = os.path.join(Base_dir, "assets/DynamicFPSLimiter_icon.png") #TODO: Add autopilot icon versions
+icon_png_path = os.path.join(Base_dir, "assets/DynamicFPSLimiter_icon.png")
 close_width, close_height, close_channels, close_data = dpg.load_image(close_image_path)
 min_width, min_height, min_channels, min_data = dpg.load_image(minimize_image_path)
 icon_width, icon_height, icon_channels, icon_data = dpg.load_image(icon_png_path)

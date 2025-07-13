@@ -1,5 +1,3 @@
-# TODO: Change prints to runtime errors
-
 import ctypes
 import time
 from collections import defaultdict

@@ -228,10 +228,16 @@ class TrayManager:
 
     def _create_icon(self):
         self.update_hover_text()
-        icon_file = self.icon_path
-        if self.running:
-            icon_file = self.icon_path.replace(".ico", "_red.ico")
-            if not os.path.exists(icon_file):
+        # Choose icon based on running state and autopilot
+        if getattr(self.cm, "autopilot", False):
+            if self.running:
+                icon_file = self.icon_path.replace(".ico", "_dark_red.ico")
+            else:
+                icon_file = self.icon_path.replace(".ico", "_dark_green.ico")
+        else:
+            if self.running:
+                icon_file = self.icon_path.replace(".ico", "_red.ico")
+            else:
                 icon_file = self.icon_path
         image = Image.open(icon_file)
         menu = Menu(
@@ -284,13 +290,18 @@ class TrayManager:
             self.icon.title = self.hover_text
 
     def _update_icon_image(self):
-        """Update the tray icon image based on running state."""
-        icon_file = self.icon_path
-        # Use red icon if running, otherwise default
-        if self.running:
-            icon_file = self.icon_path.replace(".ico", "_red.ico")
-            if not os.path.exists(icon_file):
-                icon_file = self.icon_path  # fallback if red icon missing
+        """Update the tray icon image based on running state and autopilot."""
+        # Choose icon based on running state and autopilot
+        if getattr(self.cm, "autopilot", False):
+            if self.running:
+                icon_file = self.icon_path.replace(".ico", "_dark_red.ico")
+            else:
+                icon_file = self.icon_path.replace(".ico", "_dark_green.ico")
+        else:
+            if self.running:
+                icon_file = self.icon_path.replace(".ico", "_red.ico")
+            else:
+                icon_file = self.icon_path
         if self.icon:
             image = Image.open(icon_file)
             self.icon.icon = image
