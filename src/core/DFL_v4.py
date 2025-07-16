@@ -84,13 +84,9 @@ def autopilot_checkbox_callback(sender, app_data, user_data):
     cm.update_preference_setting('autopilot', sender, app_data, user_data)
 
     if cm.autopilot:
-        #dpg.configure_item("profile_dropdown", enabled=False)
         dpg.configure_item("start_stop_button", enabled=False)
-        #dpg.bind_item_theme("start_stop_button", themes_manager.themes["disabled_button_theme"]) #TODO: add actual theme
     else:
-        #dpg.configure_item("profile_dropdown", enabled=True)
         dpg.configure_item("start_stop_button", enabled=True)
-        #dpg.bind_item_theme("start_stop_button", themes_manager.themes["start_button_theme"])
 
 running = False  # Flag to control the monitoring loop
 
@@ -123,6 +119,7 @@ def start_stop_callback(sender, app_data, user_data):
         dpg.configure_item(tag, enabled=not running)
 
     dpg.configure_item("profile_dropdown", enabled=not running)
+    dpg.configure_item("autopilot_checkbox", enabled=not running)
 
     if running:
         
@@ -621,6 +618,7 @@ with dpg.window(label=app_title, tag="Primary Window"):
                                 dpg.add_button(tag="Reset_Default", label="Reset Settings to Default", callback=cm.reset_to_program_default, width=tab1_group3_width)
                             with dpg.table_row():
                                 dpg.add_button(tag="SaveToProfile", label="Save Settings to Profile", callback=cm.save_to_profile, width=tab1_group3_width)
+                                dpg.bind_item_theme("SaveToProfile", themes_manager.themes["revert_gpu_theme"])
     
         with dpg.tab(label="  Preferences", tag="tab2"): 
             with dpg.child_window(height=tab_height):
@@ -790,9 +788,7 @@ cm.current_method_callback()
 autostart = AutoStartManager(app_path=os.path.join(os.path.dirname(Base_dir), "DynamicFPSLimiter.exe"))
 autostart.update_if_needed(cm.launchonstartup)
 
-#TODO: run callback at startup (for disablng elements)
 if cm.autopilot:
-    #dpg.configure_item("profile_dropdown", enabled=False)
     dpg.configure_item("start_stop_button", enabled=False)
 
 dpg.bind_theme(themes_manager.themes["main_theme"])

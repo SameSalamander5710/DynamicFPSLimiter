@@ -7,13 +7,13 @@ bg_colour_2_child = (27, 31, 37, 255)
 #bg_colour_3_button = (35, 39, 47, 255)
 bg_colour_3_button = (43, 47, 57, 255)
 bg_colour_4_buttonhover = (32, 60, 68, 255)
-bg_colour_4_buttonhover_blue = (40, 100, 225, 255)
-bg_colour_5_buttonactive = (30, 85, 205, 255) # Blue
-bg_colour_6_buttonstateactive_orange = (200, 88, 45, 255)
+bg_colour_4_buttonhover_blue = (15, 73, 114, 255)
+bg_colour_5_buttonactive = (16, 63, 96, 255) # Blue
+#bg_colour_6_buttonstateactive_orange = (200, 88, 45, 255)
 bg_colour_7_text_faded = (150, 152, 161, 255) # Faded text for plot
 bg_colour_8_text_enabled = (255, 255, 255, 255)
 bg_colour_9_text_disabled = (150, 152, 161, 150) 
-bg_colour_10_button_disabled = (31, 35, 42, 255) 
+#bg_colour_10_button_disabled = (31, 35, 42, 255) 
 
 class ThemesManager:
     def __init__(self, Base_dir):
