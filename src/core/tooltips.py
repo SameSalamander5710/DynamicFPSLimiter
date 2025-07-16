@@ -19,7 +19,7 @@ def get_tooltips():
     "start_stop_button": "Starts maintaining the FPS cap dynamically based on GPU/CPU utilization.",
     "luid_button": "Detects the render GPU based on CURRENT highest 3D engine utilization, and sets it as the target GPU for FPS limiting. Click again to deselect.",
     "exit_fps_input": "The specific FPS limit to apply globally when the application exits, if 'Set Global FPS Limit on Exit' is checked.",
-    "SaveToProfile": "Saves the current settings to the selected profile.",
+    "SaveToProfile": "Saves the current settings to the selected profile. Settings are NOT saved automatically.",
     "Reset_Default": "Resets all settings to the program's default values.",
     "Reset_CustomFPSLimits": "Resets the custom FPS limits to 'max FPS limit' and 'min FPS limit'.",
     "DeleteProfile": "Deletes the selected profile. Be cautious, as this action cannot be undone.",
