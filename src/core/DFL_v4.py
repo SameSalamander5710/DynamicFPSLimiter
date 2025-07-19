@@ -762,6 +762,7 @@ dpg.set_viewport_max_height(Viewport_height)
 dpg.set_viewport_small_icon(icon_path)
 dpg.setup_dearpygui()
 dpg.show_viewport()
+dpg.set_viewport_vsync(True)
 dpg.set_primary_window("Primary Window", True)
 
 # Setup and Run GUI
