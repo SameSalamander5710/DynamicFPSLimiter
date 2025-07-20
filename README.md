@@ -26,12 +26,10 @@ If you'd like to inspect or customize the source code, follow the instructions i
 > - Since RTSS runs with elevated privileges, DynamicFPSLimiter must also be run as Administrator to function fully.
 
 > [!CAUTION]
-> - The executable in the release was packaged using PyInstaller and may be flagged by some antivirus software as a Trojan. 
+> - The executable in the release was packaged using PyInstaller and may be flagged by some antivirus software as a Trojan. Updating to the [latest version](https://www.microsoft.com/en-us/wdsi/defenderupdates) of Windows Defender should prevent false detections. 
 > - You can confirm whether the app is signed by me using the public certificate [here](/src/Public_SameSalamander5710.cer).
-> - You can find the VirusTotal report for the latest release (v4.3.0):
->   - [DynamicFPSLimiter_v4.3.0.zip](https://www.virustotal.com/gui/file/dd0664e6819d9ef2c7c4243167fd3e541ea8223fb8090d29033df81642e23402/detection)
->   - [DynamicFPSLimiter.exe](https://www.virustotal.com/gui/file/9a6db2df4805bca8e3b3174b957c91b8dd104eac81e275744cb6522d968a2c27/detection)
-
+> - You can find the VirusTotal report for the latest release (v4.4.0):
+>   - [DynamicFPSLimiter_v4.4.0.zip](https://www.virustotal.com/gui/file/0a21170f2e9aea24d063d82e1d52b2dd779dd1ab917186bb0f8e13300ef9ea4f/detection)
 
 ## The Concept
 This app was developed to enhance gaming experience in situations where the GPU load/demand varies greatly during a session. This is especially useful when using Lossless Scaling Frame Generation (LSFG). LSFG works best when the game runs with an FPS cap that leaves enough GPU headroom for frame generation. However, if GPU usage hits 100%—which may also cause the game’s base FPS to drop—you may experience input lag, which is undesirable.
