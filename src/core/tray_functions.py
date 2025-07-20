@@ -142,6 +142,8 @@ class TrayManager:
 
     def _toggle_start_stop(self, icon, item):
         # Toggle running state and update menu label
+        if self.cm and getattr(self.cm, "autopilot", False):
+            return
         if self.start_stop_callback:
             self.start_stop_callback(None, None, self.cm)
             #self.running = not self.running
@@ -156,7 +158,8 @@ class TrayManager:
                 MenuItem(
                     "Start" if not self.running else "Stop",
                     self._toggle_start_stop,
-                    default=True
+                    default=not self.cm.autopilot,
+                    enabled=not self.cm.autopilot # Disable if autopilot is on
                 ),
                 MenuItem(
                     "Profiles",
@@ -177,6 +180,7 @@ class TrayManager:
         self.running = running
         self._update_menu()
         self._update_icon_image()
+        self.update_hover_text() 
 
     def _profile_menu_items(self):
         """Return a list of MenuItems for each profile (no checkmarks)."""
@@ -224,10 +228,16 @@ class TrayManager:
 
     def _create_icon(self):
         self.update_hover_text()
-        icon_file = self.icon_path
-        if self.running:
-            icon_file = self.icon_path.replace(".ico", "_red.ico")
-            if not os.path.exists(icon_file):
+        # Choose icon based on running state and autopilot
+        if getattr(self.cm, "autopilot", False):
+            if self.running:
+                icon_file = self.icon_path.replace(".ico", "_dark_red.ico")
+            else:
+                icon_file = self.icon_path.replace(".ico", "_dark_green.ico")
+        else:
+            if self.running:
+                icon_file = self.icon_path.replace(".ico", "_red.ico")
+            else:
                 icon_file = self.icon_path
         image = Image.open(icon_file)
         menu = Menu(
@@ -235,7 +245,8 @@ class TrayManager:
             MenuItem(
                 "Start" if not self.running else "Stop",
                 self._toggle_start_stop,
-                default=True
+                default=not self.cm.autopilot,
+                enabled=not self.cm.autopilot  # Disable if autopilot is on
             ),
             MenuItem(
                 "Profiles",
@@ -259,7 +270,10 @@ class TrayManager:
         2) _toggle_start_stop
         3) _create_icon
         """
-        status = "Click to Start" if not self.running else "Click to Stop"
+        if getattr(self.cm, "autopilot", False):
+            status = "Autopilot Mode"
+        else:
+            status = "Click to Start" if not self.running else "Click to Stop"
 
         profile_name = dpg.get_value("profile_dropdown")
         method = dpg.get_value("input_capmethod")
@@ -276,13 +290,18 @@ class TrayManager:
             self.icon.title = self.hover_text
 
     def _update_icon_image(self):
-        """Update the tray icon image based on running state."""
-        icon_file = self.icon_path
-        # Use red icon if running, otherwise default
-        if self.running:
-            icon_file = self.icon_path.replace(".ico", "_red.ico")
-            if not os.path.exists(icon_file):
-                icon_file = self.icon_path  # fallback if red icon missing
+        """Update the tray icon image based on running state and autopilot."""
+        # Choose icon based on running state and autopilot
+        if getattr(self.cm, "autopilot", False):
+            if self.running:
+                icon_file = self.icon_path.replace(".ico", "_dark_red.ico")
+            else:
+                icon_file = self.icon_path.replace(".ico", "_dark_green.ico")
+        else:
+            if self.running:
+                icon_file = self.icon_path.replace(".ico", "_red.ico")
+            else:
+                icon_file = self.icon_path
         if self.icon:
             image = Image.open(icon_file)
             self.icon.icon = image

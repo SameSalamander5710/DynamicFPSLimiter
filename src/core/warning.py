@@ -17,6 +17,11 @@ def check_min_greater_than_minvalidfps(dpg, cm, mincap):
         return "[WARNING]: Minimum FPS limit should be > minimum valid FPS of {}. This setting can be changes in settings.ini".format(cm.minvalidfps)
     return None
 
+def check_non_global_profile_for_autopilot(cm):
+    profiles = cm.profiles_config.sections() if hasattr(cm, "profiles_config") else []
+    if getattr(cm, "autopilot", False) and (len(profiles) <= 1 or profiles == ["Global"]):
+        return "[WARNING]: Autopilot requires at least one non-Global profile to function properly."
+    return None
 def get_active_warnings(dpg, cm, rtss_manager, mincap):
     warnings = []
     # Add more checks as needed
@@ -29,6 +34,10 @@ def get_active_warnings(dpg, cm, rtss_manager, mincap):
         warnings.append(msg)
     
     msg = check_min_greater_than_minvalidfps(dpg, cm, mincap)
+    if msg:
+        warnings.append(msg)
+
+    msg = check_non_global_profile_for_autopilot(cm)
     if msg:
         warnings.append(msg)
     # Add more warning checks here...

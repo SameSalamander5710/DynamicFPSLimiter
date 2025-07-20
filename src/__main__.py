@@ -38,6 +38,8 @@ def build_executable():
         '--version-file', 'src/metadata/version.txt',
         '--add-data', 'src/core/assets/DynamicFPSLimiter.ico:assets',
         '--add-data', 'src/core/assets/DynamicFPSLimiter_red.ico:assets',
+        '--add-data', 'src/core/assets/DynamicFPSLimiter_dark_green.ico:assets',
+        '--add-data', 'src/core/assets/DynamicFPSLimiter_dark_red.ico:assets',
         '--add-data', 'src/core/assets/DynamicFPSLimiter_icon.png:assets',
         '--add-data', 'src/core/assets/close_button.png:assets',
         '--add-data', 'src/core/assets/minimize_button.png:assets',

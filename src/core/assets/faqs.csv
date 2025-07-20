@@ -1,5 +1,6 @@
 question,answer
 Do I need to set profiles or framerate limits in RTSS for this app to work?,No. Clicking 'Start' will automatically create a profile and apply framerate limits as needed.
+Why does the app sometimes use high CPU?,Manually add the app as an exclusion (disabled application detection) in RTSS to reduce its CPU usage.
 How do I select a specific GPU as the render GPU?,Click 'Detect Render GPU' while the game is running. The GPU with the highest 3D engine usage will be selected.
 How do I add a running game process to Profiles?,Switch between the app and the game while monitoring is active. Then click 'Add process to profiles' to save the last active process.
 How do I disable CPU usage monitoring?,Set the CPU usage upper threshold to a value above 100 in the profile settings.

@@ -17,10 +17,10 @@ class ConfigManager:
         self.Default_settings_original = {
             "maxcap": 60,
             "mincap": 30,
-            "capratio": 15,
+            "capratio": 10,
             "capstep": 5,
             "gpucutofffordecrease": 85,
-            "gpucutoffforincrease": 65,
+            "gpucutoffforincrease": 70,
             'cpucutofffordecrease': 105,
             'cpucutoffforincrease': 101,
             "delaybeforedecrease": 2,
@@ -54,6 +54,7 @@ class ConfigManager:
                 'profileonstartup': 'True',
                 'launchonstartup': 'False',
                 'minimizeonstartup': 'False',
+                'autopilot': 'False',
             }
             self.settings_config["GlobalSettings"] = {
                 'delaybeforedecrease': '2',
@@ -78,10 +79,10 @@ class ConfigManager:
             self.profiles_config["Global"] = {
                 'maxcap': '60',
                 'mincap': '30',
-                'capratio': '15',
+                'capratio': '10',
                 'capstep': '5',
                 'gpucutofffordecrease': '85',
-                'gpucutoffforincrease': '65',
+                'gpucutoffforincrease': '70',
                 'cpucutofffordecrease': '105',
                 'cpucutoffforincrease': '101',
                 'capmethod': 'ratio',
@@ -124,6 +125,7 @@ class ConfigManager:
             'profileonstartup_name': str,
             'launchonstartup': bool,
             'minimizeonstartup': bool,
+            'autopilot': bool,
         }
 
         self.current_profile = "Global"
@@ -250,7 +252,10 @@ class ConfigManager:
 
         if select_first and profiles:
             dpg.set_value("profile_dropdown", profiles[0])  # Set combo selection
-    
+
+        current_profile = dpg.get_value("profile_dropdown")
+        dpg.set_value("game_name", current_profile)
+
     def load_profile_callback(self, sender, app_data, user_data):
         
         self.current_profile = app_data

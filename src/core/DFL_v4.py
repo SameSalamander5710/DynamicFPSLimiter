@@ -1,5 +1,5 @@
 # DFL_v4.py
-# Dynamic FPS Limiter v4.3.0
+# Dynamic FPS Limiter v4.4.0
 
 import ctypes
 ctypes.windll.shcore.SetProcessDpiAwareness(2)
@@ -31,6 +31,7 @@ from core.autostart import AutoStartManager
 from core.rtss_functions import RTSSController
 from core.fps_utils import FPSUtils
 from core.tray_functions import TrayManager
+from core.autopilot import autopilot_on_check, get_foreground_process_name
 
 # Default viewport size
 Viewport_width = 610
@@ -79,6 +80,14 @@ def autostart_checkbox_callback(sender, app_data, user_data):
     else:
         autostart.delete() 
 
+def autopilot_checkbox_callback(sender, app_data, user_data):
+    cm.update_preference_setting('autopilot', sender, app_data, user_data)
+
+    if cm.autopilot:
+        dpg.configure_item("start_stop_button", enabled=False)
+    else:
+        dpg.configure_item("start_stop_button", enabled=True)
+
 running = False  # Flag to control the monitoring loop
 
 cm.update_global_variables()
@@ -108,6 +117,9 @@ def start_stop_callback(sender, app_data, user_data):
 
     for tag in cm.input_button_tags:
         dpg.configure_item(tag, enabled=not running)
+
+    dpg.configure_item("profile_dropdown", enabled=not running)
+    dpg.configure_item("autopilot_checkbox", enabled=not running)
 
     if running:
         
@@ -222,30 +234,6 @@ def update_plot_usage(time_val, gpu_val, cpu_val):
     else:
         dpg.set_axis_limits_auto("x_axis")
 
-luid_selected = False  # default state
-luid = "All"
-
-def toggle_luid_selection():
-    global luid_selected, luid
-
-    if not luid_selected:
-        # First click: detect top LUID
-        usage, luid = gpu_monitor.get_gpu_usage(engine_type="engtype_3D")
-        if luid:
-            logger.add_log(f"Tracking LUID: {luid} | Current 3D engine Utilization: {usage}%")
-            dpg.configure_item("luid_button", label="Revert to all GPUs")
-            dpg.bind_item_theme("luid_button", themes_manager.themes["revert_gpu_theme"])  # Apply blue theme
-            luid_selected = True
-        else:
-            logger.add_log("Failed to detect active LUID.")
-    else:
-        # Second click: deselect
-        luid = "All"
-        logger.add_log("Tracking all GPU engines.")
-        dpg.configure_item("luid_button", label="Detect Render GPU")
-        dpg.bind_item_theme("luid_button", themes_manager.themes["detect_gpu_theme"])  # Apply default grey theme
-        luid_selected = False
-
 fps_values = []
 gpu_values = []
 cpu_values = []
@@ -254,7 +242,7 @@ fps_mean = 0
 
 def monitoring_loop():
     global running, fps_values, CurrentFPSOffset, fps_mean, gpu_values, cpu_values
-    global max_points, luid_selected, luid
+    global max_points
 
     last_process_name = None
     
@@ -271,7 +259,14 @@ def monitoring_loop():
         current_profile = cm.current_profile
         fps, process_name = rtss_manager.get_fps_for_active_window()
         #logger.add_log(f"Current highed CPU core load: {cpu_monitor.cpu_percentile}%")
-        
+
+        #logger.add_log(f"get_foreground_process_name {get_foreground_process_name()}")
+
+        if cm.autopilot:
+            selected_game = dpg.get_value("profile_dropdown")
+            if selected_game != "Global" and get_foreground_process_name() != selected_game and running:
+                start_stop_callback(None, None, cm)
+
         if process_name and process_name != last_process_name:
             last_process_name = process_name
             logger.add_log(f"Active window changed to: {last_process_name}") 
@@ -416,10 +411,14 @@ def plotting_loop():
 gui_running = True
 
 def gui_update_loop():
-    global gui_running
+    global gui_running, running
+
     while gui_running:  # Changed from True to gui_running
+
         if not running:
             try:
+                if cm.autopilot:  # Only run autopilot if enabled
+                    autopilot_on_check(cm, rtss_manager, dpg, logger, running, start_stop_callback)
                 if fps_utils.current_stepped_limits():
                     warnings = get_active_warnings(dpg, cm, rtss_manager, int(min(fps_utils.current_stepped_limits())))
                     warning_visible = bool(warnings)
@@ -466,17 +465,31 @@ tray = TrayManager(
 
 cm.tray = tray  # Set tray manager in ConfigManager
 
+def toggle_luid_selection():
+    """
+    Wrapper function to prevent a 'gpu_monitor' not found error when DearPyGui builds the UI.
+
+    This function is defined early so that it can be referenced as a callback in the UI layout,
+    before the actual gpu_monitor instance is initialized later in the script.
+    """
+    gpu_monitor.toggle_luid_selection()
+
 # Defining short sections of the GUI
 # TODO: Refactor main GUI into a separate module for better organization
 def build_profile_section():
     with dpg.child_window(width=-1, height=145):
         with dpg.group(horizontal=True):
             #dpg.add_spacer(width=1)
-            dpg.add_input_text(tag="game_name", multiline=False, readonly=False, width=350, height=10)
+            dpg.add_input_text(tag="game_name", multiline=False, readonly=True, width=260, height=10)
             #dpg.add_button(tag="game_name", label="", width=350)
             dpg.bind_item_theme("game_name", themes_manager.themes["no_padding_theme"])
             # Use ThemesManager to bind font
             themes_manager.bind_font_to_item("game_name", "bold_font_large")
+
+            dpg.add_checkbox(label="Autopilot", tag="autopilot_checkbox",
+                                default_value=cm.autopilot, 
+                            callback=autopilot_checkbox_callback
+            )
             dpg.add_button(label="Detect Render GPU", callback=toggle_luid_selection, tag="luid_button", width=150)
             dpg.add_button(label="Start", tag="start_stop_button", callback=start_stop_callback, width=50, user_data=cm)
             dpg.bind_item_theme("start_stop_button", themes_manager.themes["start_button_theme"])  # Apply start button theme
@@ -493,7 +506,7 @@ def build_profile_section():
                 dpg.add_text("Select Profile:")
                 dpg.add_combo(tag="profile_dropdown", callback=cm.load_profile_callback, width=260, default_value="Global")
                 dpg.add_button(label="Delete Profile", callback=cm.delete_selected_profile_callback, width=160)
-
+                #TODO: Add toggle to delete in RTSS or not
             # Second row
             with dpg.table_row():
                 dpg.add_text("New RTSS Profile:")
@@ -539,7 +552,7 @@ with dpg.window(label=app_title, tag="Primary Window"):
         dpg.add_image(icon_texture, tag="icon", width=20, height=20)
         dpg.add_text(app_title, tag="app_title")
         #dpg.bind_item_font("app_title", bold_font)
-        dpg.add_text("v4.3.0")
+        dpg.add_text("v4.4.0")
         dpg.add_spacer(width=310)
 
         dpg.add_image_button(texture_tag=minimize_texture, tag="minimize", callback=tray.minimize_to_tray, width=20, height=20)
@@ -605,6 +618,7 @@ with dpg.window(label=app_title, tag="Primary Window"):
                                 dpg.add_button(tag="Reset_Default", label="Reset Settings to Default", callback=cm.reset_to_program_default, width=tab1_group3_width)
                             with dpg.table_row():
                                 dpg.add_button(tag="SaveToProfile", label="Save Settings to Profile", callback=cm.save_to_profile, width=tab1_group3_width)
+                                dpg.bind_item_theme("SaveToProfile", themes_manager.themes["revert_gpu_theme"])
     
         with dpg.tab(label="  Preferences", tag="tab2"): 
             with dpg.child_window(height=tab_height):
@@ -613,7 +627,7 @@ with dpg.window(label=app_title, tag="Primary Window"):
                 dpg.add_checkbox(label="Minimze on Launch", tag="minimizeonstartup_checkbox",
                                  default_value=cm.minimizeonstartup, 
                                 callback=cm.make_update_preference_callback('minimizeonstartup')
-                                ) 
+                )
                 with dpg.group(horizontal=True):
                     dpg.add_checkbox(label="Set", tag="profile_on_startup_checkbox",
                                     default_value=cm.profileonstartup, 
@@ -748,6 +762,7 @@ dpg.set_viewport_max_height(Viewport_height)
 dpg.set_viewport_small_icon(icon_path)
 dpg.setup_dearpygui()
 dpg.show_viewport()
+dpg.set_viewport_vsync(True)
 dpg.set_primary_window("Primary Window", True)
 
 # Setup and Run GUI
@@ -756,14 +771,8 @@ logger.add_log("Initializing...")
 cm.update_profile_dropdown(select_first=True)
 cm.startup_profile_selection()
 
-gpu_monitor = GPUUsageMonitor(lambda: luid, lambda: running, logger, dpg, interval=(cm.gpupollinginterval/1000), max_samples=cm.gpupollingsamples, percentile=cm.gpupercentile)
-#logger.add_log(f"Current highed GPU core load: {gpu_monitor.gpu_percentile}%")
-
-#usage, luid = gpu_monitor.get_gpu_usage(engine_type="engtype_3D")
-#logger.add_log(f"Current Top LUID: {luid}, 3D engine usage: {usage}%")
-
+gpu_monitor = GPUUsageMonitor(lambda: running, logger, dpg, themes_manager, interval=(cm.gpupollinginterval/1000), max_samples=cm.gpupollingsamples, percentile=cm.gpupercentile)
 cpu_monitor = CPUUsageMonitor(lambda: running, logger, dpg, interval=(cm.cpupollinginterval/1000), max_samples=cm.cpupollingsamples, percentile=cm.cpupercentile)
-#logger.add_log(f"Current highed CPU core load: {cpu_monitor.cpu_percentile}%")
 
 # Assuming logger and dpg are initialized
 rtss.enable_limiter()
@@ -779,6 +788,9 @@ cm.current_method_callback()
 
 autostart = AutoStartManager(app_path=os.path.join(os.path.dirname(Base_dir), "DynamicFPSLimiter.exe"))
 autostart.update_if_needed(cm.launchonstartup)
+
+if cm.autopilot:
+    dpg.configure_item("start_stop_button", enabled=False)
 
 dpg.bind_theme(themes_manager.themes["main_theme"])
 dpg.bind_item_theme("plot_childwindow", themes_manager.themes["plot_bg_theme"])
