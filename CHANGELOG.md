@@ -1,5 +1,33 @@
 # CHANGELOG
 
+## [v4.4.0] - 2025-07-20
+
+### Added
+- Autopilot mode
+    - Automatically activates the corresponding profile when a saved application is detected and stops when focus shifts away from the game.
+    - Includes alternate dark-mode tray icons to indicate Autopilot status when minimized.
+    - Disables the Start/Stop buttons while active. To add a new profile:
+        - Disable Autopilot
+        - Manually start the Global profile (or any profile to copy it's existing settings)
+        - Switch to and from the target game
+        - Click 'Add process to profiles'
+        - Re-enable Autopilot
+    - A warning will appear if no non-Global profiles are available, as Autopilot requires at least one.
+- README and in-app FAQ updated with CPU usage mitigation steps:
+    - In some specific scenarios (e.g., RTSS 'passive waiting' disabled for Global profile and a Twitch stream running in Chrome), the app may use 20–30% CPU even when idle.
+    - Adding `DynamicFPSLimiter.exe` as a profile in RTSS with application detection set to None can reduce CPU usage to 1–3%. Use the **Shift** key + **Add** to directly add an active process for exclusion in RTSS.
+
+### Changed
+- V-Sync enabled for the app's GUI
+- Minor GUI rearrangement to accommodate the Autopilot checkbox.
+- Updated tooltips and in-app FAQ entries.
+- Minor refactoring of functions/modules
+- Adjusted default values for cap_ratio and GPU usage thresholds.
+
+### Fix
+- Profile name field is now read-only but selectable for copy/paste.
+    - Useful for integration with tools like Lossless Scaling via its "filter" feature.
+
 ## [v4.3.0] - 2025-07-06
 
 ### Added
