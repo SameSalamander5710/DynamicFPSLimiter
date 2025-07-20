@@ -15,12 +15,12 @@ def get_tooltips():
     "minvalidgpu": "Sets the minimum valid GPU usage percentage required for adjusting the FPS. If the GPU usage is below this threshold, the FPS cap will not change. This helps prevent FPS fluctuations during loading screens.",
     "minvalidfps": "Defines the minimum valid FPS required for adjusting the FPS. If the FPS falls below this value, the FPS cap will not change. This helps prevent FPS fluctuations during loading screens.",
     "quick_save": "Save settings to memory temporarily. Useful to copy settings between profiles.",
-    "quick_load": "Loads input values from memory.",
+    "quick_load": "Loads input values from memory. Useful to copy settings between profiles.",
     "start_stop_button": "Starts maintaining the FPS cap dynamically based on GPU/CPU utilization.",
     "luid_button": "Detects the render GPU based on CURRENT highest 3D engine utilization, and sets it as the target GPU for FPS limiting. Click again to deselect.",
     "exit_fps_input": "The specific FPS limit to apply globally when the application exits, if 'Set Global FPS Limit on Exit' is checked.",
     "SaveToProfile": "Saves the current settings to the selected profile. Settings are NOT saved automatically.",
-    "Reset_Default": "Resets all settings to the program's default values.",
+    "Reset_Default": "Resets all settings to the program's default values. To reset to the profile's default values, reselect the profile from the profile dropdown.",
     "Reset_CustomFPSLimits": "Resets the custom FPS limits to 'max FPS limit' and 'min FPS limit'.",
     "DeleteProfile": "Deletes the selected profile. Be cautious, as this action cannot be undone.",
     "checkbox_globallimitonexit": "Enables or disables the application of a global FPS limit when exiting the program. When enabled, the specified FPS limit will be applied to all processes.",
@@ -29,6 +29,7 @@ def get_tooltips():
     "button_cpucutofffordecrease": "(Optional) Set values below 100 to enable CPU-based FPS limiting.",
     "button_cpucutoffforincrease": "(Optional) Set values below 100 to enable CPU-based FPS limiting.",
     "rest_fps_cap_button": "Clears the input fields and resets to Min/Max values",
+    "autopilot_checkbox": "Relinquishes control of Start/Stop button to the autopilot, which will automatically shift to the corresponding profile based on the active process. It also Starts/Stops on its own. Only works for non-Global profiles.",
 }
 
 def add_tooltip(dpg, key, tooltips, ShowTooltip, cm, logger):
