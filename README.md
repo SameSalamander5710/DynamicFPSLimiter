@@ -1,4 +1,4 @@
-# Dynamic FPS Limiter v4.3
+# Dynamic FPS Limiter v4.4
 
 A lightweight companion app for RTSS that uses it's profile modification API to dynamically adjusts framerate limits based on real-time GPU and CPU usage. It's especially useful for reducing input latency when using frame generation tools like Lossless Scaling.
 
