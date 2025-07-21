@@ -421,8 +421,6 @@ def gui_update_loop():
 
         if not running:
             try:
-                if cm.autopilot:  # Only run autopilot if enabled
-                    autopilot_on_check(cm, rtss_manager, dpg, logger, running, start_stop_callback)
                 if fps_utils.current_stepped_limits():
                     warnings = get_active_warnings(dpg, cm, rtss_manager, int(min(fps_utils.current_stepped_limits())))
                     warning_visible = bool(warnings)
@@ -438,6 +436,13 @@ def gui_update_loop():
                 if gui_running:  # Only log if we're still supposed to be running
                     logger.add_log(f"Error in GUI update loop: {e}")
         time.sleep(0.1)
+
+def autopilot_loop():
+    global gui_running, running
+    while gui_running:
+        if cm.autopilot and not running:
+            autopilot_on_check(cm, rtss_manager, dpg, logger, running, start_stop_callback)
+        time.sleep(1)  # Tune interval as needed
 
 def exit_gui():
     global running, gui_running, rtss_manager, monitoring_thread, plotting_thread
@@ -783,9 +788,12 @@ rtss.enable_limiter()
 
 rtss_manager = RTSSInterface(logger, dpg)
 
-# Add after your other thread initializations
 gui_update_thread = threading.Thread(target=gui_update_loop, daemon=True)
 gui_update_thread.start()
+
+# Start the autopilot thread
+autopilot_thread = threading.Thread(target=autopilot_loop, daemon=True)
+autopilot_thread.start()
 
 apply_all_tooltips(dpg, get_tooltips(), cm.showtooltip, cm, logger)
 cm.current_method_callback()
