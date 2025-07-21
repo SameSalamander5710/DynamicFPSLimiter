@@ -413,7 +413,11 @@ gui_running = True
 def gui_update_loop():
     global gui_running, running
 
-    while gui_running:  # Changed from True to gui_running
+    while gui_running:
+
+        # Wait until tray is not active
+        while tray.is_tray_active and gui_running:
+            time.sleep(0.5)  # Sleep until tray is not active
 
         if not running:
             try:
