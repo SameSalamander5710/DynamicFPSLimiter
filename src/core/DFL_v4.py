@@ -417,7 +417,7 @@ def gui_update_loop():
 
         # Wait until tray is not active
         while tray.is_tray_active and gui_running:
-            time.sleep(0.5)  # Sleep until tray is not active
+            time.sleep(1)  # Sleep until tray is not active
 
         if not running:
             try:
