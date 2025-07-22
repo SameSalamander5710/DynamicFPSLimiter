@@ -255,6 +255,8 @@ def monitoring_loop():
     min_ft = current_mincap - round((current_maxcap - current_mincap) * Decimal('0.1'))
     max_ft = current_maxcap + round((current_maxcap - current_mincap) * Decimal('0.1'))
 
+    increase_cooldown = 0 # Cooldown for increasing FPS cap
+
     while running:
         current_profile = cm.current_profile
         fps, process_name = rtss_manager.get_fps_for_active_window()
@@ -338,7 +340,11 @@ def monitoring_loop():
                 if gpu_increase_condition and cpu_increase_condition:
                      should_increase = True
 
-                if CurrentFPSOffset < 0 and should_increase:
+                # --- COOLDOWN LOGIC ---
+                if increase_cooldown > 0:
+                    increase_cooldown -= 1
+
+                if CurrentFPSOffset < 0 and should_increase and increase_cooldown == 0:
                     current_fps = current_maxcap + CurrentFPSOffset
                     gpu_range = cm.gpucutofffordecrease - cm.gpucutoffforincrease
                     last_gpu = gpu_values[-1] if gpu_values else 0
@@ -357,6 +363,7 @@ def monitoring_loop():
                             next_fps = fps_limit_list[next_index]
                             CurrentFPSOffset = next_fps - current_maxcap
                             rtss.set_fractional_framerate(current_profile, next_fps)
+                            increase_cooldown = cm.delaybeforeincrease  # Start cooldown
                     except ValueError:
                         # If current FPS not in list, find nearest higher value
                         higher_values = [x for x in fps_limit_list if x > current_fps]
@@ -368,6 +375,7 @@ def monitoring_loop():
                             next_fps = fps_limit_list[next_index]
                             CurrentFPSOffset = next_fps - current_maxcap
                             rtss.set_fractional_framerate(current_profile, next_fps)
+                            increase_cooldown = cm.delaybeforeincrease  # Start cooldown
 
         if running:
             # Update legend labels with current values
