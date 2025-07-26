@@ -1,5 +1,25 @@
 # CHANGELOG
 
+## [v4.4.1] - 2025-07-26
+
+### Added
+- Cooldown period for FPS cap increase logic
+    - Previously, when GPU usage stayed below the lower threshold for 3 continuous seconds (default `delaybeforeincrease`), the app began increasing the FPS cap once per second, leading to noticeable 1-second microstutters until GPU usage stabilized.
+    - Now, after each FPS cap increase, the app enters a cooldown period (equal to `delaybeforeincrease`) before attempting another increase, only if the low GPU usage condition still holds.
+    - Effect: This change spaces out FPS cap increases, making transitions from high-demand to low-demand scenes relatively smoother.
+        - Example: If 3 FPS cap increases are needed:
+            - Before: 3 microstutters over 3 seconds -> very jarring
+            - Now: 3 microstutters over 9 seconds -> less intrusive
+
+### Changed
+- Interal: Autopilot’s monitoring loop is now decoupled from the GUI update loop.
+- Increased internal wait times at various stages to reduce unnecessary polling and reduce CPU overhead.
+
+### Fixed
+- Reduced CPU usage when idle and minimized to tray
+    - The app previously consumed more CPU when idle due to continuous GUI updates.
+    - GUI updates are now paused when minimized, resulting in significantly lower CPU usage while the app is idle in the background.
+
 ## [v4.4.0] - 2025-07-20
 
 ### Added

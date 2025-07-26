@@ -1,5 +1,5 @@
 # DFL_v4.py
-# Dynamic FPS Limiter v4.4.0
+# Dynamic FPS Limiter v4.4.1
 
 import ctypes
 ctypes.windll.shcore.SetProcessDpiAwareness(2)
@@ -255,6 +255,8 @@ def monitoring_loop():
     min_ft = current_mincap - round((current_maxcap - current_mincap) * Decimal('0.1'))
     max_ft = current_maxcap + round((current_maxcap - current_mincap) * Decimal('0.1'))
 
+    increase_cooldown = 0 # Cooldown for increasing FPS cap
+
     while running:
         current_profile = cm.current_profile
         fps, process_name = rtss_manager.get_fps_for_active_window()
@@ -338,7 +340,11 @@ def monitoring_loop():
                 if gpu_increase_condition and cpu_increase_condition:
                      should_increase = True
 
-                if CurrentFPSOffset < 0 and should_increase:
+                # --- COOLDOWN LOGIC ---
+                if increase_cooldown > 0:
+                    increase_cooldown -= 1
+
+                if CurrentFPSOffset < 0 and should_increase and increase_cooldown == 0:
                     current_fps = current_maxcap + CurrentFPSOffset
                     gpu_range = cm.gpucutofffordecrease - cm.gpucutoffforincrease
                     last_gpu = gpu_values[-1] if gpu_values else 0
@@ -357,6 +363,7 @@ def monitoring_loop():
                             next_fps = fps_limit_list[next_index]
                             CurrentFPSOffset = next_fps - current_maxcap
                             rtss.set_fractional_framerate(current_profile, next_fps)
+                            increase_cooldown = cm.delaybeforeincrease  # Start cooldown
                     except ValueError:
                         # If current FPS not in list, find nearest higher value
                         higher_values = [x for x in fps_limit_list if x > current_fps]
@@ -368,6 +375,7 @@ def monitoring_loop():
                             next_fps = fps_limit_list[next_index]
                             CurrentFPSOffset = next_fps - current_maxcap
                             rtss.set_fractional_framerate(current_profile, next_fps)
+                            increase_cooldown = cm.delaybeforeincrease  # Start cooldown
 
         if running:
             # Update legend labels with current values
@@ -413,12 +421,14 @@ gui_running = True
 def gui_update_loop():
     global gui_running, running
 
-    while gui_running:  # Changed from True to gui_running
+    while gui_running:
+
+        # Wait until tray is not active
+        while tray.is_tray_active and gui_running:
+            time.sleep(1)  # Sleep until tray is not active
 
         if not running:
             try:
-                if cm.autopilot:  # Only run autopilot if enabled
-                    autopilot_on_check(cm, rtss_manager, dpg, logger, running, start_stop_callback)
                 if fps_utils.current_stepped_limits():
                     warnings = get_active_warnings(dpg, cm, rtss_manager, int(min(fps_utils.current_stepped_limits())))
                     warning_visible = bool(warnings)
@@ -434,6 +444,13 @@ def gui_update_loop():
                 if gui_running:  # Only log if we're still supposed to be running
                     logger.add_log(f"Error in GUI update loop: {e}")
         time.sleep(0.1)
+
+def autopilot_loop():
+    global gui_running, running
+    while gui_running:
+        if cm.autopilot and not running:
+            autopilot_on_check(cm, rtss_manager, dpg, logger, running, start_stop_callback)
+        time.sleep(1)  # Tune interval as needed
 
 def exit_gui():
     global running, gui_running, rtss_manager, monitoring_thread, plotting_thread
@@ -552,7 +569,7 @@ with dpg.window(label=app_title, tag="Primary Window"):
         dpg.add_image(icon_texture, tag="icon", width=20, height=20)
         dpg.add_text(app_title, tag="app_title")
         #dpg.bind_item_font("app_title", bold_font)
-        dpg.add_text("v4.4.0")
+        dpg.add_text("v4.4.1")
         dpg.add_spacer(width=310)
 
         dpg.add_image_button(texture_tag=minimize_texture, tag="minimize", callback=tray.minimize_to_tray, width=20, height=20)
@@ -779,9 +796,12 @@ rtss.enable_limiter()
 
 rtss_manager = RTSSInterface(logger, dpg)
 
-# Add after your other thread initializations
 gui_update_thread = threading.Thread(target=gui_update_loop, daemon=True)
 gui_update_thread.start()
+
+# Start the autopilot thread
+autopilot_thread = threading.Thread(target=autopilot_loop, daemon=True)
+autopilot_thread.start()
 
 apply_all_tooltips(dpg, get_tooltips(), cm.showtooltip, cm, logger)
 cm.current_method_callback()

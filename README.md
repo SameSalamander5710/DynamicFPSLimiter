@@ -1,6 +1,9 @@
 # Dynamic FPS Limiter v4.4
 
-A lightweight companion app for RTSS that uses it's profile modification API to dynamically adjusts framerate limits based on real-time GPU and CPU usage. It's especially useful for reducing input latency when using frame generation tools like Lossless Scaling.
+A lightweight companion app for RTSS that uses it's profile modification API to dynamically adjust framerate limits based on real-time GPU and CPU usage. 
+- Instead of relying on a fixed FPS cap below average framerates for smooth gameplay, it intelligently raises the cap when performance headroom is available, allowing consistently smooth frametimes, with the caveat of a momentary stutter during FPS limit transition.
+- Especially useful for reducing input latency when using frame generation tools like Lossless Scaling, by ensuring there's always enough GPU headroom.
+- When paired with adaptive frame generation in Lossless Scaling, it enables a constant high refresh rate experience with lower power draw and reduced GPU temperatures, without noticeable visual compromises or input lag.
 
 <p align="center">
   <img src="docs/Images/v4.1.0_2025-05-31-09-50-18.gif" width="45%" />
@@ -20,6 +23,12 @@ If you'd like to inspect or customize the source code, follow the instructions i
 4. **Recommended**: Add `DynamicFPSLimiter.exe`as an exclusion in RTSS to reduce the app's CPU performance overhead. 
     - This can be done by holding the **Shift** key and clicking **Add** in RTSS, while the app is running.
     - **Note**: While not strictly necessary, this step is strongly recommended if you have disabled 'passive waiting' for the Global profile in RTSS
+
+Watch the demo here! (Based on v4.2.0)
+
+<a href="https://www.youtube.com/watch?v=6r3l5ebymew" target="_blank" rel="noopener noreferrer">
+  <img src="https://img.youtube.com/vi/6r3l5ebymew/hqdefault.jpg" width="45%" alt="Watch the demo here! (Based on v4.2.0)">
+</a>
 
 > [!NOTE]
 > - This app requires Rivatuner Statistics Server (RTSS) running in the background to function. Ensure RTSS is installed before running the app!
