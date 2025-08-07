@@ -609,7 +609,7 @@ with dpg.window(label=app_title, tag="Primary Window"):
                                                       min_clamped=True, min_value=1)
                    
                     #2 dpg.add_spacer(width=1)
-                    with dpg.group(width=175):
+                    with dpg.group(width=220):
                         with dpg.table(header_row=False, resizable=False, policy=dpg.mvTable_SizingFixedFit):
                             dpg.add_table_column(width_fixed=True)
                             dpg.add_table_column(width_fixed=True)
@@ -623,8 +623,8 @@ with dpg.window(label=app_title, tag="Primary Window"):
                                     dpg.add_input_text(tag=f"input_{key}", default_value=str(cm.settings[key]), width=40)
                     
                     #dpg.add_spacer(width=1)
-                    tab1_group3_width = 170
-                    with dpg.group(width=180):
+                    tab1_group3_width = 125
+                    with dpg.group(width=135):
                         with dpg.table(header_row=False, resizable=False, policy=dpg.mvTable_SizingFixedFit):
                             dpg.add_table_column(width_fixed=True)
                             with dpg.table_row():
@@ -632,9 +632,9 @@ with dpg.window(label=app_title, tag="Primary Window"):
                             with dpg.table_row():
                                 dpg.add_button(tag="quick_load", label="Quick Load", callback=cm.quick_load_settings, width=tab1_group3_width)
                             with dpg.table_row():
-                                dpg.add_button(tag="Reset_Default", label="Reset Settings to Default", callback=cm.reset_to_program_default, width=tab1_group3_width)
+                                dpg.add_button(tag="Reset_Default", label="Reset to Default", callback=cm.reset_to_program_default, width=tab1_group3_width)
                             with dpg.table_row():
-                                dpg.add_button(tag="SaveToProfile", label="Save Settings to Profile", callback=cm.save_to_profile, width=tab1_group3_width)
+                                dpg.add_button(tag="SaveToProfile", label="Save to Profile", callback=cm.save_to_profile, width=tab1_group3_width)
                                 dpg.bind_item_theme("SaveToProfile", themes_manager.themes["revert_gpu_theme"])
     
         with dpg.tab(label="  Preferences", tag="tab2"): 
