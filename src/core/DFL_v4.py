@@ -629,17 +629,14 @@ with dpg.window(label=app_title, tag="Primary Window"):
                                     dpg.add_input_text(tag="input_cpucutofffordecrease", default_value=str(cm.settings["cpucutofffordecrease"]), width=40)
                                     dpg.add_text("%", tag="cpu_percent_text", wrap=300)
                             with dpg.table_row():
-
                                 with dpg.group(horizontal=True):
-                                    dpg.add_button(label="Delays:", tag="button_delaybeforedecrease", width=50)
+                                    dpg.add_button(label="Delays: for decrease (s)", tag="button_delaybeforedecrease", width=155)
                                     dpg.bind_item_theme("button_delaybeforedecrease", themes_manager.themes["button_right_theme"])
-                                    dpg.add_text("for decrease (s):", wrap=300)
                                     dpg.add_input_text(tag="input_delaybeforedecrease", default_value=str(cm.settings["delaybeforedecrease"]), width=40)
                             with dpg.table_row():
                                 with dpg.group(horizontal=True):
-                                    dpg.add_button(label=" ", tag="button_delaybeforeincrease", width=50)
+                                    dpg.add_button(label="for increase (s)", tag="button_delaybeforeincrease", width=155)
                                     dpg.bind_item_theme("button_delaybeforeincrease", themes_manager.themes["button_right_theme"])
-                                    dpg.add_text("for increase (s):", wrap=300)
                                     dpg.add_input_text(tag="input_delaybeforeincrease", default_value=str(cm.settings["delaybeforeincrease"]), width=40)
 
                     #dpg.add_spacer(width=1)
