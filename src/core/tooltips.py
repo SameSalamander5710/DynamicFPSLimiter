@@ -26,8 +26,7 @@ def get_tooltips():
     "checkbox_globallimitonexit": "Enables or disables the application of a global FPS limit when exiting the program. When enabled, the specified FPS limit will be applied to all processes.",
     "autofill_fps_caps": "Click with the method set to 'ratio' or 'step' to copy the calculated limits.",
     "process_to_profile": "Add the current settings to a new profile based on the last used process.",
-    "button_cpucutofffordecrease": "(Optional) Set values below 100 to enable CPU-based FPS limiting.",
-    "button_cpucutoffforincrease": "(Optional) Set values below 100 to enable CPU-based FPS limiting.",
+    "button_cpulimit": "(Optional) Set values below 100 to enable CPU-based FPS limiting.",
     "rest_fps_cap_button": "Clears the input fields and resets to Min/Max values",
     "autopilot_checkbox": "Relinquishes control of Start/Stop button to the autopilot, which will automatically shift to the corresponding profile based on the active process. It also Starts/Stops on its own. Only works for non-Global profiles.",
 }

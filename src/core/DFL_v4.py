@@ -611,17 +611,25 @@ with dpg.window(label=app_title, tag="Primary Window"):
                     #2 dpg.add_spacer(width=1)
                     with dpg.group(width=220):
                         with dpg.table(header_row=False, resizable=False, policy=dpg.mvTable_SizingFixedFit):
-                            dpg.add_table_column(width_fixed=True)
-                            dpg.add_table_column(width_fixed=True)
-                            for label, key in [("GPU: Upper limit", "gpucutofffordecrease"),
-                                            ("Lower limit", "gpucutoffforincrease"),
-                                            ("CPU: Upper limit", "cpucutofffordecrease"),
-                                            ("Lower limit", "cpucutoffforincrease")]:
-                                with dpg.table_row():
-                                    dpg.add_button(label=label, tag=f"button_{key}", width=120)
-                                    dpg.bind_item_theme(f"button_{key}", themes_manager.themes["button_right_theme"])
-                                    dpg.add_input_text(tag=f"input_{key}", default_value=str(cm.settings[key]), width=40)
-                    
+                            dpg.add_table_column(width_fixed=True)  # Label
+                            dpg.add_table_column(width_fixed=True)  # Input + "to" + Input
+                            with dpg.table_row():
+                                dpg.add_button(label="GPU Limit:", tag="button_gpulimit", width=75)
+                                dpg.bind_item_theme("button_gpulimit", themes_manager.themes["button_right_theme"])
+                                with dpg.group(horizontal=True):
+                                    dpg.add_input_text(tag="input_gpucutoffforincrease", default_value=str(cm.settings["gpucutoffforincrease"]), width=40)
+                                    dpg.add_text("-", wrap=300)
+                                    dpg.add_input_text(tag="input_gpucutofffordecrease", default_value=str(cm.settings["gpucutofffordecrease"]), width=40)
+                                    dpg.add_text("%", tag="gpu_percent_text", wrap=300)
+                            with dpg.table_row():
+                                dpg.add_button(label="CPU Limit:", tag="button_cpulimit", width=75)
+                                dpg.bind_item_theme("button_cpulimit", themes_manager.themes["button_right_theme"])
+                                with dpg.group(horizontal=True):
+                                    dpg.add_input_text(tag="input_cpucutoffforincrease", default_value=str(cm.settings["cpucutoffforincrease"]), width=40)
+                                    dpg.add_text("-", wrap=300)
+                                    dpg.add_input_text(tag="input_cpucutofffordecrease", default_value=str(cm.settings["cpucutofffordecrease"]), width=40)
+                                    dpg.add_text("%", tag="cpu_percent_text", wrap=300)
+
                     #dpg.add_spacer(width=1)
                     tab1_group3_width = 125
                     with dpg.group(width=135):
