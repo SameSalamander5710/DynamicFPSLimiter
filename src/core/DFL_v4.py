@@ -612,23 +612,35 @@ with dpg.window(label=app_title, tag="Primary Window"):
                     with dpg.group(width=220):
                         with dpg.table(header_row=False, resizable=False, policy=dpg.mvTable_SizingFixedFit):
                             dpg.add_table_column(width_fixed=True)  # Label
-                            dpg.add_table_column(width_fixed=True)  # Input + "to" + Input
                             with dpg.table_row():
-                                dpg.add_button(label="GPU Limit:", tag="button_gpulimit", width=75)
-                                dpg.bind_item_theme("button_gpulimit", themes_manager.themes["button_right_theme"])
                                 with dpg.group(horizontal=True):
+                                    dpg.add_button(label="GPU range:", tag="button_gpulimit", width=78)
+                                    dpg.bind_item_theme("button_gpulimit", themes_manager.themes["button_right_theme"])
                                     dpg.add_input_text(tag="input_gpucutoffforincrease", default_value=str(cm.settings["gpucutoffforincrease"]), width=40)
                                     dpg.add_text("-", wrap=300)
                                     dpg.add_input_text(tag="input_gpucutofffordecrease", default_value=str(cm.settings["gpucutofffordecrease"]), width=40)
                                     dpg.add_text("%", tag="gpu_percent_text", wrap=300)
                             with dpg.table_row():
-                                dpg.add_button(label="CPU Limit:", tag="button_cpulimit", width=75)
-                                dpg.bind_item_theme("button_cpulimit", themes_manager.themes["button_right_theme"])
                                 with dpg.group(horizontal=True):
+                                    dpg.add_button(label="CPU range:", tag="button_cpulimit", width=78)
+                                    dpg.bind_item_theme("button_cpulimit", themes_manager.themes["button_right_theme"])
                                     dpg.add_input_text(tag="input_cpucutoffforincrease", default_value=str(cm.settings["cpucutoffforincrease"]), width=40)
                                     dpg.add_text("-", wrap=300)
                                     dpg.add_input_text(tag="input_cpucutofffordecrease", default_value=str(cm.settings["cpucutofffordecrease"]), width=40)
                                     dpg.add_text("%", tag="cpu_percent_text", wrap=300)
+                            with dpg.table_row():
+
+                                with dpg.group(horizontal=True):
+                                    dpg.add_button(label="Delays:", tag="button_delaybeforedecrease", width=50)
+                                    dpg.bind_item_theme("button_delaybeforedecrease", themes_manager.themes["button_right_theme"])
+                                    dpg.add_text("for decrease (s):", wrap=300)
+                                    dpg.add_input_text(tag="input_delaybeforedecrease", default_value=str(cm.settings["delaybeforedecrease"]), width=40)
+                            with dpg.table_row():
+                                with dpg.group(horizontal=True):
+                                    dpg.add_button(label=" ", tag="button_delaybeforeincrease", width=50)
+                                    dpg.bind_item_theme("button_delaybeforeincrease", themes_manager.themes["button_right_theme"])
+                                    dpg.add_text("for increase (s):", wrap=300)
+                                    dpg.add_input_text(tag="input_delaybeforeincrease", default_value=str(cm.settings["delaybeforeincrease"]), width=40)
 
                     #dpg.add_spacer(width=1)
                     tab1_group3_width = 125
