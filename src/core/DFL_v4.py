@@ -1,5 +1,5 @@
 # DFL_v4.py
-# Dynamic FPS Limiter v4.4.1
+# Dynamic FPS Limiter v4.4.2
 
 import ctypes
 ctypes.windll.shcore.SetProcessDpiAwareness(2)
@@ -569,7 +569,7 @@ with dpg.window(label=app_title, tag="Primary Window"):
         dpg.add_image(icon_texture, tag="icon", width=20, height=20)
         dpg.add_text(app_title, tag="app_title")
         #dpg.bind_item_font("app_title", bold_font)
-        dpg.add_text("v4.4.1")
+        dpg.add_text("v4.4.2")
         dpg.add_spacer(width=310)
 
         dpg.add_image_button(texture_tag=minimize_texture, tag="minimize", callback=tray.minimize_to_tray, width=20, height=20)

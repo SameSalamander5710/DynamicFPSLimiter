@@ -2,8 +2,8 @@
 
 VSVersionInfo(
   ffi=FixedFileInfo(
-    filevers=(4, 4, 1, 0),
-    prodvers=(4, 4, 1, 0),
+    filevers=(4, 4, 2, 0),
+    prodvers=(4, 4, 2, 0),
     mask=0x3f,
     flags=0x0,
     OS=0x4,
@@ -19,11 +19,11 @@ VSVersionInfo(
           [
             StringStruct('CompanyName', 'SameSalamander5710'),
             StringStruct('FileDescription', 'DynamicFPSLimiter'),
-            StringStruct('FileVersion', '4.4.1'),
+            StringStruct('FileVersion', '4.4.2'),
             StringStruct('InternalName', 'DynamicFPSLimiter'),
             StringStruct('OriginalFilename', 'DynamicFPSLimiter.exe'),
             StringStruct('ProductName', 'DynamicFPSLimiter'),
-            StringStruct('ProductVersion', '4.4.1')
+            StringStruct('ProductVersion', '4.4.2')
           ]
         )
       ]

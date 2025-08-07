@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## [v4.4.2] - 2025-08-XX
+
+### To add
+- Move delay settings to main GUI
+    - make it a profile specific setting
+- change default min fps to 40
+- change default delay to inc. to 5 or 10 seconds
+
 ## [v4.4.1] - 2025-07-26
 
 ### Added
