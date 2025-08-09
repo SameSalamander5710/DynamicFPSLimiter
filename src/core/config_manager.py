@@ -57,8 +57,6 @@ class ConfigManager:
                 'autopilot': 'False',
             }
             self.settings_config["GlobalSettings"] = {
-                'delaybeforedecrease': '2',
-                'delaybeforeincrease': '3',
                 'minvalidgpu': '14',
                 'minvalidfps': '14',
                 'globallimitonexit_fps': '98',
@@ -85,6 +83,8 @@ class ConfigManager:
                 'gpucutoffforincrease': '70',
                 'cpucutofffordecrease': '105',
                 'cpucutoffforincrease': '101',
+                'delaybeforedecrease': '2',
+                'delaybeforeincrease': '3',
                 'capmethod': 'ratio',
                 'customfpslimits': '30.01, 45.00, 59.99',
             }
@@ -93,7 +93,7 @@ class ConfigManager:
         
         self.input_field_keys = ["maxcap", "mincap", "capstep", "capratio",
                 "gpucutofffordecrease", "gpucutoffforincrease", "cpucutofffordecrease", "cpucutoffforincrease",
-                "capmethod", "customfpslimits"]
+                "capmethod", "customfpslimits", "delaybeforedecrease", "delaybeforeincrease"]
 
         self.input_button_tags = ["rest_fps_cap_button", "autofill_fps_caps", "quick_save", "quick_load", "Reset_Default", "SaveToProfile"]
 
