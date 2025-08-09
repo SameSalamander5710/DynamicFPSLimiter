@@ -1,5 +1,5 @@
 # DFL_v4.py
-# Dynamic FPS Limiter v4.4.1
+# Dynamic FPS Limiter v4.4.2
 
 import ctypes
 ctypes.windll.shcore.SetProcessDpiAwareness(2)
@@ -569,7 +569,7 @@ with dpg.window(label=app_title, tag="Primary Window"):
         dpg.add_image(icon_texture, tag="icon", width=20, height=20)
         dpg.add_text(app_title, tag="app_title")
         #dpg.bind_item_font("app_title", bold_font)
-        dpg.add_text("v4.4.1")
+        dpg.add_text("v4.4.2")
         dpg.add_spacer(width=310)
 
         dpg.add_image_button(texture_tag=minimize_texture, tag="minimize", callback=tray.minimize_to_tray, width=20, height=20)
@@ -609,22 +609,42 @@ with dpg.window(label=app_title, tag="Primary Window"):
                                                       min_clamped=True, min_value=1)
                    
                     #2 dpg.add_spacer(width=1)
-                    with dpg.group(width=175):
+                    with dpg.group(width=220):
                         with dpg.table(header_row=False, resizable=False, policy=dpg.mvTable_SizingFixedFit):
-                            dpg.add_table_column(width_fixed=True)
-                            dpg.add_table_column(width_fixed=True)
-                            for label, key in [("GPU: Upper limit", "gpucutofffordecrease"),
-                                            ("Lower limit", "gpucutoffforincrease"),
-                                            ("CPU: Upper limit", "cpucutofffordecrease"),
-                                            ("Lower limit", "cpucutoffforincrease")]:
-                                with dpg.table_row():
-                                    dpg.add_button(label=label, tag=f"button_{key}", width=120)
-                                    dpg.bind_item_theme(f"button_{key}", themes_manager.themes["button_right_theme"])
-                                    dpg.add_input_text(tag=f"input_{key}", default_value=str(cm.settings[key]), width=40)
-                    
+                            dpg.add_table_column(width_fixed=True)  # Label
+                            with dpg.table_row():
+                                with dpg.group(horizontal=True):
+                                    dpg.add_button(label="GPU range:", tag="button_gpulimit", width=78)
+                                    dpg.bind_item_theme("button_gpulimit", themes_manager.themes["button_right_theme"])
+                                    dpg.add_input_text(tag="input_gpucutoffforincrease", default_value=str(cm.settings["gpucutoffforincrease"]), width=40)
+                                    dpg.add_text("-", wrap=300)
+                                    dpg.add_input_text(tag="input_gpucutofffordecrease", default_value=str(cm.settings["gpucutofffordecrease"]), width=40)
+                                    dpg.add_text("%", tag="gpu_percent_text", wrap=300)
+                            with dpg.table_row():
+                                with dpg.group(horizontal=True):
+                                    dpg.add_button(label="CPU range:", tag="button_cpulimit", width=78)
+                                    dpg.bind_item_theme("button_cpulimit", themes_manager.themes["button_right_theme"])
+                                    dpg.add_input_text(tag="input_cpucutoffforincrease", default_value=str(cm.settings["cpucutoffforincrease"]), width=40)
+                                    dpg.add_text("-", wrap=300)
+                                    dpg.add_input_text(tag="input_cpucutofffordecrease", default_value=str(cm.settings["cpucutofffordecrease"]), width=40)
+                                    dpg.add_text("%", tag="cpu_percent_text", wrap=300)
+                            with dpg.table_row():
+                                with dpg.group(horizontal=True):
+                                    dpg.add_button(label="FPS drop delay:", tag="button_delaybeforedecrease", width=110)
+                                    dpg.bind_item_theme("button_delaybeforedecrease", themes_manager.themes["button_right_theme"])
+                                    dpg.add_input_int(tag=f"input_delaybeforedecrease", default_value=int(cm.settings["delaybeforedecrease"]), 
+                                                      width=90, step=1, step_fast=10, 
+                                                      min_clamped=True, min_value=1, max_value=99, max_clamped=True)
+                            with dpg.table_row():
+                                with dpg.group(horizontal=True):
+                                    dpg.add_button(label="FPS raise delay:", tag="button_delaybeforeincrease", width=110)
+                                    dpg.bind_item_theme("button_delaybeforeincrease", themes_manager.themes["button_right_theme"])
+                                    dpg.add_input_int(tag=f"input_delaybeforeincrease", default_value=int(cm.settings["delaybeforeincrease"]), 
+                                                      width=90, step=1, step_fast=10, 
+                                                      min_clamped=True, min_value=1, max_value=99, max_clamped=True)
                     #dpg.add_spacer(width=1)
-                    tab1_group3_width = 170
-                    with dpg.group(width=180):
+                    tab1_group3_width = 125
+                    with dpg.group(width=135):
                         with dpg.table(header_row=False, resizable=False, policy=dpg.mvTable_SizingFixedFit):
                             dpg.add_table_column(width_fixed=True)
                             with dpg.table_row():
@@ -632,9 +652,9 @@ with dpg.window(label=app_title, tag="Primary Window"):
                             with dpg.table_row():
                                 dpg.add_button(tag="quick_load", label="Quick Load", callback=cm.quick_load_settings, width=tab1_group3_width)
                             with dpg.table_row():
-                                dpg.add_button(tag="Reset_Default", label="Reset Settings to Default", callback=cm.reset_to_program_default, width=tab1_group3_width)
+                                dpg.add_button(tag="Reset_Default", label="Reset to Default", callback=cm.reset_to_program_default, width=tab1_group3_width)
                             with dpg.table_row():
-                                dpg.add_button(tag="SaveToProfile", label="Save Settings to Profile", callback=cm.save_to_profile, width=tab1_group3_width)
+                                dpg.add_button(tag="SaveToProfile", label="Save to Profile", callback=cm.save_to_profile, width=tab1_group3_width)
                                 dpg.bind_item_theme("SaveToProfile", themes_manager.themes["revert_gpu_theme"])
     
         with dpg.tab(label="  Preferences", tag="tab2"): 

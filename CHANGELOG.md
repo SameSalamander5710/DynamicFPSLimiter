@@ -1,5 +1,21 @@
 # CHANGELOG
 
+## [v4.4.2] - 2025-08-09
+
+### Added
+- Moved the delay settings (before increase/decrease) from global preferences to profile-specific settings. These can now be changed directly in the app.
+
+### Changed
+- Default maximum and minimum framerate limits updated:
+    - Maximum FPS limit increased from 60 to 114.
+    - Minimim FPS limit increased from 30 to 40.
+        - Given the vastly improved experience when using LSFG with a base 40 FPS vs 30 FPS (~101.00 ms vs ~144.91 ms end-to-end latency respectively<sup><a href="#v4.4.2_ref1">1</a></sup>, along with improved visuals), this serves as a subtle hint to avoid capping below 40 FPS when possible. The app still works the same and can be used with a 30 FPS cap if needed.
+- Default 'delay before increase' value raised from 3 seconds to 10 seconds.:
+    - The microstutter that occurs when the game stalls during a framerate limit change can affect each game differently. A 10-second delay provides a less dynamic but smoother experience for new users and likely results in better performance in most games. The app still works the same and can be used with a 3 second delay if needed.
+
+### References
+<a id="v4.4.2_ref1">1. </a>[CptTombstone's post on r/losslessscaling](https://www.reddit.com/r/losslessscaling/comments/1mhfjnq/curious_about_the_latency_impact_of_lsfg_at/)
+
 ## [v4.4.1] - 2025-07-26
 
 ### Added
