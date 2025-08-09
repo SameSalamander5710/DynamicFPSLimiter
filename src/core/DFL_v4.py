@@ -630,15 +630,18 @@ with dpg.window(label=app_title, tag="Primary Window"):
                                     dpg.add_text("%", tag="cpu_percent_text", wrap=300)
                             with dpg.table_row():
                                 with dpg.group(horizontal=True):
-                                    dpg.add_button(label="Delays: for decrease (s)", tag="button_delaybeforedecrease", width=155)
+                                    dpg.add_button(label="FPS drop delay:", tag="button_delaybeforedecrease", width=110)
                                     dpg.bind_item_theme("button_delaybeforedecrease", themes_manager.themes["button_right_theme"])
-                                    dpg.add_input_text(tag="input_delaybeforedecrease", default_value=str(cm.settings["delaybeforedecrease"]), width=40)
+                                    dpg.add_input_int(tag=f"input_delaybeforedecrease", default_value=int(cm.settings["delaybeforedecrease"]), 
+                                                      width=90, step=1, step_fast=10, 
+                                                      min_clamped=True, min_value=1, max_value=99, max_clamped=True)
                             with dpg.table_row():
                                 with dpg.group(horizontal=True):
-                                    dpg.add_button(label="for increase (s)", tag="button_delaybeforeincrease", width=155)
+                                    dpg.add_button(label="FPS raise delay:", tag="button_delaybeforeincrease", width=110)
                                     dpg.bind_item_theme("button_delaybeforeincrease", themes_manager.themes["button_right_theme"])
-                                    dpg.add_input_text(tag="input_delaybeforeincrease", default_value=str(cm.settings["delaybeforeincrease"]), width=40)
-
+                                    dpg.add_input_int(tag=f"input_delaybeforeincrease", default_value=int(cm.settings["delaybeforeincrease"]), 
+                                                      width=90, step=1, step_fast=10, 
+                                                      min_clamped=True, min_value=1, max_value=99, max_clamped=True)
                     #dpg.add_spacer(width=1)
                     tab1_group3_width = 125
                     with dpg.group(width=135):
