@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [v4.4.2-patch1] - 2025-08-11
+
+### Fixed
+- Temporary workaround: Disabled the currently unused GetFlags functionality to prevent errors experienced by some users.
+    - This feature is reserved for potential future use and does not affect current app functionality.
+
 ## [v4.4.2] - 2025-08-09
 
 ### Added
