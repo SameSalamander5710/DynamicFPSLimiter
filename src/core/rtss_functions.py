@@ -50,9 +50,9 @@ class RTSSController:
         self.SetFlags.argtypes = [ctypes.c_uint, ctypes.c_uint]
         self.SetFlags.restype = ctypes.c_uint
 
-        self.GetFlags = self.dll.GetFlags
-        self.GetFlags.argtypes = []
-        self.GetFlags.restype = ctypes.c_uint
+#        self.GetFlags = self.dll.GetFlags
+#        self.GetFlags.argtypes = []
+#        self.GetFlags.restype = ctypes.c_uint
 
     def get_rtss_install_path(self):
         try:
@@ -120,8 +120,8 @@ class RTSSController:
         self.SaveProfile(profile_name.encode('ascii'))
         self.UpdateProfiles()
 
-    def get_flags(self):
-        return self.GetFlags()
+#    def get_flags(self):
+#        return self.GetFlags()
 
     def set_flags(self, and_mask, xor_mask):
         return self.SetFlags(and_mask, xor_mask)
