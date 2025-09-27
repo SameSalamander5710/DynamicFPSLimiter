@@ -19,15 +19,15 @@ computer.Open()
 
 # Define which sensors to extract for each hardware type and sensor type
 CPU_SENSORS = {
-    SensorType.Load: ['CPU Total', 'CPU Core Max'],
-    SensorType.Temperature: ['CPU Package'],
-    SensorType.Power: ['CPU Package'],
+    SensorType.Load: None, #['CPU Total', 'CPU Core Max'],
+    SensorType.Temperature: None, #['CPU Package'],
+    SensorType.Power: None,  #['CPU Package'],
 }
 
 GPU_SENSORS = {
     SensorType.Load: None,  # None means all available
-    SensorType.Temperature: ['GPU Core', 'GPU Hot Spot'],
-    SensorType.Power: ['GPU Package'],
+    SensorType.Temperature: None, #['GPU Core', 'GPU Hot Spot'],
+    SensorType.Power: None, #['GPU Package'],
 }
 
 def get_selected_sensor_values(hardware, sensor_map):
