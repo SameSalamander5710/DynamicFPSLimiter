@@ -23,7 +23,7 @@ def relaunch_as_admin():
 
 def run_app():
     # Import and run DFL_v4 directly
-    import core.DFL_v4
+    import core.DFL_v5
 
 def build_executable():
     PyInstaller.__main__.run([
@@ -44,6 +44,8 @@ def build_executable():
         '--add-data', 'src/core/assets/close_button.png:assets',
         '--add-data', 'src/core/assets/minimize_button.png:assets',
         '--add-data', 'src/core/assets/faqs.csv:assets',
+        '--add-data', 'src/core/assets/LibreHardwareMonitorLib.dll:assets',
+        '--add-data', 'src/core/assets/LICENSE.txt:assets',
         '--distpath', 'output/dist',
         '--workpath', 'output/build'
     ])

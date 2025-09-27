@@ -1,8 +1,26 @@
 import dearpygui.dearpygui as dpg
+import clr
+from pathlib import Path
+
+# Add the src directory to the Python path for imports
+#_this_dir = os.path.abspath(os.path.dirname(__file__))
+
+# Path to the DLL
+dll_path = Path(__file__).parent / "assets" / "LibreHardwareMonitorLib.dll"
+clr.AddReference(str(dll_path))
+
+from LibreHardwareMonitor.Hardware import SensorType  # Add this import at the top
+
+sensor_type_map = {
+    "Load": SensorType.Load,
+    "Temperature": SensorType.Temperature,
+    "Power": SensorType.Power,
+}
 
 class FPSUtils:
-    def __init__(self, cm, logger=None, dpg=None, viewport_width=610):
+    def __init__(self, cm, lhm_sensor, logger=None, dpg=None, viewport_width=610):
         self.cm = cm
+        self.lhm_sensor = lhm_sensor
         self.logger = logger
         self.dpg = dpg or dpg  # fallback to global if not passed
         self.viewport_width = viewport_width
@@ -13,7 +31,7 @@ class FPSUtils:
         minimum = int(dpg.get_value("input_mincap"))
         step = int(dpg.get_value("input_capstep"))
         ratio = int(dpg.get_value("input_capratio"))
-        use_custom = dpg.get_value("input_capmethod")
+        use_custom = dpg.get_value("input_capmethod").lower()
 
         if use_custom == "custom":
             custom_limits = dpg.get_value("input_customfpslimits")
@@ -111,3 +129,77 @@ class FPSUtils:
         lowerlimit = self.dpg.get_value("input_mincap")
         upperlimit = self.dpg.get_value("input_maxcap")
         self.dpg.set_value("input_customfpslimits", f"{lowerlimit}, {upperlimit}")
+
+    def should_decrease_fps_cap(self, gpu_values, cpu_values):
+        monitoring_method = self.dpg.get_value("input_monitoring_method")
+        cm = self.cm
+        lhm_sensor = self.lhm_sensor
+        if monitoring_method == "Legacy":
+            gpu_decrease_condition = (
+                len(gpu_values) >= cm.delaybeforedecrease and
+                all(value >= cm.gpucutofffordecrease for value in gpu_values[-cm.delaybeforedecrease:])
+            )
+            cpu_decrease_condition = (
+                len(cpu_values) >= cm.delaybeforedecrease and
+                all(value >= cm.cpucutofffordecrease for value in cpu_values[-cm.delaybeforedecrease:])
+            )
+            return gpu_decrease_condition or cpu_decrease_condition
+
+        elif monitoring_method == "LibreHardwareMonitor":
+            checks = [
+                ("input_load_gpucore_enable", ("Load", "GPU Core (1)"), "input_load_gpucore_upper"),
+                ("input_load_d3d3d_enable", ("Load", "D3D 3D"), "input_load_d3d3d_upper"),
+                ("input_load_d3dcopy1_enable", ("Load", "D3D Copy (1)"), "input_load_d3dcopy1_upper"),
+                ("input_load_cputotal_enable", ("Load", "CPU Total"), "input_load_cputotal_upper"),
+                ("input_load_cpucoremax_enable", ("Load", "CPU Core Max"), "input_load_cpucoremax_upper"),
+            ]
+            triggered = []
+            
+            for checkbox, percentile_key, upper_tag in checks:
+                if self.dpg.get_value(checkbox):
+                    upper = float(self.dpg.get_value(upper_tag))
+                    sensor_type_enum = sensor_type_map.get(percentile_key[0])
+                    key = (sensor_type_enum, percentile_key[1])
+                    value = lhm_sensor.cpu_percentiles.get(key) if "CPU" in percentile_key[1] else lhm_sensor.gpu_percentiles.get(key)
+                    self.logger.add_log(f"Checking {percentile_key} against upper limit {upper}: {value}")
+                    if value is not None and value >= upper:
+                        triggered.append(True)
+                    else:
+                        triggered.append(False)
+            return any(triggered) if triggered else False
+
+    def should_increase_fps_cap(self, gpu_values, cpu_values):
+        monitoring_method = self.dpg.get_value("input_monitoring_method")
+        cm = self.cm
+        lhm_sensor = self.lhm_sensor
+        if monitoring_method == "Legacy":
+            gpu_increase_condition = (
+                len(gpu_values) >= cm.delaybeforeincrease and
+                all(value <= cm.gpucutoffforincrease for value in gpu_values[-cm.delaybeforeincrease:])
+            )
+            cpu_increase_condition = (
+                len(cpu_values) >= cm.delaybeforeincrease and
+                all(value <= cm.cpucutoffforincrease for value in cpu_values[-cm.delaybeforeincrease:])
+            )
+            return gpu_increase_condition and cpu_increase_condition
+
+        elif monitoring_method == "LibreHardwareMonitor":
+            checks = [
+                ("input_load_gpucore_enable", ("Load", "GPU Core (1)"), "input_load_gpucore_lower"),
+                ("input_load_d3d3d_enable", ("Load", "D3D 3D"), "input_load_d3d3d_lower"),
+                ("input_load_d3dcopy1_enable", ("Load", "D3D Copy (1)"), "input_load_d3dcopy1_lower"),
+                ("input_load_cputotal_enable", ("Load", "CPU Total"), "input_load_cputotal_lower"),
+                ("input_load_cpucoremax_enable", ("Load", "CPU Core Max"), "input_load_cpucoremax_lower"),
+            ]
+            results = []
+            for checkbox, percentile_key, lower_tag in checks:
+                if self.dpg.get_value(checkbox):
+                    lower = float(self.dpg.get_value(lower_tag))
+                    sensor_type_enum = sensor_type_map.get(percentile_key[0])
+                    key = (sensor_type_enum, percentile_key[1])
+                    value = lhm_sensor.cpu_percentiles.get(key) if "CPU" in percentile_key[1] else lhm_sensor.gpu_percentiles.get(key)
+                    if value is not None and value <= lower:
+                        results.append(True)
+                    else:
+                        results.append(False)
+            return all(results) if results else False
