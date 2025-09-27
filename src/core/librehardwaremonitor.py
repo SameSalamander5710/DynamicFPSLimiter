@@ -67,6 +67,8 @@ class LHMSensor:
         self.percentile = percentile
         self.cpu_history = defaultdict(lambda: deque(maxlen=max_samples))
         self.gpu_history = defaultdict(lambda: deque(maxlen=max_samples))
+        self.cpu_percentiles = defaultdict(float)
+        self.gpu_percentiles = defaultdict(float)
         self._thread = None
         self._lock = threading.Lock()
         self.cpu_name = self.get_cpu_name()
@@ -94,6 +96,12 @@ class LHMSensor:
         return names
 
     def start(self):
+    # Reset histories and percentiles
+        with self._lock:
+            self.cpu_history.clear()
+            self.gpu_history.clear()
+            self.cpu_percentiles.clear()
+            self.gpu_percentiles.clear()
         if self._thread and self._thread.is_alive():
             return  # Already running
         self._should_stop.clear()
