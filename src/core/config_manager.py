@@ -556,10 +556,10 @@ class ConfigManager:
         app_data = app_data.lower() if app_data else dpg.get_value("input_monitoring_method").lower()
 
         if app_data == "librehardwaremonitor":
-            self.dpg.configure_item("load_childwindow", show=True)
+            self.dpg.configure_item("LHwM_childwindow", show=True)
             self.dpg.configure_item("legacy_childwindow", show=False)
         else:
-            self.dpg.configure_item("load_childwindow", show=False)
+            self.dpg.configure_item("LHwM_childwindow", show=False)
             self.dpg.configure_item("legacy_childwindow", show=True)
 
     def gpu_dropdown_callback(self, sender, app_data, user_data):

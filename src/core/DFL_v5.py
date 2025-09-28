@@ -700,7 +700,7 @@ with dpg.window(label=app_title, tag="Primary Window"):
 
     with dpg.child_window(width=-1, height=425, border=True):
         with dpg.group(horizontal=True):
-            with dpg.child_window(width=280, height=205, border=False, tag="load_childwindow", show=False): #TODO: Change defaults to selected states
+            with dpg.child_window(width=280, height=205, border=False, tag="LHwM_childwindow", show=False):
                 dpg.add_spacer(height=1)
                 with dpg.group(horizontal=True):
                     dpg.add_text("GPU:")
@@ -764,40 +764,6 @@ with dpg.window(label=app_title, tag="Primary Window"):
                             dpg.add_input_text(tag="input_load_cpucoremax_upper", default_value=str(cm.settings["load_cpucoremax_upper"]), width=40)
                             dpg.add_text("%", wrap=300)
 
-#TODO Add checkboxes to legacy options as well
-            with dpg.child_window(width=280, height=205, border=False, tag="legacy_childwindow", show=False):
-                dpg.add_text("Legacy monitoring options go here.")
-                with dpg.group(horizontal=True):
-                    with dpg.drawlist(width=15, height=15):
-                        dpg.draw_line((0, 13), (15, 13), color=(180,180,180), thickness=1)
-                    dpg.add_text("Load")
-                    with dpg.drawlist(width=200, height=15):
-                        dpg.draw_line((0, 13), (200, 13), color=(180,180,180), thickness=1)
-                with dpg.table(header_row=False, resizable=False, policy=dpg.mvTable_SizingFixedFit):
-                    dpg.add_table_column(width_fixed=True)  # Label
-                    with dpg.table_row():
-                        with dpg.group(horizontal=True):
-                            dpg.add_button(label="GPU 3D:", tag="button_gpu3d_legacy", width=85)
-                            dpg.bind_item_theme("button_gpu3d_legacy", themes_manager.themes["button_left_theme"])
-                            dpg.add_input_text(tag="input_gpucutoffforincrease", default_value=str(cm.settings["gpucutoffforincrease"]), width=40)
-                            dpg.add_text("-", wrap=300)
-                            dpg.add_input_text(tag="input_gpucutofffordecrease", default_value=str(cm.settings["gpucutofffordecrease"]), width=40)
-                            dpg.add_text("%", wrap=300)
-                    with dpg.table_row():
-                        with dpg.group(horizontal=True):
-                            dpg.add_button(label="CPU Core:", tag="button_cpucore_legacy", width=85)
-                            dpg.bind_item_theme("button_cpucore_legacy", themes_manager.themes["button_left_theme"])
-                            dpg.add_input_text(tag="input_cpucutoffforincrease", default_value=str(cm.settings["cpucutoffforincrease"]), width=40)
-                            dpg.add_text("-", wrap=300)
-                            dpg.add_input_text(tag="input_cpucutofffordecrease", default_value=str(cm.settings["cpucutofffordecrease"]), width=40)
-                            dpg.add_text("%", wrap=300)
-                dpg.add_spacer(height=5)
-                dpg.add_input_text(tag="luid_status_text", default_value="Tracking all GPU 3D usages.", readonly=True, width=260)
-                dpg.add_spacer(height=5)
-                dpg.add_button(label="Detect Render GPU", callback=toggle_luid_selection, tag="luid_button", width=150)
-                dpg.add_spacer(height=5)
-
-            with dpg.child_window(width=-1, height=205, border=False, tag="temp_power_childwindow"):
                 with dpg.group(horizontal=True):
                     with dpg.drawlist(width=15, height=15):
                         dpg.draw_line((0, 13), (15, 13), color=(180,180,180), thickness=1)
@@ -859,6 +825,41 @@ with dpg.window(label=app_title, tag="Primary Window"):
                             dpg.add_text("-", wrap=300)
                             dpg.add_input_text(tag="input_power_cpupackage_upper", default_value=str(cm.settings["power_cpupackage_upper"]), width=40)
                             dpg.add_text("W", wrap=300)
+
+#TODO Add checkboxes to legacy options as well
+            with dpg.child_window(width=280, height=205, border=False, tag="legacy_childwindow", show=False):
+                dpg.add_text("Legacy monitoring options go here.")
+                with dpg.group(horizontal=True):
+                    with dpg.drawlist(width=15, height=15):
+                        dpg.draw_line((0, 13), (15, 13), color=(180,180,180), thickness=1)
+                    dpg.add_text("Load")
+                    with dpg.drawlist(width=200, height=15):
+                        dpg.draw_line((0, 13), (200, 13), color=(180,180,180), thickness=1)
+                with dpg.table(header_row=False, resizable=False, policy=dpg.mvTable_SizingFixedFit):
+                    dpg.add_table_column(width_fixed=True)  # Label
+                    with dpg.table_row():
+                        with dpg.group(horizontal=True):
+                            dpg.add_button(label="GPU 3D:", tag="button_gpu3d_legacy", width=85)
+                            dpg.bind_item_theme("button_gpu3d_legacy", themes_manager.themes["button_left_theme"])
+                            dpg.add_input_text(tag="input_gpucutoffforincrease", default_value=str(cm.settings["gpucutoffforincrease"]), width=40)
+                            dpg.add_text("-", wrap=300)
+                            dpg.add_input_text(tag="input_gpucutofffordecrease", default_value=str(cm.settings["gpucutofffordecrease"]), width=40)
+                            dpg.add_text("%", wrap=300)
+                    with dpg.table_row():
+                        with dpg.group(horizontal=True):
+                            dpg.add_button(label="CPU Core:", tag="button_cpucore_legacy", width=85)
+                            dpg.bind_item_theme("button_cpucore_legacy", themes_manager.themes["button_left_theme"])
+                            dpg.add_input_text(tag="input_cpucutoffforincrease", default_value=str(cm.settings["cpucutoffforincrease"]), width=40)
+                            dpg.add_text("-", wrap=300)
+                            dpg.add_input_text(tag="input_cpucutofffordecrease", default_value=str(cm.settings["cpucutofffordecrease"]), width=40)
+                            dpg.add_text("%", wrap=300)
+                dpg.add_spacer(height=5)
+                dpg.add_input_text(tag="luid_status_text", default_value="Tracking all GPU 3D usages.", readonly=True, width=260)
+                dpg.add_spacer(height=5)
+                dpg.add_button(label="Detect Render GPU", callback=toggle_luid_selection, tag="luid_button", width=150)
+                dpg.add_spacer(height=5)
+
+
 
         with dpg.group(horizontal=True):
             with dpg.drawlist(width=15, height=15):
@@ -995,7 +996,7 @@ cm.startup_profile_selection()
 
 initial_method = dpg.get_value("input_monitoring_method")
 if initial_method == "LibreHardwareMonitor":
-    dpg.configure_item("load_childwindow", show=True)
+    dpg.configure_item("LHwM_childwindow", show=True)
 else:
     dpg.configure_item("legacy_childwindow", show=True)
 
