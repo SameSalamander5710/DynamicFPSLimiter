@@ -489,7 +489,7 @@ def toggle_luid_selection():
 # TODO: Refactor main GUI into a separate module for better organization
 # TODO: mention legacy in plot, add specifics (3D, core max)
 def build_profile_section():
-    with dpg.child_window(width=-1, height=145):
+    with dpg.child_window(width=-1, height=140):
         with dpg.group(horizontal=True):
             #dpg.add_spacer(width=1)
             dpg.add_input_text(tag="game_name", multiline=False, readonly=True, width=400, height=10)
@@ -506,7 +506,7 @@ def build_profile_section():
             dpg.add_button(label="Start", tag="start_stop_button", callback=start_stop_callback, width=50, user_data=cm)
             dpg.bind_item_theme("start_stop_button", themes_manager.themes["start_button_theme"])  # Apply start button theme
 
-        dpg.add_spacer(height=10)
+        dpg.add_spacer(height=5)
 
         with dpg.table(header_row=False):
             dpg.add_table_column(init_width_or_weight=45)
@@ -675,192 +675,198 @@ with dpg.window(label=app_title, tag="Primary Window"):
     # Profiles
     dpg.add_spacer(height=5)
     build_profile_section()
-    #TODO: Add tooltips for each
-    with dpg.group(horizontal=True, width=-1):
-        dpg.add_radio_button(
-            items=["LibreHardwareMonitor", "Legacy"], 
-            horizontal=True,
-            callback=cm.monitoring_method_callback,
-            default_value="LibreHardwareMonitor",#settings["method"],
-            tag="input_monitoring_method"
-            )
-        dpg.bind_item_theme("input_monitoring_method", themes_manager.themes["radio_theme"])
-        dpg.add_text(" | ")
-        dpg.add_radio_button(
-            items=["Ratio", "Step", "Custom"], 
-            horizontal=True,
-            callback=cm.current_method_callback,
-            default_value="Ratio",#settings["method"],
-            tag="input_capmethod"
-            )
-        dpg.bind_item_theme("input_capmethod", themes_manager.themes["radio_theme"])
-        #dpg.bind_item_font("input_monitoring_method", bold_font)
+
     dpg.add_spacer(height=1)
 
+    with dpg.group(horizontal=True):
+        with dpg.group(horizontal=False):
+            with dpg.child_window(width=180, height=100, border=True):
+                #TODO: Add tooltips for each
+                with dpg.group(horizontal=False, width=120):
+                    dpg.add_text("Monitoring Method:")
+                    dpg.add_radio_button(
+                        items=["LibreHardwareMonitor", "Legacy"], 
+                        horizontal=False,
+                        callback=cm.monitoring_method_callback,
+                        default_value="LibreHardwareMonitor",#settings["method"],
+                        tag="input_monitoring_method"
+                        )
+                    dpg.bind_item_theme("input_monitoring_method", themes_manager.themes["radio_theme"])
+            dpg.add_spacer(height=1)
+            with dpg.child_window(width=180, height=125, border=True):
+                with dpg.group(horizontal=False, width=120):
+                    dpg.add_text("Capping Method:")
+                    dpg.add_radio_button(
+                        items=["Ratio", "Step", "Custom"], 
+                        horizontal=False,
+                        callback=cm.current_method_callback,
+                        default_value="Ratio",#settings["method"],
+                        tag="input_capmethod"
+                        )
+                    dpg.bind_item_theme("input_capmethod", themes_manager.themes["radio_theme"])
+                    #dpg.bind_item_font("input_monitoring_method", bold_font)
 
-    with dpg.child_window(width=-1, height=425, border=True):
-        with dpg.group(horizontal=True):
-            with dpg.child_window(width=280, height=205, border=False, tag="LHwM_childwindow", show=False):
-                dpg.add_spacer(height=1)
-                with dpg.group(horizontal=True):
-                    dpg.add_text("GPU:")
-                    dpg.add_combo(
-                        tag="gpu_dropdown",
-                        width=200,
-                        default_value="Not detected. Use 'Legacy'.",
-                        callback=cm.gpu_dropdown_callback
-                    )
-                with dpg.group(horizontal=True):
-                    with dpg.drawlist(width=15, height=15):
-                        dpg.draw_line((0, 13), (15, 13), color=(180,180,180), thickness=1)
-                    dpg.add_text("Load")
-                    with dpg.drawlist(width=200, height=15):
-                        dpg.draw_line((0, 13), (200, 13), color=(180,180,180), thickness=1)
-                with dpg.table(header_row=False, resizable=False, policy=dpg.mvTable_SizingFixedFit):
-                    dpg.add_table_column(width_fixed=True)  # Label
-                    with dpg.table_row():
-                        with dpg.group(horizontal=True):
-                            dpg.add_checkbox(tag="input_load_gpucore_enable", default_value=cm.settings["load_gpucore_enable"])
-                            dpg.add_button(label="GPU Total:", tag="button_gpucore", width=85)
-                            dpg.bind_item_theme("button_gpucore", themes_manager.themes["button_left_theme"])
-                            dpg.add_input_text(tag="input_load_gpucore_lower", default_value=str(cm.settings["load_gpucore_lower"]), width=40)
-                            dpg.add_text("-", wrap=300)
-                            dpg.add_input_text(tag="input_load_gpucore_upper", default_value=str(cm.settings["load_gpucore_upper"]), width=40)
-                            dpg.add_text("%", tag="gpu_percent_text2", wrap=300)
-                    with dpg.table_row():
-                        with dpg.group(horizontal=True):
-                            dpg.add_checkbox(tag="input_load_d3d3d_enable", default_value=cm.settings["load_d3d3d_enable"])
-                            dpg.add_button(label="GPU 3D:", tag="button_d3d3d", width=85)
-                            dpg.bind_item_theme("button_d3d3d", themes_manager.themes["button_left_theme"])
-                            dpg.add_input_text(tag="input_load_d3d3d_lower", default_value=str(cm.settings["load_d3d3d_lower"]), width=40)
-                            dpg.add_text("-", wrap=300)
-                            dpg.add_input_text(tag="input_load_d3d3d_upper", default_value=str(cm.settings["load_d3d3d_upper"]), width=40)
-                            dpg.add_text("%", wrap=300)
-                    with dpg.table_row():
-                        with dpg.group(horizontal=True):
-                            dpg.add_checkbox(tag="input_load_d3dcopy1_enable", default_value=cm.settings["load_d3dcopy1_enable"])
-                            dpg.add_button(label="GPU Copy 1:", tag="button_d3dcopy1", width=85)
-                            dpg.bind_item_theme("button_d3dcopy1", themes_manager.themes["button_left_theme"])
-                            dpg.add_input_text(tag="input_load_d3dcopy1_lower", default_value=str(cm.settings["load_d3dcopy1_lower"]), width=40)
-                            dpg.add_text("-", wrap=300)
-                            dpg.add_input_text(tag="input_load_d3dcopy1_upper", default_value=str(cm.settings["load_d3dcopy1_upper"]), width=40)
-                            dpg.add_text("%", wrap=300)
-                    with dpg.table_row():
-                        with dpg.group(horizontal=True):
-                            dpg.add_checkbox(tag="input_load_cputotal_enable", default_value=cm.settings["load_cputotal_enable"])
-                            dpg.add_button(label="CPU Total:", tag="button_cputotal", width=85)
-                            dpg.bind_item_theme("button_cputotal", themes_manager.themes["button_left_theme"])
-                            dpg.add_input_text(tag="input_load_cputotal_lower", default_value=str(cm.settings["load_cputotal_lower"]), width=40)
-                            dpg.add_text("-", wrap=300)
-                            dpg.add_input_text(tag="input_load_cputotal_upper", default_value=str(cm.settings["load_cputotal_upper"]), width=40)
-                            dpg.add_text("%", wrap=300)
-                    with dpg.table_row():
-                        with dpg.group(horizontal=True):
-                            dpg.add_checkbox(tag="input_load_cpucoremax_enable", default_value=cm.settings["load_cpucoremax_enable"])
-                            dpg.add_button(label="CPU Core:", tag="button_cpucoremax", width=85)
-                            dpg.bind_item_theme("button_cpucoremax", themes_manager.themes["button_left_theme"])
-                            dpg.add_input_text(tag="input_load_cpucoremax_lower", default_value=str(cm.settings["load_cpucoremax_lower"]), width=40)
-                            dpg.add_text("-", wrap=300)
-                            dpg.add_input_text(tag="input_load_cpucoremax_upper", default_value=str(cm.settings["load_cpucoremax_upper"]), width=40)
-                            dpg.add_text("%", wrap=300)
 
-                with dpg.group(horizontal=True):
-                    with dpg.drawlist(width=15, height=15):
-                        dpg.draw_line((0, 13), (15, 13), color=(180,180,180), thickness=1)
-                    dpg.add_text("Temperature")
-                    with dpg.drawlist(width=165, height=15):
-                        dpg.draw_line((0, 13), (165, 13), color=(180,180,180), thickness=1)
-                with dpg.table(header_row=False, resizable=False, policy=dpg.mvTable_SizingFixedFit):
-                    dpg.add_table_column(width_fixed=True)  # Label
-                    with dpg.table_row():
-                        with dpg.group(horizontal=True):
-                            dpg.add_checkbox(tag="input_temp_gpuhotspot_enable", default_value=cm.settings["temp_gpuhotspot_enable"])
-                            dpg.add_button(label="GPU Hotspot:", tag="button_temp_gpuhotspot", width=90)
-                            dpg.bind_item_theme("button_temp_gpuhotspot", themes_manager.themes["button_left_theme"])
-                            dpg.add_input_text(tag="input_temp_gpuhotspot_lower", default_value=str(cm.settings["temp_gpuhotspot_lower"]), width=40)
-                            dpg.add_text("-", wrap=300)
-                            dpg.add_input_text(tag="input_temp_gpuhotspot_upper", default_value=str(cm.settings["temp_gpuhotspot_upper"]), width=40)
-                            dpg.add_text("°C", wrap=300)
-                    with dpg.table_row():
-                        with dpg.group(horizontal=True):
-                            dpg.add_checkbox(tag="input_temp_gpucore_enable", default_value=cm.settings["temp_gpucore_enable"])
-                            dpg.add_button(label="GPU Core:", tag="button_temp_gpucore", width=90)
-                            dpg.bind_item_theme("button_temp_gpucore", themes_manager.themes["button_left_theme"])
-                            dpg.add_input_text(tag="input_temp_gpucore_lower", default_value=str(cm.settings["temp_gpucore_lower"]), width=40)
-                            dpg.add_text("-", wrap=300)
-                            dpg.add_input_text(tag="input_temp_gpucore_upper", default_value=str(cm.settings["temp_gpucore_upper"]), width=40)
-                            dpg.add_text("°C", wrap=300)
-                    with dpg.table_row():
-                        with dpg.group(horizontal=True):
-                            dpg.add_checkbox(tag="input_temp_cpupackage_enable", default_value=cm.settings["temp_cpupackage_enable"])
-                            dpg.add_button(label="CPU Package:", tag="button_temp_cpupackage", width=90)
-                            dpg.bind_item_theme("button_temp_cpupackage", themes_manager.themes["button_left_theme"])
-                            dpg.add_input_text(tag="input_temp_cpupackage_lower", default_value=str(cm.settings["temp_cpupackage_lower"]), width=40)
-                            dpg.add_text("-", wrap=300)
-                            dpg.add_input_text(tag="input_temp_cpupackage_upper", default_value=str(cm.settings["temp_cpupackage_upper"]), width=40)
-                            dpg.add_text("°C", wrap=300)
-                with dpg.group(horizontal=True):
-                    with dpg.drawlist(width=15, height=15):
-                        dpg.draw_line((0, 13), (15, 13), color=(180,180,180), thickness=1)
-                    dpg.add_text("Power Draw")
-                    with dpg.drawlist(width=165, height=15):
-                        dpg.draw_line((0, 13), (165, 13), color=(180,180,180), thickness=1)
-                with dpg.table(header_row=False, resizable=False, policy=dpg.mvTable_SizingFixedFit):
-                    dpg.add_table_column(width_fixed=True)  # Label
-                    with dpg.table_row():
-                        with dpg.group(horizontal=True):
-                            dpg.add_checkbox(tag="input_power_gpupackage_enable", default_value=cm.settings["power_gpupackage_enable"])
-                            dpg.add_button(label="GPU Package:", tag="button_power_gpupackage", width=90)
-                            dpg.bind_item_theme("button_power_gpupackage", themes_manager.themes["button_left_theme"])
-                            dpg.add_input_text(tag="input_power_gpupackage_lower", default_value=str(cm.settings["power_gpupackage_lower"]), width=40)
-                            dpg.add_text("-", wrap=300)
-                            dpg.add_input_text(tag="input_power_gpupackage_upper", default_value=str(cm.settings["power_gpupackage_upper"]), width=40)
-                            dpg.add_text("W", wrap=300)
-                    with dpg.table_row():
-                        with dpg.group(horizontal=True):
-                            dpg.add_checkbox(tag="input_power_cpupackage_enable", default_value=cm.settings["power_cpupackage_enable"])
-                            dpg.add_button(label="CPU Package:", tag="button_power_cpupackage", width=90)
-                            dpg.bind_item_theme("button_power_cpupackage", themes_manager.themes["button_left_theme"])
-                            dpg.add_input_text(tag="input_power_cpupackage_lower", default_value=str(cm.settings["power_cpupackage_lower"]), width=40)
-                            dpg.add_text("-", wrap=300)
-                            dpg.add_input_text(tag="input_power_cpupackage_upper", default_value=str(cm.settings["power_cpupackage_upper"]), width=40)
-                            dpg.add_text("W", wrap=300)
+        monitoring_window_height = 234
+        with dpg.child_window(width=-1, height=monitoring_window_height, border=True, tag="LHwM_childwindow", show=False):
+            dpg.add_spacer(height=1)
+            with dpg.group(horizontal=True):
+                dpg.add_text("GPU:")
+                dpg.add_combo(
+                    tag="gpu_dropdown",
+                    width=200,
+                    default_value="Not detected. Use 'Legacy'.",
+                    callback=cm.gpu_dropdown_callback
+                )
+            with dpg.group(horizontal=True):
+                with dpg.drawlist(width=15, height=15):
+                    dpg.draw_line((0, 13), (15, 13), color=(180,180,180), thickness=1)
+                dpg.add_text("Load")
+                with dpg.drawlist(width=200, height=15):
+                    dpg.draw_line((0, 13), (200, 13), color=(180,180,180), thickness=1)
+            with dpg.table(header_row=False, resizable=False, policy=dpg.mvTable_SizingFixedFit):
+                dpg.add_table_column(width_fixed=True)  # Label
+                with dpg.table_row():
+                    with dpg.group(horizontal=True):
+                        dpg.add_checkbox(tag="input_load_gpucore_enable", default_value=cm.settings["load_gpucore_enable"])
+                        dpg.add_button(label="GPU Total:", tag="button_gpucore", width=85)
+                        dpg.bind_item_theme("button_gpucore", themes_manager.themes["button_left_theme"])
+                        dpg.add_input_text(tag="input_load_gpucore_lower", default_value=str(cm.settings["load_gpucore_lower"]), width=40)
+                        dpg.add_text("-", wrap=300)
+                        dpg.add_input_text(tag="input_load_gpucore_upper", default_value=str(cm.settings["load_gpucore_upper"]), width=40)
+                        dpg.add_text("%", tag="gpu_percent_text2", wrap=300)
+                with dpg.table_row():
+                    with dpg.group(horizontal=True):
+                        dpg.add_checkbox(tag="input_load_d3d3d_enable", default_value=cm.settings["load_d3d3d_enable"])
+                        dpg.add_button(label="GPU 3D:", tag="button_d3d3d", width=85)
+                        dpg.bind_item_theme("button_d3d3d", themes_manager.themes["button_left_theme"])
+                        dpg.add_input_text(tag="input_load_d3d3d_lower", default_value=str(cm.settings["load_d3d3d_lower"]), width=40)
+                        dpg.add_text("-", wrap=300)
+                        dpg.add_input_text(tag="input_load_d3d3d_upper", default_value=str(cm.settings["load_d3d3d_upper"]), width=40)
+                        dpg.add_text("%", wrap=300)
+                with dpg.table_row():
+                    with dpg.group(horizontal=True):
+                        dpg.add_checkbox(tag="input_load_d3dcopy1_enable", default_value=cm.settings["load_d3dcopy1_enable"])
+                        dpg.add_button(label="GPU Copy 1:", tag="button_d3dcopy1", width=85)
+                        dpg.bind_item_theme("button_d3dcopy1", themes_manager.themes["button_left_theme"])
+                        dpg.add_input_text(tag="input_load_d3dcopy1_lower", default_value=str(cm.settings["load_d3dcopy1_lower"]), width=40)
+                        dpg.add_text("-", wrap=300)
+                        dpg.add_input_text(tag="input_load_d3dcopy1_upper", default_value=str(cm.settings["load_d3dcopy1_upper"]), width=40)
+                        dpg.add_text("%", wrap=300)
+                with dpg.table_row():
+                    with dpg.group(horizontal=True):
+                        dpg.add_checkbox(tag="input_load_cputotal_enable", default_value=cm.settings["load_cputotal_enable"])
+                        dpg.add_button(label="CPU Total:", tag="button_cputotal", width=85)
+                        dpg.bind_item_theme("button_cputotal", themes_manager.themes["button_left_theme"])
+                        dpg.add_input_text(tag="input_load_cputotal_lower", default_value=str(cm.settings["load_cputotal_lower"]), width=40)
+                        dpg.add_text("-", wrap=300)
+                        dpg.add_input_text(tag="input_load_cputotal_upper", default_value=str(cm.settings["load_cputotal_upper"]), width=40)
+                        dpg.add_text("%", wrap=300)
+                with dpg.table_row():
+                    with dpg.group(horizontal=True):
+                        dpg.add_checkbox(tag="input_load_cpucoremax_enable", default_value=cm.settings["load_cpucoremax_enable"])
+                        dpg.add_button(label="CPU Core:", tag="button_cpucoremax", width=85)
+                        dpg.bind_item_theme("button_cpucoremax", themes_manager.themes["button_left_theme"])
+                        dpg.add_input_text(tag="input_load_cpucoremax_lower", default_value=str(cm.settings["load_cpucoremax_lower"]), width=40)
+                        dpg.add_text("-", wrap=300)
+                        dpg.add_input_text(tag="input_load_cpucoremax_upper", default_value=str(cm.settings["load_cpucoremax_upper"]), width=40)
+                        dpg.add_text("%", wrap=300)
+
+            with dpg.group(horizontal=True):
+                with dpg.drawlist(width=15, height=15):
+                    dpg.draw_line((0, 13), (15, 13), color=(180,180,180), thickness=1)
+                dpg.add_text("Temperature")
+                with dpg.drawlist(width=165, height=15):
+                    dpg.draw_line((0, 13), (165, 13), color=(180,180,180), thickness=1)
+            with dpg.table(header_row=False, resizable=False, policy=dpg.mvTable_SizingFixedFit):
+                dpg.add_table_column(width_fixed=True)  # Label
+                with dpg.table_row():
+                    with dpg.group(horizontal=True):
+                        dpg.add_checkbox(tag="input_temp_gpuhotspot_enable", default_value=cm.settings["temp_gpuhotspot_enable"])
+                        dpg.add_button(label="GPU Hotspot:", tag="button_temp_gpuhotspot", width=90)
+                        dpg.bind_item_theme("button_temp_gpuhotspot", themes_manager.themes["button_left_theme"])
+                        dpg.add_input_text(tag="input_temp_gpuhotspot_lower", default_value=str(cm.settings["temp_gpuhotspot_lower"]), width=40)
+                        dpg.add_text("-", wrap=300)
+                        dpg.add_input_text(tag="input_temp_gpuhotspot_upper", default_value=str(cm.settings["temp_gpuhotspot_upper"]), width=40)
+                        dpg.add_text("°C", wrap=300)
+                with dpg.table_row():
+                    with dpg.group(horizontal=True):
+                        dpg.add_checkbox(tag="input_temp_gpucore_enable", default_value=cm.settings["temp_gpucore_enable"])
+                        dpg.add_button(label="GPU Core:", tag="button_temp_gpucore", width=90)
+                        dpg.bind_item_theme("button_temp_gpucore", themes_manager.themes["button_left_theme"])
+                        dpg.add_input_text(tag="input_temp_gpucore_lower", default_value=str(cm.settings["temp_gpucore_lower"]), width=40)
+                        dpg.add_text("-", wrap=300)
+                        dpg.add_input_text(tag="input_temp_gpucore_upper", default_value=str(cm.settings["temp_gpucore_upper"]), width=40)
+                        dpg.add_text("°C", wrap=300)
+                with dpg.table_row():
+                    with dpg.group(horizontal=True):
+                        dpg.add_checkbox(tag="input_temp_cpupackage_enable", default_value=cm.settings["temp_cpupackage_enable"])
+                        dpg.add_button(label="CPU Package:", tag="button_temp_cpupackage", width=90)
+                        dpg.bind_item_theme("button_temp_cpupackage", themes_manager.themes["button_left_theme"])
+                        dpg.add_input_text(tag="input_temp_cpupackage_lower", default_value=str(cm.settings["temp_cpupackage_lower"]), width=40)
+                        dpg.add_text("-", wrap=300)
+                        dpg.add_input_text(tag="input_temp_cpupackage_upper", default_value=str(cm.settings["temp_cpupackage_upper"]), width=40)
+                        dpg.add_text("°C", wrap=300)
+            with dpg.group(horizontal=True):
+                with dpg.drawlist(width=15, height=15):
+                    dpg.draw_line((0, 13), (15, 13), color=(180,180,180), thickness=1)
+                dpg.add_text("Power Draw")
+                with dpg.drawlist(width=165, height=15):
+                    dpg.draw_line((0, 13), (165, 13), color=(180,180,180), thickness=1)
+            with dpg.table(header_row=False, resizable=False, policy=dpg.mvTable_SizingFixedFit):
+                dpg.add_table_column(width_fixed=True)  # Label
+                with dpg.table_row():
+                    with dpg.group(horizontal=True):
+                        dpg.add_checkbox(tag="input_power_gpupackage_enable", default_value=cm.settings["power_gpupackage_enable"])
+                        dpg.add_button(label="GPU Package:", tag="button_power_gpupackage", width=90)
+                        dpg.bind_item_theme("button_power_gpupackage", themes_manager.themes["button_left_theme"])
+                        dpg.add_input_text(tag="input_power_gpupackage_lower", default_value=str(cm.settings["power_gpupackage_lower"]), width=40)
+                        dpg.add_text("-", wrap=300)
+                        dpg.add_input_text(tag="input_power_gpupackage_upper", default_value=str(cm.settings["power_gpupackage_upper"]), width=40)
+                        dpg.add_text("W", wrap=300)
+                with dpg.table_row():
+                    with dpg.group(horizontal=True):
+                        dpg.add_checkbox(tag="input_power_cpupackage_enable", default_value=cm.settings["power_cpupackage_enable"])
+                        dpg.add_button(label="CPU Package:", tag="button_power_cpupackage", width=90)
+                        dpg.bind_item_theme("button_power_cpupackage", themes_manager.themes["button_left_theme"])
+                        dpg.add_input_text(tag="input_power_cpupackage_lower", default_value=str(cm.settings["power_cpupackage_lower"]), width=40)
+                        dpg.add_text("-", wrap=300)
+                        dpg.add_input_text(tag="input_power_cpupackage_upper", default_value=str(cm.settings["power_cpupackage_upper"]), width=40)
+                        dpg.add_text("W", wrap=300)
 
 #TODO Add checkboxes to legacy options as well
-            with dpg.child_window(width=280, height=205, border=False, tag="legacy_childwindow", show=False):
-                dpg.add_text("Legacy monitoring options go here.")
-                with dpg.group(horizontal=True):
-                    with dpg.drawlist(width=15, height=15):
-                        dpg.draw_line((0, 13), (15, 13), color=(180,180,180), thickness=1)
-                    dpg.add_text("Load")
-                    with dpg.drawlist(width=200, height=15):
-                        dpg.draw_line((0, 13), (200, 13), color=(180,180,180), thickness=1)
-                with dpg.table(header_row=False, resizable=False, policy=dpg.mvTable_SizingFixedFit):
-                    dpg.add_table_column(width_fixed=True)  # Label
-                    with dpg.table_row():
-                        with dpg.group(horizontal=True):
-                            dpg.add_button(label="GPU 3D:", tag="button_gpu3d_legacy", width=85)
-                            dpg.bind_item_theme("button_gpu3d_legacy", themes_manager.themes["button_left_theme"])
-                            dpg.add_input_text(tag="input_gpucutoffforincrease", default_value=str(cm.settings["gpucutoffforincrease"]), width=40)
-                            dpg.add_text("-", wrap=300)
-                            dpg.add_input_text(tag="input_gpucutofffordecrease", default_value=str(cm.settings["gpucutofffordecrease"]), width=40)
-                            dpg.add_text("%", wrap=300)
-                    with dpg.table_row():
-                        with dpg.group(horizontal=True):
-                            dpg.add_button(label="CPU Core:", tag="button_cpucore_legacy", width=85)
-                            dpg.bind_item_theme("button_cpucore_legacy", themes_manager.themes["button_left_theme"])
-                            dpg.add_input_text(tag="input_cpucutoffforincrease", default_value=str(cm.settings["cpucutoffforincrease"]), width=40)
-                            dpg.add_text("-", wrap=300)
-                            dpg.add_input_text(tag="input_cpucutofffordecrease", default_value=str(cm.settings["cpucutofffordecrease"]), width=40)
-                            dpg.add_text("%", wrap=300)
-                dpg.add_spacer(height=5)
-                dpg.add_input_text(tag="luid_status_text", default_value="Tracking all GPU 3D usages.", readonly=True, width=260)
-                dpg.add_spacer(height=5)
-                dpg.add_button(label="Detect Render GPU", callback=toggle_luid_selection, tag="luid_button", width=150)
-                dpg.add_spacer(height=5)
+        with dpg.child_window(width=-1, height=monitoring_window_height, border=True, tag="legacy_childwindow", show=False):
+            with dpg.group(horizontal=True):
+                with dpg.drawlist(width=15, height=15):
+                    dpg.draw_line((0, 13), (15, 13), color=(180,180,180), thickness=1)
+                dpg.add_text("Load")
+                with dpg.drawlist(width=200, height=15):
+                    dpg.draw_line((0, 13), (200, 13), color=(180,180,180), thickness=1)
+            with dpg.table(header_row=False, resizable=False, policy=dpg.mvTable_SizingFixedFit):
+                dpg.add_table_column(width_fixed=True)  # Label
+                with dpg.table_row():
+                    with dpg.group(horizontal=True):
+                        dpg.add_button(label="GPU 3D:", tag="button_gpu3d_legacy", width=85)
+                        dpg.bind_item_theme("button_gpu3d_legacy", themes_manager.themes["button_left_theme"])
+                        dpg.add_input_text(tag="input_gpucutoffforincrease", default_value=str(cm.settings["gpucutoffforincrease"]), width=40)
+                        dpg.add_text("-", wrap=300)
+                        dpg.add_input_text(tag="input_gpucutofffordecrease", default_value=str(cm.settings["gpucutofffordecrease"]), width=40)
+                        dpg.add_text("%", wrap=300)
+                with dpg.table_row():
+                    with dpg.group(horizontal=True):
+                        dpg.add_button(label="CPU Core:", tag="button_cpucore_legacy", width=85)
+                        dpg.bind_item_theme("button_cpucore_legacy", themes_manager.themes["button_left_theme"])
+                        dpg.add_input_text(tag="input_cpucutoffforincrease", default_value=str(cm.settings["cpucutoffforincrease"]), width=40)
+                        dpg.add_text("-", wrap=300)
+                        dpg.add_input_text(tag="input_cpucutofffordecrease", default_value=str(cm.settings["cpucutofffordecrease"]), width=40)
+                        dpg.add_text("%", wrap=300)
+            dpg.add_spacer(height=5)
+            dpg.add_input_text(tag="luid_status_text", default_value="Tracking all GPU 3D usages.", readonly=True, width=260)
+            dpg.add_spacer(height=5)
+            dpg.add_button(label="Detect Render GPU", callback=toggle_luid_selection, tag="luid_button", width=150)
 
-
-
+    dpg.add_spacer(height=1)
+    with dpg.child_window(width=-1, height=215, border=True):
         with dpg.group(horizontal=True):
             with dpg.drawlist(width=15, height=15):
                 dpg.draw_line((0, 13), (15, 13), color=(180,180,180), thickness=1)
@@ -915,7 +921,7 @@ with dpg.window(label=app_title, tag="Primary Window"):
                         dpg.add_button(tag="SaveToProfile", label="Save to Profile", callback=cm.save_to_profile, width=tab1_group3_width)
                         dpg.bind_item_theme("SaveToProfile", themes_manager.themes["revert_gpu_theme"])
 
-        dpg.add_spacer(height=5)
+        dpg.add_spacer(height=1)
 
         draw_height = 40
         layer1_height = 30
