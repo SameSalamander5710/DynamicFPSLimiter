@@ -145,7 +145,7 @@ class FPSUtils:
             )
             return gpu_decrease_condition or cpu_decrease_condition
 
-        elif monitoring_method == "LibreHardwareMonitor":
+        elif monitoring_method == "LibreHM":
             checks = [
                 ("input_load_gpucore_enable", ("Load", "GPU Core (1)"), "input_load_gpucore_upper"),
                 ("input_load_d3d3d_enable", ("Load", "D3D 3D"), "input_load_d3d3d_upper"),
@@ -183,7 +183,7 @@ class FPSUtils:
             )
             return gpu_increase_condition and cpu_increase_condition
 
-        elif monitoring_method == "LibreHardwareMonitor":
+        elif monitoring_method == "LibreHM":
             checks = [
                 ("input_load_gpucore_enable", ("Load", "GPU Core (1)"), "input_load_gpucore_lower"),
                 ("input_load_d3d3d_enable", ("Load", "D3D 3D"), "input_load_d3d3d_lower"),

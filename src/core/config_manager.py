@@ -27,7 +27,7 @@ class ConfigManager:
             "delaybeforeincrease": 10,
             "capmethod": "ratio",
             "customfpslimits": '30.01, 45.00, 59.99',
-            "monitoring_method": "librehardwaremonitor",
+            "monitoring_method": "librehm",
             "lhm_gpu_priority": 0,
             "load_gpucore_enable": True,
             "load_gpucore_lower": 75,
@@ -125,7 +125,7 @@ class ConfigManager:
                 'delaybeforeincrease': '10',
                 'capmethod': 'ratio',
                 'customfpslimits': '30.01, 45.00, 59.99',
-                'monitoring_method': 'librehardwaremonitor',
+                'monitoring_method': 'librehm',
                 'lhm_gpu_priority': '0',
                 'load_gpucore_enable': 'True',
                 'load_gpucore_lower': '75',
@@ -555,7 +555,7 @@ class ConfigManager:
 
         app_data = app_data.lower() if app_data else dpg.get_value("input_monitoring_method").lower()
 
-        if app_data == "librehardwaremonitor":
+        if app_data == "librehm":
             self.dpg.configure_item("LHwM_childwindow", show=True)
             self.dpg.configure_item("legacy_childwindow", show=False)
         else:

@@ -679,34 +679,35 @@ with dpg.window(label=app_title, tag="Primary Window"):
     dpg.add_spacer(height=1)
 
     with dpg.group(horizontal=True):
+        dpg.add_spacer(width=5)
         with dpg.group(horizontal=False):
-            with dpg.child_window(width=180, height=100, border=True):
+            dpg.add_spacer(height=5)
                 #TODO: Add tooltips for each
-                with dpg.group(horizontal=False, width=120):
-                    dpg.add_text("Monitoring Method:")
-                    dpg.add_radio_button(
-                        items=["LibreHardwareMonitor", "Legacy"], 
-                        horizontal=False,
-                        callback=cm.monitoring_method_callback,
-                        default_value="LibreHardwareMonitor",#settings["method"],
-                        tag="input_monitoring_method"
-                        )
-                    dpg.bind_item_theme("input_monitoring_method", themes_manager.themes["radio_theme"])
-            dpg.add_spacer(height=1)
-            with dpg.child_window(width=180, height=125, border=True):
-                with dpg.group(horizontal=False, width=120):
-                    dpg.add_text("Capping Method:")
-                    dpg.add_radio_button(
-                        items=["Ratio", "Step", "Custom"], 
-                        horizontal=False,
-                        callback=cm.current_method_callback,
-                        default_value="Ratio",#settings["method"],
-                        tag="input_capmethod"
-                        )
-                    dpg.bind_item_theme("input_capmethod", themes_manager.themes["radio_theme"])
-                    #dpg.bind_item_font("input_monitoring_method", bold_font)
+            with dpg.group(horizontal=False):
+                dpg.add_text("Monitoring Method:")
+                dpg.add_radio_button(
+                    items=["LibreHM", "Legacy"], 
+                    horizontal=False,
+                    callback=cm.monitoring_method_callback,
+                    default_value="LibreHM",#settings["method"],
+                    tag="input_monitoring_method"
+                    )
+                dpg.bind_item_theme("input_monitoring_method", themes_manager.themes["radio_theme"])
+            dpg.add_spacer(height=10)
+            #with dpg.child_window(width=180, height=125, border=True):
+            with dpg.group(horizontal=False):
+                dpg.add_text("Capping Method:")
+                dpg.add_radio_button(
+                    items=["Ratio", "Step", "Custom"], 
+                    horizontal=False,
+                    callback=cm.current_method_callback,
+                    default_value="Ratio",#settings["method"],
+                    tag="input_capmethod"
+                    )
+                dpg.bind_item_theme("input_capmethod", themes_manager.themes["radio_theme"])
+                #dpg.bind_item_font("input_monitoring_method", bold_font)
 
-
+        dpg.add_spacer(width=10)
         monitoring_window_height = 234
         with dpg.child_window(width=-1, height=monitoring_window_height, border=True, tag="LHwM_childwindow", show=False):
             dpg.add_spacer(height=1)
@@ -1001,7 +1002,7 @@ cm.update_profile_dropdown(select_first=True)
 cm.startup_profile_selection()
 
 initial_method = dpg.get_value("input_monitoring_method")
-if initial_method == "LibreHardwareMonitor":
+if initial_method == "LibreHM":
     dpg.configure_item("LHwM_childwindow", show=True)
 else:
     dpg.configure_item("legacy_childwindow", show=True)
