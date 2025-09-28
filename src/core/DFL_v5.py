@@ -684,7 +684,8 @@ with dpg.window(label=app_title, tag="Primary Window"):
             dpg.add_spacer(height=5)
                 #TODO: Add tooltips for each
             with dpg.group(horizontal=False):
-                dpg.add_text("Monitoring Method:")
+                dpg.add_text("Monitoring Method:", color=(200, 200, 200), tag="monitoring_method_text")
+                dpg.bind_item_font("monitoring_method_text", bold_font)
                 dpg.add_radio_button(
                     items=["LibreHM", "Legacy"], 
                     horizontal=False,
@@ -696,7 +697,8 @@ with dpg.window(label=app_title, tag="Primary Window"):
             dpg.add_spacer(height=10)
             #with dpg.child_window(width=180, height=125, border=True):
             with dpg.group(horizontal=False):
-                dpg.add_text("Capping Method:")
+                dpg.add_text("Capping Method:", color=(200, 200, 200), tag="capping_method_text")
+                dpg.bind_item_font("capping_method_text", bold_font)
                 dpg.add_radio_button(
                     items=["Ratio", "Step", "Custom"], 
                     horizontal=False,
