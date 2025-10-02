@@ -128,3 +128,26 @@
                                 dpg.add_text("-", wrap=300)
                                 dpg.add_input_text(tag="input_power_cpupackage_upper", default_value=str(cm.settings["power_cpupackage_upper"]), width=40)
                                 dpg.add_text("W", wrap=300)
+
+    with dpg.group(horizontal=True):
+        mid_window_height = 280
+        with dpg.child_window(width=240, height=mid_window_height, border=True):
+            with dpg.group(horizontal=True):
+                with dpg.drawlist(width=15, height=15):
+                    dpg.draw_line((0, 13), (15, 13), color=(180,180,180), thickness=1)
+                dpg.add_text("Framerate Limits")
+                with dpg.drawlist(width=85, height=15):
+                    dpg.draw_line((0, 13), (85, 13), color=(180,180,180), thickness=1)
+            with dpg.group(horizontal=True):
+                with dpg.group(width=220, horizontal=False):
+                    with dpg.table(header_row=False, resizable=False, policy=dpg.mvTable_SizingFixedFit):
+                        dpg.add_table_column(width_fixed=True)  # Column for labels
+                        dpg.add_table_column(width_fixed=True)  # Column for input boxes
+                        for label, key in [("Max FPS limit:", "maxcap"), 
+                                        ("Min FPS limit:", "mincap"),
+                                        ("Framerate ratio:", "capratio")]:
+                            with dpg.table_row():
+                                dpg.add_text(label, tag=f"label_{key}")
+                                dpg.add_input_int(tag=f"input_{key}", default_value=int(cm.settings[key]), 
+                                                    width=90, step=1, step_fast=10, 
+                                                    min_clamped=True, min_value=1)

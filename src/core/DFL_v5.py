@@ -676,42 +676,104 @@ with dpg.window(label=app_title, tag="Primary Window"):
     dpg.add_spacer(height=5)
     build_profile_section()
 
+    with dpg.group(horizontal=False):
+        #dpg.add_spacer(height=5)
+            #TODO: Add tooltips for each
+        with dpg.group(horizontal=True):
+            dpg.add_text("Monitoring Method:", color=(200, 200, 200), tag="monitoring_method_text")
+            dpg.bind_item_font("monitoring_method_text", bold_font)
+            dpg.add_radio_button(
+                items=["LibreHM", "Legacy"], 
+                horizontal=True,
+                callback=cm.monitoring_method_callback,
+                default_value="LibreHM",#settings["method"],
+                tag="input_monitoring_method"
+                )
+            dpg.bind_item_theme("input_monitoring_method", themes_manager.themes["radio_theme"])
+        with dpg.group(horizontal=True):
+            dpg.add_text("Capping Method:", color=(200, 200, 200), tag="capping_method_text")
+            dpg.bind_item_font("capping_method_text", bold_font)
+            dpg.add_radio_button(
+                items=["Ratio", "Step", "Custom"], 
+                horizontal=True,
+                callback=cm.current_method_callback,
+                default_value="Ratio",#settings["method"],
+                tag="input_capmethod"
+                )
+            dpg.bind_item_theme("input_capmethod", themes_manager.themes["radio_theme"])
+            #dpg.bind_item_font("input_monitoring_method", bold_font)
+
     dpg.add_spacer(height=1)
 
     with dpg.group(horizontal=True):
-        dpg.add_spacer(width=5)
-        with dpg.group(horizontal=False):
-            dpg.add_spacer(height=5)
-                #TODO: Add tooltips for each
-            with dpg.group(horizontal=False):
-                dpg.add_text("Monitoring Method:", color=(200, 200, 200), tag="monitoring_method_text")
-                dpg.bind_item_font("monitoring_method_text", bold_font)
-                dpg.add_radio_button(
-                    items=["LibreHM", "Legacy"], 
-                    horizontal=False,
-                    callback=cm.monitoring_method_callback,
-                    default_value="LibreHM",#settings["method"],
-                    tag="input_monitoring_method"
-                    )
-                dpg.bind_item_theme("input_monitoring_method", themes_manager.themes["radio_theme"])
-            dpg.add_spacer(height=10)
-            #with dpg.child_window(width=180, height=125, border=True):
-            with dpg.group(horizontal=False):
-                dpg.add_text("Capping Method:", color=(200, 200, 200), tag="capping_method_text")
-                dpg.bind_item_font("capping_method_text", bold_font)
-                dpg.add_radio_button(
-                    items=["Ratio", "Step", "Custom"], 
-                    horizontal=False,
-                    callback=cm.current_method_callback,
-                    default_value="Ratio",#settings["method"],
-                    tag="input_capmethod"
-                    )
-                dpg.bind_item_theme("input_capmethod", themes_manager.themes["radio_theme"])
-                #dpg.bind_item_font("input_monitoring_method", bold_font)
+        mid_window_height = 280
+        with dpg.child_window(width=240, height=mid_window_height, border=True):
+            with dpg.group(horizontal=True):
+                with dpg.drawlist(width=15, height=15):
+                    dpg.draw_line((0, 13), (15, 13), color=(180,180,180), thickness=1)
+                dpg.add_text("Framerate Limits")
+                with dpg.drawlist(width=85, height=15):
+                    dpg.draw_line((0, 13), (85, 13), color=(180,180,180), thickness=1)
 
-        dpg.add_spacer(width=10)
-        monitoring_window_height = 234
-        with dpg.child_window(width=-1, height=monitoring_window_height, border=True, tag="LHwM_childwindow", show=False):
+            with dpg.table(header_row=False, resizable=False, policy=dpg.mvTable_SizingFixedFit):
+                dpg.add_table_column(width_fixed=True)  # Label
+                dpg.add_table_column(width_fixed=True)  # Column for input boxes
+                with dpg.table_row():
+                    dpg.add_text("Max FPS limit:", tag="label_maxcap")
+                    dpg.add_input_int(
+                        tag="input_maxcap", default_value=int(cm.settings["maxcap"]),
+                        width=90,
+                        step=1,
+                        step_fast=10,
+                        min_clamped=True,
+                        min_value=1)
+                # Min FPS limit
+                with dpg.table_row():
+                    dpg.add_text("Min FPS limit:", tag="label_mincap")
+                    dpg.add_input_int(
+                        tag="input_mincap", default_value=int(cm.settings["mincap"]),
+                        width=90,
+                        step=1,
+                        step_fast=10,
+                        min_clamped=True,
+                        min_value=1)
+                # Framerate ratio
+                with dpg.table_row():
+                    dpg.add_text("Framerate ratio:", tag="label_capratio")
+                    dpg.add_input_int(
+                        tag="input_capratio", default_value=int(cm.settings["capratio"]),
+                        width=90,
+                        step=1,
+                        step_fast=10,
+                        min_clamped=True,
+                        min_value=1)
+                with dpg.table_row():
+                    dpg.add_text("Framerate step:", tag="label_capstep")
+                    dpg.add_input_int(tag=f"input_capstep", default_value=int(cm.settings["capstep"]), 
+                                        width=90, step=1, step_fast=10, 
+                                        min_clamped=True, min_value=1)
+                with dpg.table_row():
+                    dpg.add_text("FPS drop delay:", tag="button_delaybeforedecrease")
+                    dpg.add_input_int(tag=f"input_delaybeforedecrease", default_value=int(cm.settings["delaybeforedecrease"]), 
+                                        width=90, step=1, step_fast=10, 
+                                        min_clamped=True, min_value=1, max_value=99, max_clamped=True)
+                with dpg.table_row():
+                    dpg.add_text("FPS raise delay:", tag="button_delaybeforeincrease")
+                    dpg.add_input_int(tag=f"input_delaybeforeincrease", default_value=int(cm.settings["delaybeforeincrease"]), 
+                                        width=90, step=1, step_fast=10, 
+                                        min_clamped=True, min_value=1, max_value=99, max_clamped=True)
+
+            dpg.add_input_text(
+                tag="input_customfpslimits",
+                default_value=cm.settings["customfpslimits"],
+                width=220,
+                callback=cm.sort_customfpslimits_callback,
+                on_enter=True)
+            with dpg.group(horizontal=True):
+                dpg.add_button(label="Reset", tag="rest_fps_cap_button", width=70, callback=fps_utils.reset_custom_limits)
+                dpg.add_button(label="Copy from above", tag="autofill_fps_caps", width=140, callback=fps_utils.copy_from_plot)
+
+        with dpg.child_window(width=-1, height=mid_window_height, border=True, tag="LHwM_childwindow", show=False):
             dpg.add_spacer(height=1)
             with dpg.group(horizontal=True):
                 dpg.add_text("GPU:")
@@ -838,7 +900,7 @@ with dpg.window(label=app_title, tag="Primary Window"):
                         dpg.add_text("W", wrap=300)
 
 #TODO Add checkboxes to legacy options as well
-        with dpg.child_window(width=-1, height=monitoring_window_height, border=True, tag="legacy_childwindow", show=False):
+        with dpg.child_window(width=-1, height=mid_window_height, border=True, tag="legacy_childwindow", show=False):
             with dpg.group(horizontal=True):
                 with dpg.drawlist(width=15, height=15):
                     dpg.draw_line((0, 13), (15, 13), color=(180,180,180), thickness=1)
@@ -869,63 +931,26 @@ with dpg.window(label=app_title, tag="Primary Window"):
             dpg.add_button(label="Detect Render GPU", callback=toggle_luid_selection, tag="luid_button", width=150)
 
     dpg.add_spacer(height=1)
-    with dpg.child_window(width=-1, height=215, border=True):
-        with dpg.group(horizontal=True):
-            with dpg.drawlist(width=15, height=15):
-                dpg.draw_line((0, 13), (15, 13), color=(180,180,180), thickness=1)
-            dpg.add_text("Framerate Limits")
-            with dpg.drawlist(width=430, height=15):
-                dpg.draw_line((0, 13), (430, 13), color=(180,180,180), thickness=1)
-        with dpg.group(horizontal=True):
-            with dpg.group(width=205):
-                with dpg.table(header_row=False, resizable=False, policy=dpg.mvTable_SizingFixedFit):
-                    dpg.add_table_column(width_fixed=True)  # Column for labels
-                    dpg.add_table_column(width_fixed=True)  # Column for input boxes
-                    for label, key in [("Max FPS limit:", "maxcap"), 
-                                    ("Min FPS limit:", "mincap"),
-                                    ("Framerate ratio:", "capratio")]:
-                        with dpg.table_row():
-                            dpg.add_text(label, tag=f"label_{key}")
-                            dpg.add_input_int(tag=f"input_{key}", default_value=int(cm.settings[key]), 
-                                                width=90, step=1, step_fast=10, 
-                                                min_clamped=True, min_value=1)
-            
-            #2 dpg.add_spacer(width=1)
-            with dpg.group(width=220):
-                with dpg.table(header_row=False, resizable=False, policy=dpg.mvTable_SizingFixedFit):
-                    dpg.add_table_column(width_fixed=True)  # Label
-                    dpg.add_table_column(width_fixed=True)  # Column for input boxes
-                    with dpg.table_row():
-                        dpg.add_text("FPS drop delay:", tag="button_delaybeforedecrease")
-                        dpg.add_input_int(tag=f"input_delaybeforedecrease", default_value=int(cm.settings["delaybeforedecrease"]), 
-                                            width=90, step=1, step_fast=10, 
-                                            min_clamped=True, min_value=1, max_value=99, max_clamped=True)
-                    with dpg.table_row():
-                        dpg.add_text("FPS raise delay:", tag="button_delaybeforeincrease")
-                        dpg.add_input_int(tag=f"input_delaybeforeincrease", default_value=int(cm.settings["delaybeforeincrease"]), 
-                                            width=90, step=1, step_fast=10, 
-                                            min_clamped=True, min_value=1, max_value=99, max_clamped=True)
-                    with dpg.table_row():
-                        dpg.add_text("Framerate step:", tag="label_capstep")
-                        dpg.add_input_int(tag=f"input_capstep", default_value=int(cm.settings["capstep"]), 
-                                            width=90, step=1, step_fast=10, 
-                                            min_clamped=True, min_value=1)
+
 
             #dpg.add_spacer(width=1)
-            tab1_group3_width = 125
-            with dpg.group(width=135):
-                with dpg.table(header_row=False, resizable=False, policy=dpg.mvTable_SizingFixedFit):
-                    dpg.add_table_column(width_fixed=True)
-                    with dpg.table_row():
-                        dpg.add_button(tag="quick_save", label="Quick Save", callback=cm.quick_save_settings, width=tab1_group3_width)
-                    with dpg.table_row():
-                        dpg.add_button(tag="quick_load", label="Quick Load", callback=cm.quick_load_settings, width=tab1_group3_width)
-                    with dpg.table_row():
-                        dpg.add_button(tag="SaveToProfile", label="Save to Profile", callback=cm.save_to_profile, width=tab1_group3_width)
-                        dpg.bind_item_theme("SaveToProfile", themes_manager.themes["revert_gpu_theme"])
+    tab1_group3_width = 125
+    with dpg.group(width=135):
+        with dpg.table(header_row=False, resizable=False, policy=dpg.mvTable_SizingFixedFit):
+            dpg.add_table_column(width_fixed=True)
+            with dpg.table_row():
+                dpg.add_button(tag="quick_save", label="Quick Save", callback=cm.quick_save_settings, width=tab1_group3_width)
+            with dpg.table_row():
+                dpg.add_button(tag="quick_load", label="Quick Load", callback=cm.quick_load_settings, width=tab1_group3_width)
+            with dpg.table_row():
+                dpg.add_button(tag="SaveToProfile", label="Save to Profile", callback=cm.save_to_profile, width=tab1_group3_width)
+                dpg.bind_item_theme("SaveToProfile", themes_manager.themes["revert_gpu_theme"])
 
-        dpg.add_spacer(height=1)
 
+    dpg.add_spacer(height=1)
+    #TODO Remove unnecessary theme functions if unused
+
+    with dpg.group(horizontal=False):
         draw_height = 40
         layer1_height = 30
         layer2_height = 30
@@ -937,20 +962,6 @@ with dpg.window(label=app_title, tag="Primary Window"):
             with dpg.draw_layer(tag="Foreground"):
                 dpg.draw_line((margin, layer2_height // 2), (draw_width, layer2_height // 2), color=(200, 200, 200), thickness=2)
         dpg.add_spacer(height=1)
-        with dpg.group(horizontal=True):
-            dpg.add_input_text(
-                tag="input_customfpslimits",
-                default_value=cm.settings["customfpslimits"],
-                width=draw_width - 215,
-                #pos=(10, 140),  # Center the input horizontally
-                callback=cm.sort_customfpslimits_callback,
-                on_enter=True)
-            dpg.add_button(label="Reset", tag="rest_fps_cap_button", width=80, callback=fps_utils.reset_custom_limits)
-            dpg.add_button(label="Copy from above", tag="autofill_fps_caps", width=120, callback=fps_utils.copy_from_plot)
-
-    dpg.add_spacer(height=1)
-    #TODO Remove unnecessary theme functions if unused
-
 
     with dpg.group(horizontal=True):
         dpg.add_button(
