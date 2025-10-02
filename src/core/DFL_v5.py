@@ -676,32 +676,36 @@ with dpg.window(label=app_title, tag="Primary Window"):
     dpg.add_spacer(height=5)
     build_profile_section()
 
-    with dpg.group(horizontal=False):
-        #dpg.add_spacer(height=5)
-            #TODO: Add tooltips for each
-        with dpg.group(horizontal=True):
+    with dpg.table(header_row=False, resizable=False, policy=dpg.mvTable_SizingFixedFit):
+        dpg.add_table_column(width_fixed=True)   # Column for text (right-aligned)
+        dpg.add_table_column(width_fixed=True)   # Column for radio buttons (left-aligned)
+        # Monitoring Method row
+        with dpg.table_row():
             dpg.add_text("Monitoring Method:", color=(200, 200, 200), tag="monitoring_method_text")
             dpg.bind_item_font("monitoring_method_text", bold_font)
             dpg.add_radio_button(
                 items=["LibreHM", "Legacy"], 
                 horizontal=True,
                 callback=cm.monitoring_method_callback,
-                default_value="LibreHM",#settings["method"],
+                default_value="LibreHM",
                 tag="input_monitoring_method"
-                )
+            )
             dpg.bind_item_theme("input_monitoring_method", themes_manager.themes["radio_theme"])
-        with dpg.group(horizontal=True):
+            #dpg.bind_item_theme("monitoring_method_text", themes_manager.themes["align_right_text"])  
+
+        # Capping Method row
+        with dpg.table_row():
             dpg.add_text("Capping Method:", color=(200, 200, 200), tag="capping_method_text")
             dpg.bind_item_font("capping_method_text", bold_font)
             dpg.add_radio_button(
                 items=["Ratio", "Step", "Custom"], 
                 horizontal=True,
                 callback=cm.current_method_callback,
-                default_value="Ratio",#settings["method"],
+                default_value="Ratio",
                 tag="input_capmethod"
-                )
+            )
             dpg.bind_item_theme("input_capmethod", themes_manager.themes["radio_theme"])
-            #dpg.bind_item_font("input_monitoring_method", bold_font)
+            #dpg.bind_item_theme("capping_method_text", themes_manager.themes["align_right_text"])  
 
     dpg.add_spacer(height=1)
 
