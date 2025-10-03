@@ -657,7 +657,8 @@ def load_and_create_textures(image_names, base_dir, dpg_module):
 image_files = [
     "close_button.png",
     "minimize_button.png",
-    "DynamicFPSLimiter_icon.png"
+    "DynamicFPSLimiter_icon.png",
+    "icon_copy.png"
 ]
 textures = load_and_create_textures(image_files, Base_dir, dpg)
 
@@ -820,7 +821,13 @@ with dpg.window(label=app_title, tag="Primary Window"):
                 dpg.add_table_column(width_fixed=True)
                 # First row: Quick Save, Quick Load
                 with dpg.table_row():
-                    dpg.add_button(tag="quick_save", label="Quick Save", callback=cm.quick_save_settings, width=tab1_group3_width)
+                    dpg.add_image_button(
+                        texture_tag=textures["icon_copy"],
+                        tag="quick_save",
+                        callback=cm.quick_save_settings,
+                        width=20,
+                        height=20,  # Set height as needed for your icon
+                    )
                     dpg.add_button(tag="quick_load", label="Quick Load", callback=cm.quick_load_settings, width=tab1_group3_width)
                 # Second row: Show Plot, Settings
                 with dpg.table_row():
