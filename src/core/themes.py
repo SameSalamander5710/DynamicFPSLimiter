@@ -153,6 +153,10 @@ class ThemesManager:
                 dpg.add_theme_color(dpg.mvThemeCol_Button, bg_colour_5_buttonactive)
                 dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, bg_colour_4_buttonhover_blue)
                 dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, bg_colour_5_buttonactive)
+            with dpg.theme_component(dpg.mvImageButton):
+                dpg.add_theme_color(dpg.mvThemeCol_Button, bg_colour_5_buttonactive)
+                dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, bg_colour_4_buttonhover_blue)
+                dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, bg_colour_5_buttonactive)
             #with dpg.theme_component(dpg.mvAll):
                 #dpg.add_theme_color(dpg.mvThemeCol_Text, bg_colour_8_text_stateactive)
         self.themes["revert_gpu_theme"] = revert_gpu_theme
