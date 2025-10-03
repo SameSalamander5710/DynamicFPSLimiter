@@ -637,32 +637,44 @@ bold_font_large = fonts.get("bold_font_large")
 monospaced_font = fonts.get("monospaced_font")
 
 # Load image data
-close_image_path = os.path.join(Base_dir, "assets/close_button.png")
-minimize_image_path = os.path.join(Base_dir, "assets/minimize_button.png")
-icon_png_path = os.path.join(Base_dir, "assets/DynamicFPSLimiter_icon.png")
-close_width, close_height, close_channels, close_data = dpg.load_image(close_image_path)
-min_width, min_height, min_channels, min_data = dpg.load_image(minimize_image_path)
-icon_width, icon_height, icon_channels, icon_data = dpg.load_image(icon_png_path)
 
-# Create static textures
-with dpg.texture_registry():
-    close_texture = dpg.add_static_texture(close_width, close_height, close_data, tag="close_texture")
-    minimize_texture = dpg.add_static_texture(min_width, min_height, min_data, tag="minimize_texture")
-    icon_texture = dpg.add_static_texture(icon_width, icon_height, icon_data, tag="icon_texture")
+def load_and_create_textures(image_names, base_dir, dpg_module):
+    """
+    Loads PNG images and creates static textures in DearPyGui.
+    Returns a dict mapping image base names to their texture tags.
+    """
+    textures = {}
+    with dpg_module.texture_registry():
+        for image_name in image_names:
+            image_path = os.path.join(base_dir, f"assets/{image_name}")
+            width, height, channels, data = dpg_module.load_image(image_path)
+            base = os.path.splitext(image_name)[0]  # e.g., "close_button"
+            tag = f"{base}_texture"
+            textures[base] = dpg_module.add_static_texture(width, height, data, tag=tag)
+    return textures
+
+# Usage:
+image_files = [
+    "close_button.png",
+    "minimize_button.png",
+    "DynamicFPSLimiter_icon.png"
+]
+textures = load_and_create_textures(image_files, Base_dir, dpg)
+
 
 #The actual GUI starts here
 with dpg.window(label=app_title, tag="Primary Window"):
 
     # Title bar
     with dpg.group(horizontal=True):
-        dpg.add_image(icon_texture, tag="icon", width=20, height=20)
+        dpg.add_image(textures["DynamicFPSLimiter_icon"], tag="icon", width=20, height=20)
         dpg.add_text(app_title, tag="app_title")
         #dpg.bind_item_font("app_title", bold_font)
         dpg.add_text("v5.0.0")
         dpg.add_spacer(width=310)
 
-        dpg.add_image_button(texture_tag=minimize_texture, tag="minimize", callback=tray.minimize_to_tray, width=20, height=20)
-        dpg.add_image_button(texture_tag=close_texture, tag="exit", callback=exit_gui, width=20, height=20)
+        dpg.add_image_button(texture_tag=textures["minimize_button"], tag="minimize", callback=tray.minimize_to_tray, width=20, height=20)
+        dpg.add_image_button(texture_tag=textures["close_button"], tag="exit", callback=exit_gui, width=20, height=20)
 
         dpg.bind_item_theme("minimize", themes_manager.themes["titlebar_button_theme"])
         dpg.bind_item_theme("exit", themes_manager.themes["titlebar_button_theme"])
