@@ -676,36 +676,45 @@ with dpg.window(label=app_title, tag="Primary Window"):
     dpg.add_spacer(height=5)
     build_profile_section()
 
-    with dpg.table(header_row=False, resizable=False, policy=dpg.mvTable_SizingFixedFit):
-        dpg.add_table_column(width_fixed=True)   # Column for text (right-aligned)
-        dpg.add_table_column(width_fixed=True)   # Column for radio buttons (left-aligned)
-        # Monitoring Method row
-        with dpg.table_row():
-            dpg.add_text("Monitoring Method:", color=(200, 200, 200), tag="monitoring_method_text")
-            dpg.bind_item_font("monitoring_method_text", bold_font)
-            dpg.add_radio_button(
-                items=["LibreHM", "Legacy"], 
-                horizontal=True,
-                callback=cm.monitoring_method_callback,
-                default_value="LibreHM",
-                tag="input_monitoring_method"
-            )
-            dpg.bind_item_theme("input_monitoring_method", themes_manager.themes["radio_theme"])
-            #dpg.bind_item_theme("monitoring_method_text", themes_manager.themes["align_right_text"])  
+    with dpg.group(horizontal=True):
 
-        # Capping Method row
-        with dpg.table_row():
-            dpg.add_text("Capping Method:", color=(200, 200, 200), tag="capping_method_text")
-            dpg.bind_item_font("capping_method_text", bold_font)
-            dpg.add_radio_button(
-                items=["Ratio", "Step", "Custom"], 
-                horizontal=True,
-                callback=cm.current_method_callback,
-                default_value="Ratio",
-                tag="input_capmethod"
-            )
-            dpg.bind_item_theme("input_capmethod", themes_manager.themes["radio_theme"])
-            #dpg.bind_item_theme("capping_method_text", themes_manager.themes["align_right_text"])  
+        with dpg.table(header_row=False, resizable=False, policy=dpg.mvTable_SizingFixedFit):
+            dpg.add_table_column(width_fixed=True)   # Column for text (right-aligned)
+            dpg.add_table_column(width_fixed=True)   # Column for radio buttons (left-aligned)
+            # Monitoring Method row
+            with dpg.table_row():
+                dpg.add_text("Monitoring Method:", color=(200, 200, 200), tag="monitoring_method_text")
+                dpg.bind_item_font("monitoring_method_text", bold_font)
+                dpg.add_radio_button(
+                    items=["LibreHM", "Legacy"], 
+                    horizontal=True,
+                    callback=cm.monitoring_method_callback,
+                    default_value="LibreHM",
+                    tag="input_monitoring_method"
+                )
+                dpg.bind_item_theme("input_monitoring_method", themes_manager.themes["radio_theme"])
+                #dpg.bind_item_theme("monitoring_method_text", themes_manager.themes["align_right_text"])  
+
+            # Capping Method row
+            with dpg.table_row():
+                dpg.add_text("Capping Method:", color=(200, 200, 200), tag="capping_method_text")
+                dpg.bind_item_font("capping_method_text", bold_font)
+                dpg.add_radio_button(
+                    items=["Ratio", "Step", "Custom"], 
+                    horizontal=True,
+                    callback=cm.current_method_callback,
+                    default_value="Ratio",
+                    tag="input_capmethod"
+                )
+                dpg.bind_item_theme("input_capmethod", themes_manager.themes["radio_theme"])
+                #dpg.bind_item_theme("capping_method_text", themes_manager.themes["align_right_text"])  
+
+        dpg.add_text("Warning!", tag="warning_text", color=(190, 90, 90), 
+                        pos=(500+20, 200-5),
+                        show=False)
+        with dpg.tooltip(parent="warning_text", tag="warning_tooltip", show=False):
+            dpg.add_text("", tag="warning_tooltip_text", wrap=300)
+        dpg.bind_item_font("warning_text", bold_font)
 
     with dpg.group(horizontal=False):
         draw_height = 40
@@ -989,16 +998,6 @@ with dpg.window(label=app_title, tag="Primary Window"):
 
     dpg.add_spacer(height=1)
     #TODO Remove unnecessary theme functions if unused
-
-    with dpg.group(horizontal=True):
-        dpg.add_spacer(width=30)
-        
-        dpg.add_text("Warning!", tag="warning_text", color=(190, 90, 90), 
-                        pos=(500, Viewport_height - 30),
-                        show=False)
-        with dpg.tooltip(parent="warning_text", tag="warning_tooltip", show=False):
-            dpg.add_text("", tag="warning_tooltip_text", wrap=300)
-        dpg.bind_item_font("warning_text", bold_font)
 
 build_plot_window()
 build_settings_window()
