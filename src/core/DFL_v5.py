@@ -723,74 +723,111 @@ with dpg.window(label=app_title, tag="Primary Window"):
     dpg.add_spacer(height=1)
 
     with dpg.group(horizontal=True):
-        mid_window_height = 280
-        with dpg.child_window(width=240, height=mid_window_height, border=True):
-            with dpg.group(horizontal=True):
-                with dpg.drawlist(width=15, height=15):
-                    dpg.draw_line((0, 13), (15, 13), color=(180,180,180), thickness=1)
-                dpg.add_text("Framerate Limits")
-                with dpg.drawlist(width=85, height=15):
-                    dpg.draw_line((0, 13), (85, 13), color=(180,180,180), thickness=1)
+        mid_window_height = 285
+        with dpg.group(horizontal=False):
+            with dpg.child_window(width=230, height=mid_window_height - 10, border=True):
+                with dpg.group(horizontal=True):
+                    with dpg.drawlist(width=15, height=15):
+                        dpg.draw_line((0, 13), (15, 13), color=(180,180,180), thickness=1)
+                    dpg.add_text("Framerate Limits")
+                    with dpg.drawlist(width=75, height=15):
+                        dpg.draw_line((0, 13), (75, 13), color=(180,180,180), thickness=1)
+                with dpg.group(horizontal=True):
+                    dpg.add_spacer(width=1)
+                    with dpg.table(header_row=False, resizable=False, policy=dpg.mvTable_SizingFixedFit):
+                        dpg.add_table_column(width_fixed=True)  # Label
+                        dpg.add_table_column(width_fixed=True)  # Column for input boxes
+                        with dpg.table_row():
+                            dpg.add_text("Max FPS limit:", tag="label_maxcap")
+                            dpg.add_input_int(
+                                tag="input_maxcap", default_value=int(cm.settings["maxcap"]),
+                                width=90,
+                                step=1,
+                                step_fast=10,
+                                min_clamped=True,
+                                min_value=1)
+                        # Min FPS limit
+                        with dpg.table_row():
+                            dpg.add_text("Min FPS limit:", tag="label_mincap")
+                            dpg.add_input_int(
+                                tag="input_mincap", default_value=int(cm.settings["mincap"]),
+                                width=90,
+                                step=1,
+                                step_fast=10,
+                                min_clamped=True,
+                                min_value=1)
+                        # Framerate ratio
+                        with dpg.table_row():
+                            dpg.add_text("Framerate ratio:", tag="label_capratio")
+                            dpg.add_input_int(
+                                tag="input_capratio", default_value=int(cm.settings["capratio"]),
+                                width=90,
+                                step=1,
+                                step_fast=10,
+                                min_clamped=True,
+                                min_value=1)
+                        with dpg.table_row():
+                            dpg.add_text("Framerate step:", tag="label_capstep")
+                            dpg.add_input_int(tag=f"input_capstep", default_value=int(cm.settings["capstep"]), 
+                                                width=90, step=1, step_fast=10, 
+                                                min_clamped=True, min_value=1)
+                        with dpg.table_row():
+                            dpg.add_text("FPS drop delay:", tag="button_delaybeforedecrease")
+                            dpg.add_input_int(tag=f"input_delaybeforedecrease", default_value=int(cm.settings["delaybeforedecrease"]), 
+                                                width=90, step=1, step_fast=10, 
+                                                min_clamped=True, min_value=1, max_value=99, max_clamped=True)
+                        with dpg.table_row():
+                            dpg.add_text("FPS raise delay:", tag="button_delaybeforeincrease")
+                            dpg.add_input_int(tag=f"input_delaybeforeincrease", default_value=int(cm.settings["delaybeforeincrease"]), 
+                                                width=90, step=1, step_fast=10, 
+                                                min_clamped=True, min_value=1, max_value=99, max_clamped=True)
+                dpg.add_spacer(height=1)
+                dpg.add_input_text(
+                    tag="input_customfpslimits",
+                    default_value=cm.settings["customfpslimits"],
+                    width=210,
+                    callback=cm.sort_customfpslimits_callback,
+                    on_enter=True)
+                with dpg.group(horizontal=True):
+                    dpg.add_button(label="Reset", tag="rest_fps_cap_button", width=65, callback=fps_utils.reset_custom_limits)
+                    dpg.add_button(label="Copy from above", tag="autofill_fps_caps", width=135, callback=fps_utils.copy_from_plot)
 
+            tab1_group3_width = 100
+            # Replace the button group with a table for better alignment
             with dpg.table(header_row=False, resizable=False, policy=dpg.mvTable_SizingFixedFit):
-                dpg.add_table_column(width_fixed=True)  # Label
-                dpg.add_table_column(width_fixed=True)  # Column for input boxes
+                dpg.add_table_column(width_fixed=True)
+                dpg.add_table_column(width_fixed=True)
+                # First row: Quick Save, Quick Load
                 with dpg.table_row():
-                    dpg.add_text("Max FPS limit:", tag="label_maxcap")
-                    dpg.add_input_int(
-                        tag="input_maxcap", default_value=int(cm.settings["maxcap"]),
-                        width=90,
-                        step=1,
-                        step_fast=10,
-                        min_clamped=True,
-                        min_value=1)
-                # Min FPS limit
+                    dpg.add_button(tag="quick_save", label="Quick Save", callback=cm.quick_save_settings, width=tab1_group3_width)
+                    dpg.add_button(tag="quick_load", label="Quick Load", callback=cm.quick_load_settings, width=tab1_group3_width)
+                # Second row: Show Plot, Settings
                 with dpg.table_row():
-                    dpg.add_text("Min FPS limit:", tag="label_mincap")
-                    dpg.add_input_int(
-                        tag="input_mincap", default_value=int(cm.settings["mincap"]),
-                        width=90,
-                        step=1,
-                        step_fast=10,
-                        min_clamped=True,
-                        min_value=1)
-                # Framerate ratio
-                with dpg.table_row():
-                    dpg.add_text("Framerate ratio:", tag="label_capratio")
-                    dpg.add_input_int(
-                        tag="input_capratio", default_value=int(cm.settings["capratio"]),
-                        width=90,
-                        step=1,
-                        step_fast=10,
-                        min_clamped=True,
-                        min_value=1)
-                with dpg.table_row():
-                    dpg.add_text("Framerate step:", tag="label_capstep")
-                    dpg.add_input_int(tag=f"input_capstep", default_value=int(cm.settings["capstep"]), 
-                                        width=90, step=1, step_fast=10, 
-                                        min_clamped=True, min_value=1)
-                with dpg.table_row():
-                    dpg.add_text("FPS drop delay:", tag="button_delaybeforedecrease")
-                    dpg.add_input_int(tag=f"input_delaybeforedecrease", default_value=int(cm.settings["delaybeforedecrease"]), 
-                                        width=90, step=1, step_fast=10, 
-                                        min_clamped=True, min_value=1, max_value=99, max_clamped=True)
-                with dpg.table_row():
-                    dpg.add_text("FPS raise delay:", tag="button_delaybeforeincrease")
-                    dpg.add_input_int(tag=f"input_delaybeforeincrease", default_value=int(cm.settings["delaybeforeincrease"]), 
-                                        width=90, step=1, step_fast=10, 
-                                        min_clamped=True, min_value=1, max_value=99, max_clamped=True)
+                    dpg.add_button(
+                        label="Show Plot",
+                        tag="show_plot_button",
+                        width=tab1_group3_width,
+                        callback=lambda: dpg.configure_item(
+                            "plot_popup_window",
+                            show=not dpg.is_item_shown("plot_popup_window")
+                        )
+                    )
+                    dpg.add_button(
+                        label="Settings",
+                        tag="show_settings_button",
+                        width=tab1_group3_width,
+                        callback=lambda: dpg.configure_item(
+                            "settings_window",
+                            show=not dpg.is_item_shown("settings_window")
+                        )
+                    )
+            # Save to Profile button and theme binding (keep outside the table for clarity)
+            dpg.add_button(tag="Reset_Default", label="Reset to Default", callback=cm.reset_to_program_default, width=tab1_group3_width*2 + 5)
+            dpg.add_button(tag="SaveToProfile", label="Save to Profile", callback=cm.save_to_profile, width=tab1_group3_width*2 + 5)
+            dpg.bind_item_theme("SaveToProfile", themes_manager.themes["revert_gpu_theme"])
 
-            dpg.add_input_text(
-                tag="input_customfpslimits",
-                default_value=cm.settings["customfpslimits"],
-                width=220,
-                callback=cm.sort_customfpslimits_callback,
-                on_enter=True)
-            with dpg.group(horizontal=True):
-                dpg.add_button(label="Reset", tag="rest_fps_cap_button", width=70, callback=fps_utils.reset_custom_limits)
-                dpg.add_button(label="Copy from above", tag="autofill_fps_caps", width=140, callback=fps_utils.copy_from_plot)
 
-        with dpg.child_window(width=-1, height=mid_window_height, border=True, tag="LHwM_childwindow", show=False):
+        with dpg.child_window(width=-1, height=mid_window_height+80, border=True, tag="LHwM_childwindow", show=False):
             dpg.add_spacer(height=1)
             with dpg.group(horizontal=True):
                 dpg.add_text("GPU:")
@@ -917,7 +954,7 @@ with dpg.window(label=app_title, tag="Primary Window"):
                         dpg.add_text("W", wrap=300)
 
 #TODO Add checkboxes to legacy options as well
-        with dpg.child_window(width=-1, height=mid_window_height, border=True, tag="legacy_childwindow", show=False):
+        with dpg.child_window(width=-1, height=mid_window_height+80, border=True, tag="legacy_childwindow", show=False):
             with dpg.group(horizontal=True):
                 with dpg.drawlist(width=15, height=15):
                     dpg.draw_line((0, 13), (15, 13), color=(180,180,180), thickness=1)
@@ -950,44 +987,12 @@ with dpg.window(label=app_title, tag="Primary Window"):
     dpg.add_spacer(height=1)
 
 
-            #dpg.add_spacer(width=1)
-    tab1_group3_width = 125
-    with dpg.group(width=135):
-        with dpg.table(header_row=False, resizable=False, policy=dpg.mvTable_SizingFixedFit):
-            dpg.add_table_column(width_fixed=True)
-            with dpg.table_row():
-                dpg.add_button(tag="quick_save", label="Quick Save", callback=cm.quick_save_settings, width=tab1_group3_width)
-            with dpg.table_row():
-                dpg.add_button(tag="quick_load", label="Quick Load", callback=cm.quick_load_settings, width=tab1_group3_width)
-            with dpg.table_row():
-                dpg.add_button(tag="SaveToProfile", label="Save to Profile", callback=cm.save_to_profile, width=tab1_group3_width)
-                dpg.bind_item_theme("SaveToProfile", themes_manager.themes["revert_gpu_theme"])
-
-
     dpg.add_spacer(height=1)
     #TODO Remove unnecessary theme functions if unused
 
     with dpg.group(horizontal=True):
-        dpg.add_button(
-            label="Show Plot",
-            tag="show_plot_button",
-            width=100,
-            callback=lambda: dpg.configure_item(
-                "plot_popup_window",
-                show=not dpg.is_item_shown("plot_popup_window")
-            )
-        )
-        dpg.add_button(
-            label="Settings",
-            tag="show_settings_button",
-            width=100,
-            callback=lambda: dpg.configure_item(
-                "settings_window",
-                show=not dpg.is_item_shown("settings_window")
-            )
-        )
         dpg.add_spacer(width=30)
-        dpg.add_button(tag="Reset_Default", label="Reset to Default", callback=cm.reset_to_program_default, width=tab1_group3_width)
+        
         dpg.add_text("Warning!", tag="warning_text", color=(190, 90, 90), 
                         pos=(500, Viewport_height - 30),
                         show=False)
