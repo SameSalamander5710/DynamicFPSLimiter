@@ -660,6 +660,7 @@ image_files = [
     "DynamicFPSLimiter_icon.png",
     "icon_copy.png",
     "icon_paste.png",
+    "icon_save.png"
 ]
 textures = load_and_create_textures(image_files, Base_dir, dpg)
 
@@ -858,7 +859,13 @@ with dpg.window(label=app_title, tag="Primary Window"):
                     )
             # Save to Profile button and theme binding (keep outside the table for clarity)
             dpg.add_button(tag="Reset_Default", label="Reset to Default", callback=cm.reset_to_program_default, width=tab1_group3_width*2 + 5)
-            dpg.add_button(tag="SaveToProfile", label="Save to Profile", callback=cm.save_to_profile, width=tab1_group3_width*2 + 5)
+            dpg.add_image_button(
+                texture_tag=textures["icon_save"],
+                tag="SaveToProfile",
+                callback=cm.save_to_profile,
+                width=24,
+                height=24,  # Set height as needed for your icon
+            )
             dpg.bind_item_theme("SaveToProfile", themes_manager.themes["revert_gpu_theme"])
 
 
