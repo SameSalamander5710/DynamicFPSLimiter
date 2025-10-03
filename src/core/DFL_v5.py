@@ -707,6 +707,19 @@ with dpg.window(label=app_title, tag="Primary Window"):
             dpg.bind_item_theme("input_capmethod", themes_manager.themes["radio_theme"])
             #dpg.bind_item_theme("capping_method_text", themes_manager.themes["align_right_text"])  
 
+    with dpg.group(horizontal=False):
+        draw_height = 40
+        layer1_height = 30
+        layer2_height = 30
+        draw_width = Viewport_width - 60
+        margin = 10
+        with dpg.drawlist(width= draw_width + 5, height=draw_height, tag="fps_cap_drawlist"):
+            with dpg.draw_layer(tag="Baseline"):
+                dpg.draw_line((margin, layer1_height // 2), (draw_width, layer1_height // 2), color=(200, 200, 200), thickness=2)
+            with dpg.draw_layer(tag="Foreground"):
+                dpg.draw_line((margin, layer2_height // 2), (draw_width, layer2_height // 2), color=(200, 200, 200), thickness=2)
+        dpg.add_spacer(height=1)
+
     dpg.add_spacer(height=1)
 
     with dpg.group(horizontal=True):
@@ -953,19 +966,6 @@ with dpg.window(label=app_title, tag="Primary Window"):
 
     dpg.add_spacer(height=1)
     #TODO Remove unnecessary theme functions if unused
-
-    with dpg.group(horizontal=False):
-        draw_height = 40
-        layer1_height = 30
-        layer2_height = 30
-        draw_width = Viewport_width - 60
-        margin = 10
-        with dpg.drawlist(width= draw_width + 5, height=draw_height, tag="fps_cap_drawlist"):
-            with dpg.draw_layer(tag="Baseline"):
-                dpg.draw_line((margin, layer1_height // 2), (draw_width, layer1_height // 2), color=(200, 200, 200), thickness=2)
-            with dpg.draw_layer(tag="Foreground"):
-                dpg.draw_line((margin, layer2_height // 2), (draw_width, layer2_height // 2), color=(200, 200, 200), thickness=2)
-        dpg.add_spacer(height=1)
 
     with dpg.group(horizontal=True):
         dpg.add_button(
