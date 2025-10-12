@@ -883,7 +883,7 @@ with dpg.window(label=app_title, tag="Primary Window"):
                 hw_name = sensor['hw_name']
                 sensors_by_hw.setdefault(hw_name, []).append(sensor)
 
-            for hw_name, sensors in sensors_by_hw.items():
+            for hw_name, sensors in reversed(list(sensors_by_hw.items())):
                 with dpg.collapsing_header(label=hw_name, default_open=False):
                     # Group sensors by sensor type
                     sensors_by_type = {}
@@ -893,24 +893,23 @@ with dpg.window(label=app_title, tag="Primary Window"):
 
                     for sensor_type, params in sensors_by_type.items():
                         dpg.add_text(sensor_type, color=(180, 220, 255))  # Sensor type as section title
-                        with dpg.table(header_row=True, resizable=False, policy=dpg.mvTable_SizingFixedFit):
-                            dpg.add_table_column(label="Parameter")
+                        with dpg.table(header_row=False, resizable=False, policy=dpg.mvTable_SizingFixedFit):
                             dpg.add_table_column(label="Enable")
+                            dpg.add_table_column(label="Parameter", width_fixed=True, init_width_or_weight=145)
                             dpg.add_table_column(label="Lower")
                             dpg.add_table_column(label="-")
                             dpg.add_table_column(label="Upper")
                             dpg.add_table_column(label="Unit")
                             for param in params:
                                 param_id = param['parameter_id']
-                                # Only show the parameter name (not type) in the label
-                                label = param['sensor_name']
+                                label = param['sensor_name']#[:18] + ("..." if len(param['sensor_name']) > 18 else "")
                                 unit = "°C" if "temp" in param_id or "temperature" in param_id else "%" if "load" in param_id else "W" if "power" in param_id else ""
                                 with dpg.table_row():
+                                    dpg.add_checkbox(tag=f"input_{param_id}_enable", default_value=False)
                                     dpg.add_text(label)
-                                    dpg.add_checkbox(tag=f"input_{param_id}_enable", default_value=True)
-                                    dpg.add_input_int(tag=f"input_{param_id}_lower", width=40, default_value=75)
+                                    dpg.add_input_text(tag=f"input_{param_id}_lower", width=40, default_value=0)
                                     dpg.add_text("-", wrap=300)
-                                    dpg.add_input_int(tag=f"input_{param_id}_upper", width=40, default_value=90)
+                                    dpg.add_input_text(tag=f"input_{param_id}_upper", width=40, default_value=100)
                                     dpg.add_text(unit, wrap=300)
                     dpg.add_spacer(height=10)
 
