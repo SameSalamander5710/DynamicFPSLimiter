@@ -884,26 +884,35 @@ with dpg.window(label=app_title, tag="Primary Window"):
                 sensors_by_hw.setdefault(hw_name, []).append(sensor)
 
             for hw_name, sensors in sensors_by_hw.items():
-                dpg.add_text(hw_name, color=(180, 220, 255), bullet=True)  # Hardware name as heading
-                with dpg.table(header_row=True, resizable=False, policy=dpg.mvTable_SizingFixedFit):
-                    dpg.add_table_column(label="Sensor")
-                    dpg.add_table_column(label="Enable")
-                    dpg.add_table_column(label="Lower")
-                    dpg.add_table_column(label="-")
-                    dpg.add_table_column(label="Upper")
-                    dpg.add_table_column(label="Unit")
+                with dpg.collapsing_header(label=hw_name, default_open=False):
+                    # Group sensors by sensor type
+                    sensors_by_type = {}
                     for sensor in sensors:
-                        label = f"{sensor['sensor_name']} ({sensor['sensor_type'].ToString() if hasattr(sensor['sensor_type'], 'ToString') else str(sensor['sensor_type'])})"
-                        param_id = sensor['parameter_id']
-                        unit = "°C" if "temp" in param_id or "temperature" in param_id else "%" if "load" in param_id else "W" if "power" in param_id else ""
-                        with dpg.table_row():
-                            dpg.add_text(label)
-                            dpg.add_checkbox(tag=f"input_{param_id}_enable", default_value=True)
-                            dpg.add_input_int(tag=f"input_{param_id}_lower", width=40, default_value=75)
-                            dpg.add_text("-", wrap=300)
-                            dpg.add_input_int(tag=f"input_{param_id}_upper", width=40, default_value=90)
-                            dpg.add_text(unit, wrap=300)
-                dpg.add_spacer(height=10)
+                        sensor_type_str = sensor['sensor_type'].ToString() if hasattr(sensor['sensor_type'], 'ToString') else str(sensor['sensor_type'])
+                        sensors_by_type.setdefault(sensor_type_str, []).append(sensor)
+
+                    for sensor_type, params in sensors_by_type.items():
+                        dpg.add_text(sensor_type, color=(180, 220, 255))  # Sensor type as section title
+                        with dpg.table(header_row=True, resizable=False, policy=dpg.mvTable_SizingFixedFit):
+                            dpg.add_table_column(label="Parameter")
+                            dpg.add_table_column(label="Enable")
+                            dpg.add_table_column(label="Lower")
+                            dpg.add_table_column(label="-")
+                            dpg.add_table_column(label="Upper")
+                            dpg.add_table_column(label="Unit")
+                            for param in params:
+                                param_id = param['parameter_id']
+                                # Only show the parameter name (not type) in the label
+                                label = param['sensor_name']
+                                unit = "°C" if "temp" in param_id or "temperature" in param_id else "%" if "load" in param_id else "W" if "power" in param_id else ""
+                                with dpg.table_row():
+                                    dpg.add_text(label)
+                                    dpg.add_checkbox(tag=f"input_{param_id}_enable", default_value=True)
+                                    dpg.add_input_int(tag=f"input_{param_id}_lower", width=40, default_value=75)
+                                    dpg.add_text("-", wrap=300)
+                                    dpg.add_input_int(tag=f"input_{param_id}_upper", width=40, default_value=90)
+                                    dpg.add_text(unit, wrap=300)
+                    dpg.add_spacer(height=10)
 
         with dpg.child_window(width=-1, height=mid_window_height+80, border=True, tag="LHwM_childwindow_old", show=False):
             dpg.add_spacer(height=1)
