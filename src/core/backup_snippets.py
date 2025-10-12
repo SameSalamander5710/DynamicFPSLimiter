@@ -151,3 +151,12 @@
                                 dpg.add_input_int(tag=f"input_{key}", default_value=int(cm.settings[key]), 
                                                     width=90, step=1, step_fast=10, 
                                                     min_clamped=True, min_value=1)
+                                
+
+                dpg.add_image_button(
+                    texture_tag=textures["icon_save"],
+                    tag="SaveToProfile",
+                    callback=cm.save_to_profile,
+                    width=120,
+                    height=24
+                )

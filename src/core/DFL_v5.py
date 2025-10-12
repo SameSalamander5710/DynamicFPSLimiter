@@ -819,65 +819,61 @@ with dpg.window(label=app_title, tag="Primary Window"):
                     dpg.add_button(label="Reset", tag="rest_fps_cap_button", width=65, callback=fps_utils.reset_custom_limits)
                     dpg.add_button(label="Copy from above", tag="autofill_fps_caps", width=135, callback=fps_utils.copy_from_plot)
 
-            tab1_group3_width = 100
-            # Replace the button group with a table for better alignment
-            with dpg.table(header_row=False, resizable=False, policy=dpg.mvTable_SizingFixedFit):
-                dpg.add_table_column(width_fixed=True)
-                dpg.add_table_column(width_fixed=True)
-                # First row: Quick Save, Quick Load
-                with dpg.table_row():
-                    dpg.add_image_button(
-                        texture_tag=textures["icon_copy"],
-                        tag="quick_save",
-                        callback=cm.quick_save_settings,
-                        width=24,
-                        height=24,  # Set height as needed for your icon
+
+            dpg.add_spacer(height=1)
+
+            with dpg.group(horizontal=True):
+                dpg.add_image_button(
+                    texture_tag=textures["icon_settings"],
+                    tag="show_settings_button",
+                    width=24,
+                    height=24,
+                    callback=lambda: dpg.configure_item(
+                        "settings_window",
+                        show=not dpg.is_item_shown("settings_window")
                     )
-                    dpg.add_image_button(
-                        texture_tag=textures["icon_paste"],
-                        tag="quick_load",
-                        callback=cm.quick_load_settings,
-                        width=24,
-                        height=24,  # Set height as needed for your icon
+                )
+                dpg.add_image_button(
+                    texture_tag=textures["icon_plot"],
+                    tag="show_plot_button",
+                    width=24,
+                    height=24,
+                    callback=lambda: dpg.configure_item(
+                        "plot_popup_window",
+                        show=not dpg.is_item_shown("plot_popup_window")
                     )
-                # Second row: Show Plot, Settings
-                with dpg.table_row():
-                    dpg.add_image_button(
-                        texture_tag=textures["icon_plot"],
-                        tag="show_plot_button",
-                        width=24,
-                        height=24,
-                        callback=lambda: dpg.configure_item(
-                            "plot_popup_window",
-                            show=not dpg.is_item_shown("plot_popup_window")
-                        )
-                    )
-                    dpg.add_image_button(
-                        texture_tag=textures["icon_settings"],
-                        tag="show_settings_button",
-                        width=24,
-                        height=24,
-                        callback=lambda: dpg.configure_item(
-                            "settings_window",
-                            show=not dpg.is_item_shown("settings_window")
-                        )
-                    )
-            # Save to Profile button and theme binding (keep outside the table for clarity)
-            dpg.add_image_button(
-                texture_tag=textures["icon_reset"],
-                tag="Reset_Default",
-                callback=cm.reset_to_program_default,
-                width=24,
-                height=24,  # Set height as needed for your icon
-            )
-            dpg.add_image_button(
-                texture_tag=textures["icon_save"],
-                tag="SaveToProfile",
-                callback=cm.save_to_profile,
-                width=24,
-                height=24,  # Set height as needed for your icon
-            )
-            dpg.bind_item_theme("SaveToProfile", themes_manager.themes["revert_gpu_theme"])
+                )
+                dpg.add_image_button(
+                    texture_tag=textures["icon_copy"],
+                    tag="quick_save",
+                    callback=cm.quick_save_settings,
+                    width=24,
+                    height=24,  # Set height as needed for your icon
+                )
+                dpg.add_image_button(
+                    texture_tag=textures["icon_paste"],
+                    tag="quick_load",
+                    callback=cm.quick_load_settings,
+                    width=24,
+                    height=24,  # Set height as needed for your icon
+                )
+            with dpg.group(horizontal=True):
+                dpg.add_button(
+                    label="Save to Profile",
+                    tag="SaveToProfile",
+                    callback=cm.save_to_profile,
+                    width=120,
+                    height=24
+                )
+                dpg.bind_item_theme("SaveToProfile", themes_manager.themes["revert_gpu_theme"])
+                dpg.add_image_button(
+                    texture_tag=textures["icon_reset"],
+                    tag="Reset_Default",
+                    callback=cm.reset_to_program_default,
+                    width=24,
+                    height=24,  # Set height as needed for your icon
+                )
+
 
 
         with dpg.child_window(width=-1, height=mid_window_height+80, border=True, tag="LHwM_childwindow", show=False):
