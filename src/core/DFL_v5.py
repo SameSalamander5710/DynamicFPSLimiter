@@ -23,7 +23,7 @@ from core import logger
 from core.rtss_interface import RTSSInterface
 from core.cpu_monitor import CPUUsageMonitor
 from core.gpu_monitor import GPUUsageMonitor
-from core.librehardwaremonitor import LHMSensor
+from core.librehardwaremonitor import LHMSensor, get_all_sensor_infos
 from core.themes import ThemesManager
 from core.config_manager import ConfigManager
 from core.tooltips import get_tooltips, add_tooltip, apply_all_tooltips, update_all_tooltip_visibility
@@ -93,6 +93,7 @@ running = False  # Flag to control the monitoring loop
 cm.update_global_variables()
 
 lhm_sensor = LHMSensor(lambda: running, logger, dpg, themes_manager, interval=(cm.lhwmonitorpollinginterval/1000), max_samples=cm.lhwmonitoringsamples, percentile=cm.lhwmonitorpercentile)
+sensor_infos = get_all_sensor_infos() 
 fps_utils = FPSUtils(cm, lhm_sensor, logger, dpg, Viewport_width)
 
 
@@ -874,9 +875,37 @@ with dpg.window(label=app_title, tag="Primary Window"):
                     height=24,  # Set height as needed for your icon
                 )
 
-
-
         with dpg.child_window(width=-1, height=mid_window_height+80, border=True, tag="LHwM_childwindow", show=False):
+            dpg.add_spacer(height=1)
+            # Group sensors by hardware name
+            sensors_by_hw = {}
+            for sensor in sensor_infos:
+                hw_name = sensor['hw_name']
+                sensors_by_hw.setdefault(hw_name, []).append(sensor)
+
+            for hw_name, sensors in sensors_by_hw.items():
+                dpg.add_text(hw_name, color=(180, 220, 255), bullet=True)  # Hardware name as heading
+                with dpg.table(header_row=True, resizable=False, policy=dpg.mvTable_SizingFixedFit):
+                    dpg.add_table_column(label="Sensor")
+                    dpg.add_table_column(label="Enable")
+                    dpg.add_table_column(label="Lower")
+                    dpg.add_table_column(label="-")
+                    dpg.add_table_column(label="Upper")
+                    dpg.add_table_column(label="Unit")
+                    for sensor in sensors:
+                        label = f"{sensor['sensor_name']} ({sensor['sensor_type'].ToString() if hasattr(sensor['sensor_type'], 'ToString') else str(sensor['sensor_type'])})"
+                        param_id = sensor['parameter_id']
+                        unit = "°C" if "temp" in param_id or "temperature" in param_id else "%" if "load" in param_id else "W" if "power" in param_id else ""
+                        with dpg.table_row():
+                            dpg.add_text(label)
+                            dpg.add_checkbox(tag=f"input_{param_id}_enable", default_value=True)
+                            dpg.add_input_int(tag=f"input_{param_id}_lower", width=40, default_value=75)
+                            dpg.add_text("-", wrap=300)
+                            dpg.add_input_int(tag=f"input_{param_id}_upper", width=40, default_value=90)
+                            dpg.add_text(unit, wrap=300)
+                dpg.add_spacer(height=10)
+
+        with dpg.child_window(width=-1, height=mid_window_height+80, border=True, tag="LHwM_childwindow_old", show=False):
             dpg.add_spacer(height=1)
             with dpg.group(horizontal=True):
                 dpg.add_text("GPU:")

@@ -56,6 +56,44 @@ def get_selected_sensor_values(hardware, sensor_map):
             result.setdefault(sensor.SensorType, {})[name] = sensor.Value
     return result
 
+def get_all_sensor_infos():
+    sensors = []
+    cpu_count = 0
+    gpu_count = 0
+    for hw in computer.Hardware:
+        hw.Update()
+        if hw.HardwareType == HardwareType.Cpu:
+            cpu_count += 1
+            param_indices = {"Load": 0, "Power": 0, "Temperature": 0}
+            for sensor in hw.Sensors:
+                if sensor.SensorType in [SensorType.Load, SensorType.Power, SensorType.Temperature]:
+                    sensor_type_str = sensor.SensorType.ToString() if hasattr(sensor.SensorType, "ToString") else str(sensor.SensorType)
+                    param_indices[sensor_type_str] += 1
+                    parameter_id = f"cpu{cpu_count}_{sensor_type_str.lower()}_{param_indices[sensor_type_str]:02d}"
+                    sensors.append({
+                        "hw_type": hw.HardwareType,
+                        "hw_name": hw.Name,
+                        "sensor_type": sensor.SensorType,
+                        "sensor_name": sensor.Name,
+                        "parameter_id": parameter_id
+                    })
+        elif hw.HardwareType in (HardwareType.GpuAmd, HardwareType.GpuNvidia):
+            gpu_count += 1
+            param_indices = {"Load": 0, "Power": 0, "Temperature": 0}
+            for sensor in hw.Sensors:
+                if sensor.SensorType in [SensorType.Load, SensorType.Power, SensorType.Temperature]:
+                    sensor_type_str = sensor.SensorType.ToString() if hasattr(sensor.SensorType, "ToString") else str(sensor.SensorType)
+                    param_indices[sensor_type_str] += 1
+                    parameter_id = f"gpu{gpu_count}_{sensor_type_str.lower()}_{param_indices[sensor_type_str]:02d}"
+                    sensors.append({
+                        "hw_type": hw.HardwareType,
+                        "hw_name": hw.Name,
+                        "sensor_type": sensor.SensorType,
+                        "sensor_name": sensor.Name,
+                        "parameter_id": parameter_id
+                    })
+    return sensors
+
 class LHMSensor:
     def __init__(self, get_running, logger_instance, dpg_instance, themes_instance, interval=0.1, max_samples=20, percentile=70):
         self._running = get_running  # This should be a callable, e.g. lambda: running
