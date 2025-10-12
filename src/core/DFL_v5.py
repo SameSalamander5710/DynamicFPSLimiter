@@ -661,7 +661,9 @@ image_files = [
     "icon_copy.png",
     "icon_paste.png",
     "icon_save.png",
-    "icon_reset.png"
+    "icon_reset.png",
+    "icon_settings.png",
+    "icon_plot.png"
 ]
 textures = load_and_create_textures(image_files, Base_dir, dpg)
 
@@ -840,19 +842,21 @@ with dpg.window(label=app_title, tag="Primary Window"):
                     )
                 # Second row: Show Plot, Settings
                 with dpg.table_row():
-                    dpg.add_button(
-                        label="Show Plot",
+                    dpg.add_image_button(
+                        texture_tag=textures["icon_plot"],
                         tag="show_plot_button",
-                        width=tab1_group3_width,
+                        width=24,
+                        height=24,
                         callback=lambda: dpg.configure_item(
                             "plot_popup_window",
                             show=not dpg.is_item_shown("plot_popup_window")
                         )
                     )
-                    dpg.add_button(
-                        label="Settings",
+                    dpg.add_image_button(
+                        texture_tag=textures["icon_settings"],
                         tag="show_settings_button",
-                        width=tab1_group3_width,
+                        width=24,
+                        height=24,
                         callback=lambda: dpg.configure_item(
                             "settings_window",
                             show=not dpg.is_item_shown("settings_window")
