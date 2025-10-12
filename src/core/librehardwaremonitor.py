@@ -164,13 +164,9 @@ class LHMSensor:
         self.gpu_percentiles = defaultdict(float)
 
         while not self._should_stop.is_set() and self._running():
-            # Get the currently selected GPU name from the combo
-            try:
-                selected_gpu_name = self.dpg.get_value("gpu_dropdown")
-            except Exception:
-                selected_gpu_name = self.gpu_name  # fallback
-
+            gpu_index = 1
             for hw in computer.Hardware:
+                # CPU logic unchanged
                 if hw.Name == self.cpu_name and hw.HardwareType == HardwareType.Cpu:
                     hw.Update()
                     values = get_selected_sensor_values(hw, CPU_SENSORS)
@@ -182,21 +178,37 @@ class LHMSensor:
                                 self.cpu_percentiles[key] = round(
                                     calculate_percentile(self.cpu_history[key], self.percentile), 2
                                 )
-                # Use the selected GPU name from the dropdown
-                elif hw.Name == selected_gpu_name and hw.HardwareType in (HardwareType.GpuAmd, HardwareType.GpuNvidia):
+                    cpu_hw_name = hw.Name  # Save for display
+                # Loop through all GPUs
+                elif hw.HardwareType in (HardwareType.GpuAmd, HardwareType.GpuNvidia):
                     hw.Update()
                     values = get_selected_sensor_values(hw, GPU_SENSORS)
                     with self._lock:
                         for sensor_type, sensors in values.items():
                             for name, value in sensors.items():
-                                key = (sensor_type, name)
+                                key = (sensor_type, f"{gpu_index} {name}")
                                 self.gpu_history[key].append(round(value, 2))
                                 self.gpu_percentiles[key] = round(
                                     calculate_percentile(self.gpu_history[key], self.percentile), 2
                                 )
+                    # Save GPU name for display
+                    if not hasattr(self, 'gpu_hw_names'):
+                        self.gpu_hw_names = []
+                    if hw.Name not in self.gpu_hw_names:
+                        self.gpu_hw_names.append(hw.Name)
+                    gpu_index += 1
+
             # Update ReadingsText in the GUI
-            cpu_str = self.format_history(self.cpu_history, self.cpu_percentiles, "CPU Sensors")
-            gpu_str = self.format_history(self.gpu_history, self.gpu_percentiles, "GPU Sensors")
+            cpu_str = self.format_history(self.cpu_history, self.cpu_percentiles, cpu_hw_name if 'cpu_hw_name' in locals() else "CPU")
+            gpu_titles = self.gpu_hw_names if hasattr(self, 'gpu_hw_names') else ["GPU"]
+            gpu_str = ""
+            # Split GPU history by index for display
+            for idx, gpu_name in enumerate(gpu_titles, start=1):
+                gpu_str += self.format_history(
+                    {k: v for k, v in self.gpu_history.items() if k[1].startswith(f"{idx} ")},
+                    self.gpu_percentiles,
+                    gpu_name
+                ) + "\n\n"
             readings = cpu_str + "\n\n" + gpu_str
             try:
                 self.dpg.set_value("ReadingsText", readings)
@@ -205,21 +217,13 @@ class LHMSensor:
                 self.logger.add_log(f"Failed to update ReadingsText: {e}")
             time.sleep(self.interval)
 
-    def get_cpu_history(self):
-        with self._lock:
-            return dict(self.cpu_history)
-
-    def get_gpu_history(self):
-        with self._lock:
-            return dict(self.gpu_history)
-
     def format_history(self, hist, percentiles, title):
         # Define column widths
         type_w = 12
         name_w = 26
         last_w = 8
         perc_w = 10
-        header = f"{'Type':<{type_w}}| {'Name':<{name_w}}| {'Current':>{last_w}}| {'70th %ile':>{perc_w}}" #TODO add set perentile value over 70
+        header = f"{'Type':<{type_w}}| {'Name':<{name_w}}| {'Current':>{last_w}}| {'70th %ile':>{perc_w}}"
         lines = [f"{title}:"]
         lines.append(header)
         lines.append("-" * len(header))
@@ -231,6 +235,14 @@ class LHMSensor:
                 f"{sensor_type_str:<{type_w}}| {name:<{name_w}}| {str(last_val):>{last_w}}| {str(percentile_val):>{perc_w}}"
             )
         return "\n".join(lines)
+
+    def get_cpu_history(self):
+        with self._lock:
+            return dict(self.cpu_history)
+
+    def get_gpu_history(self):
+        with self._lock:
+            return dict(self.gpu_history)
 
 # Example usage:
 if __name__ == "__main__":
