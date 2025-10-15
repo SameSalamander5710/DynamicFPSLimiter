@@ -3,6 +3,8 @@ import configparser
 import dearpygui.dearpygui as dpg
 from decimal import Decimal, InvalidOperation
 from core.librehardwaremonitor import get_all_sensor_infos
+import importlib.util
+import inspect
 
 class ConfigManager:
     def __init__(self, logger_instance, dpg_instance, rtss_instance, tray_instance, themes_manager, base_dir):
@@ -78,7 +80,19 @@ class ConfigManager:
         self.profiles_config = configparser.ConfigParser()
         self.load_or_init_configs()
         self.load_preferences()
+        self._attach_lhm_functions()
         self.sensor_infos = get_all_sensor_infos()
+
+    def _attach_lhm_functions(self):
+        """Dynamically import all functions from config_manager_LHM.py and attach them as methods."""
+        lhm_path = os.path.join(os.path.dirname(__file__), "LHM_config", "config_manager_LHM.py")
+        spec = importlib.util.spec_from_file_location("config_manager_LHM", lhm_path)
+        lhm_module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(lhm_module)
+
+        for name, func in inspect.getmembers(lhm_module, inspect.isfunction):
+            # Attach as bound method to self
+            setattr(self, name, func.__get__(self, self.__class__))
 
     def load_or_init_configs(self):
         # Settings

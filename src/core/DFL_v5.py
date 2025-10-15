@@ -876,14 +876,17 @@ with dpg.window(label=app_title, tag="Primary Window"):
 
         with dpg.child_window(width=-1, height=mid_window_height+80, border=True, tag="LHwM_childwindow", show=False):
             dpg.add_spacer(height=1)
+
+            with dpg.group(horizontal=True):
+                dpg.add_checkbox(label="Hide unselected parameteres", tag="hide_unselected_checkbox", default_value=False)
+                #TODO: Add function + save to config
+
             # Group sensors by hardware name
             sensors_by_hw = {}
             for sensor in cm.sensor_infos:
                 hw_name = sensor['hw_name']
                 sensors_by_hw.setdefault(hw_name, []).append(sensor)
-            with dpg.group(horizontal=True):
-                dpg.add_checkbox(label="Hide unselected parameteres", tag="hide_unselected_checkbox", default_value=False)
-                #TODO: Add function + save to config
+
             dpg.add_spacer(height=1)
             for hw_name, sensors in reversed(list(sensors_by_hw.items())):
                 with dpg.collapsing_header(label=hw_name, default_open=False):
@@ -1098,6 +1101,7 @@ dpg.set_primary_window("Primary Window", True)
 # Setup and Run GUI
 logger.add_log("Initializing...")
 
+cm.update_dynamic_input_field_keys()
 cm.update_profile_dropdown(select_first=True)
 cm.startup_profile_selection()
 
