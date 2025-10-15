@@ -59,3 +59,51 @@ def update_dynamic_input_field_keys(self):
     if new_keys:
         self.input_field_keys.extend(new_keys)
         self.logger.add_log(f"Added dynamic input_field_keys: {new_keys}")
+
+def update_dynamic_default_settings(self):
+    """
+    Adds default values for all dynamic input field keys (from sensors) to self.Default_settings_original.
+    For each parameter_id, sets:
+        - enable: False
+        - lower: 0
+        - upper: 100
+    Does not overwrite existing keys.
+    """
+    if not hasattr(self, "sensor_infos"):
+        return
+
+    added_keys = []
+    for sensor in self.sensor_infos:
+        param_id = sensor.get("parameter_id")
+        if param_id:
+            for suffix, default_value in [("_enable", False), ("_lower", 0), ("_upper", 100)]:
+                key = f"{param_id}{suffix}"
+                if key not in self.Default_settings_original:
+                    self.Default_settings_original[key] = default_value
+                    added_keys.append(key)
+    if added_keys:
+        self.logger.add_log(f"Added dynamic default settings: {added_keys}")
+
+def update_dynamic_key_type_map(self):
+    """
+    Adds type mappings for all dynamic input field keys (from sensors) to self.key_type_map.
+    For each parameter_id, sets:
+        - enable: bool
+        - lower: int
+        - upper: int
+    Does not overwrite existing keys.
+    """
+    if not hasattr(self, "sensor_infos"):
+        return
+
+    added_keys = []
+    for sensor in self.sensor_infos:
+        param_id = sensor.get("parameter_id")
+        if param_id:
+            for suffix, typ in [("_enable", bool), ("_lower", int), ("_upper", int)]:
+                key = f"{param_id}{suffix}"
+                if key not in self.key_type_map:
+                    self.key_type_map[key] = typ
+                    added_keys.append(key)
+    if added_keys:
+        self.logger.add_log(f"Added dynamic key_type_map entries: {added_keys}")

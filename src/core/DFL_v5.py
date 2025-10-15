@@ -1101,7 +1101,11 @@ dpg.set_primary_window("Primary Window", True)
 # Setup and Run GUI
 logger.add_log("Initializing...")
 
+#TODO: Clean this up
 cm.update_dynamic_input_field_keys()
+cm.update_dynamic_default_settings()
+cm.update_dynamic_key_type_map()
+
 cm.update_profile_dropdown(select_first=True)
 cm.startup_profile_selection()
 
