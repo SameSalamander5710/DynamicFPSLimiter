@@ -23,7 +23,7 @@ from core import logger
 from core.rtss_interface import RTSSInterface
 from core.cpu_monitor import CPUUsageMonitor
 from core.gpu_monitor import GPUUsageMonitor
-from core.librehardwaremonitor import LHMSensor, get_all_sensor_infos
+from core.librehardwaremonitor import LHMSensor
 from core.themes import ThemesManager
 from core.config_manager import ConfigManager
 from core.tooltips import get_tooltips, add_tooltip, apply_all_tooltips, update_all_tooltip_visibility
@@ -93,7 +93,6 @@ running = False  # Flag to control the monitoring loop
 cm.update_global_variables()
 
 lhm_sensor = LHMSensor(lambda: running, logger, dpg, themes_manager, interval=(cm.lhwmonitorpollinginterval/1000), max_samples=cm.lhwmonitoringsamples, percentile=cm.lhwmonitorpercentile)
-sensor_infos = get_all_sensor_infos() 
 fps_utils = FPSUtils(cm, lhm_sensor, logger, dpg, Viewport_width)
 
 
@@ -879,7 +878,7 @@ with dpg.window(label=app_title, tag="Primary Window"):
             dpg.add_spacer(height=1)
             # Group sensors by hardware name
             sensors_by_hw = {}
-            for sensor in sensor_infos:
+            for sensor in cm.sensor_infos:
                 hw_name = sensor['hw_name']
                 sensors_by_hw.setdefault(hw_name, []).append(sensor)
             with dpg.group(horizontal=True):

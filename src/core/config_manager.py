@@ -2,6 +2,7 @@ import os
 import configparser
 import dearpygui.dearpygui as dpg
 from decimal import Decimal, InvalidOperation
+from core.librehardwaremonitor import get_all_sensor_infos
 
 class ConfigManager:
     def __init__(self, logger_instance, dpg_instance, rtss_instance, tray_instance, themes_manager, base_dir):
@@ -77,6 +78,7 @@ class ConfigManager:
         self.profiles_config = configparser.ConfigParser()
         self.load_or_init_configs()
         self.load_preferences()
+        self.sensor_infos = get_all_sensor_infos()
 
     def load_or_init_configs(self):
         # Settings
