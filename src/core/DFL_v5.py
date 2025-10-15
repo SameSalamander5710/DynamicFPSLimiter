@@ -882,7 +882,10 @@ with dpg.window(label=app_title, tag="Primary Window"):
             for sensor in sensor_infos:
                 hw_name = sensor['hw_name']
                 sensors_by_hw.setdefault(hw_name, []).append(sensor)
-
+            with dpg.group(horizontal=True):
+                dpg.add_checkbox(label="Hide unselected parameteres", tag="hide_unselected_checkbox", default_value=False)
+                #TODO: Add function + save to config
+            dpg.add_spacer(height=1)
             for hw_name, sensors in reversed(list(sensors_by_hw.items())):
                 with dpg.collapsing_header(label=hw_name, default_open=False):
                     # Group sensors by sensor type
