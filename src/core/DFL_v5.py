@@ -662,8 +662,7 @@ image_files = [
     "icon_paste.png",
     "icon_save.png",
     "icon_reset.png",
-    "icon_settings.png",
-    "icon_plot.png"
+    "icon_settings.png"#, "icon_plot.png"
 ]
 textures = load_and_create_textures(image_files, Base_dir, dpg)
 
@@ -831,16 +830,6 @@ with dpg.window(label=app_title, tag="Primary Window"):
                     callback=lambda: dpg.configure_item(
                         "settings_window",
                         show=not dpg.is_item_shown("settings_window")
-                    )
-                )
-                dpg.add_image_button(
-                    texture_tag=textures["icon_plot"],
-                    tag="show_plot_button",
-                    width=24,
-                    height=24,
-                    callback=lambda: dpg.configure_item(
-                        "plot_popup_window",
-                        show=not dpg.is_item_shown("plot_popup_window")
                     )
                 )
                 dpg.add_image_button(
@@ -1082,7 +1071,11 @@ with dpg.window(label=app_title, tag="Primary Window"):
             dpg.add_input_text(tag="luid_status_text", default_value="Tracking all GPU 3D usages.", readonly=True, width=260)
             dpg.add_spacer(height=5)
             dpg.add_button(label="Detect Render GPU", callback=toggle_luid_selection, tag="luid_button", width=150)
-
+            dpg.add_button(label="Show Plot", tag="show_plot_button", width=150,
+                            callback=lambda: dpg.configure_item(
+                                "plot_popup_window",
+                                show=not dpg.is_item_shown("plot_popup_window")
+                            ))
     dpg.add_spacer(height=1)
 
 
