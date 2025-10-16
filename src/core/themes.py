@@ -62,6 +62,12 @@ class ThemesManager:
                 dpg.add_theme_color(dpg.mvThemeCol_BorderShadow, (255, 255, 255, 11)) # Example: light shadow for 3D effect
                 #dpg.add_theme_color(dpg.mvThemeCol_PopupActive, (30, 144, 255, 255))
 
+                dpg.add_theme_color(dpg.mvThemeCol_ScrollbarBg, bg_colour_2_child)
+                dpg.add_theme_color(dpg.mvThemeCol_ScrollbarGrab, bg_colour_3_button)
+                dpg.add_theme_color(dpg.mvThemeCol_ScrollbarGrabHovered, bg_colour_4_buttonhover)
+                dpg.add_theme_color(dpg.mvThemeCol_ScrollbarGrabActive, bg_colour_5_buttonactive)
+
+
                 # Plot-specific styles
                 dpg.add_theme_style(dpg.mvPlotStyleVar_PlotBorderSize, 0, category=dpg.mvThemeCat_Plots)
                 dpg.add_theme_style(dpg.mvPlotStyleVar_MinorAlpha, 0.20, category=dpg.mvThemeCat_Plots)
