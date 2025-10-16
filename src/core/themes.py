@@ -58,6 +58,7 @@ class ThemesManager:
                 dpg.add_theme_color(dpg.mvThemeCol_PopupBg, bg_colour)
                 dpg.add_theme_color(dpg.mvThemeCol_HeaderHovered, bg_colour_4_buttonhover)
                 dpg.add_theme_color(dpg.mvThemeCol_HeaderActive, bg_colour_5_buttonactive)
+                dpg.add_theme_color(dpg.mvThemeCol_Header, bg_colour_3_button)
                 dpg.add_theme_color(dpg.mvThemeCol_BorderShadow, (255, 255, 255, 11)) # Example: light shadow for 3D effect
                 #dpg.add_theme_color(dpg.mvThemeCol_PopupActive, (30, 144, 255, 255))
 
