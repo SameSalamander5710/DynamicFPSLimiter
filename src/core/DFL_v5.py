@@ -875,10 +875,16 @@ with dpg.window(label=app_title, tag="Primary Window"):
                 )
 
         with dpg.child_window(width=-1, height=mid_window_height+80, border=True, tag="LHwM_childwindow", show=False):
-            dpg.add_spacer(height=1)
-
             with dpg.group(horizontal=True):
-                dpg.add_checkbox(label="Hide unselected parameteres", tag="hide_unselected_checkbox", default_value=False)
+                with dpg.drawlist(width=15, height=15):
+                    dpg.draw_line((0, 13), (15, 13), color=(180,180,180), thickness=1)
+                dpg.add_text("LibreHardwareMonitorLib v0.9.4")
+                with dpg.drawlist(width=100, height=15):
+                    dpg.draw_line((0, 13), (100, 13), color=(180,180,180), thickness=1)
+            with dpg.group(horizontal=True):
+                dpg.add_button(label="Show readings", width=120)
+                dpg.add_text(" | ")
+                dpg.add_checkbox(label="Hide unselected", tag="hide_unselected_checkbox", default_value=False)
                 #TODO: Add function + save to config
 
             # Group sensors by hardware name
