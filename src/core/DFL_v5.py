@@ -921,10 +921,14 @@ with dpg.window(label=app_title, tag="Primary Window"):
                                 for param in params:
                                     param_id = param['parameter_id']
                                     label = param['sensor_name']#[:18] + ("..." if len(param['sensor_name']) > 18 else "")
+                                    indexed = param.get('sensor_name_indexed', None)
                                     unit = "°C" if "temp" in param_id or "temperature" in param_id else "%" if "load" in param_id else "W" if "power" in param_id else ""
                                     with dpg.table_row(tag=f"param_row_{param_id}"):
                                         dpg.add_checkbox(tag=f"input_{param_id}_enable", default_value=False)
                                         dpg.add_text(label)
+                                        #if indexed and indexed != label:
+                                            #dpg.add_text(f"({indexed})", color=(150,150,150))
+                                            #TODO: Add this as a tooltip instead
                                         dpg.add_input_text(tag=f"input_{param_id}_lower", width=40, default_value=0)
                                         dpg.add_text("-", wrap=300)
                                         dpg.add_input_text(tag=f"input_{param_id}_upper", width=40, default_value=100)

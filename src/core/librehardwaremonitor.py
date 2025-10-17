@@ -75,6 +75,7 @@ def get_all_sensor_infos():
                         "hw_name": hw.Name,
                         "sensor_type": sensor.SensorType,
                         "sensor_name": sensor.Name,
+                        "sensor_name_indexed": sensor.Name,   # CPU not indexed
                         "parameter_id": parameter_id
                     })
         elif hw.HardwareType in (HardwareType.GpuAmd, HardwareType.GpuNvidia):
@@ -85,11 +86,14 @@ def get_all_sensor_infos():
                     sensor_type_str = sensor.SensorType.ToString() if hasattr(sensor.SensorType, "ToString") else str(sensor.SensorType)
                     param_indices[sensor_type_str] += 1
                     parameter_id = f"gpu{gpu_count}_{sensor_type_str.lower()}_{param_indices[sensor_type_str]:02d}"
+                    # Build the indexed sensor name exactly as LHMSensor._poll_loop uses for gpu_percentiles keys
+                    sensor_name_indexed = f"{gpu_count} {sensor.Name}"
                     sensors.append({
                         "hw_type": hw.HardwareType,
                         "hw_name": hw.Name,
                         "sensor_type": sensor.SensorType,
                         "sensor_name": sensor.Name,
+                        "sensor_name_indexed": sensor_name_indexed,
                         "parameter_id": parameter_id
                     })
     return sensors
