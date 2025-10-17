@@ -9,7 +9,7 @@ from pathlib import Path
 dll_path = Path(__file__).parent / "assets" / "LibreHardwareMonitorLib.dll"
 clr.AddReference(str(dll_path))
 
-from LibreHardwareMonitor.Hardware import SensorType  # Add this import at the top
+from LibreHardwareMonitor.Hardware import SensorType, HardwareType  # Add this import at the top
 
 sensor_type_map = {
     "Load": SensorType.Load,
@@ -146,27 +146,66 @@ class FPSUtils:
             return gpu_decrease_condition or cpu_decrease_condition
 
         elif monitoring_method == "LibreHM":
-            checks = [
-                ("input_load_gpucore_enable", ("Load", "GPU Core (1)"), "input_load_gpucore_upper"),
-                ("input_load_d3d3d_enable", ("Load", "D3D 3D"), "input_load_d3d3d_upper"),
-                ("input_load_d3dcopy1_enable", ("Load", "D3D Copy (1)"), "input_load_d3dcopy1_upper"),
-                ("input_load_cputotal_enable", ("Load", "CPU Total"), "input_load_cputotal_upper"),
-                ("input_load_cpucoremax_enable", ("Load", "CPU Core Max"), "input_load_cpucoremax_upper"),
-            ]
             triggered = []
-            
-            for checkbox, percentile_key, upper_tag in checks:
-                if self.dpg.get_value(checkbox):
-                    upper = float(self.dpg.get_value(upper_tag))
-                    sensor_type_enum = sensor_type_map.get(percentile_key[0])
-                    key = (sensor_type_enum, percentile_key[1])
-                    value = lhm_sensor.cpu_percentiles.get(key) if "CPU" in percentile_key[1] else lhm_sensor.gpu_percentiles.get(key)
-                    self.logger.add_log(f"Checking {percentile_key} against upper limit {upper}: {value}")
-                    if value is not None and value >= upper:
-                        triggered.append(True)
+            # Prefer dynamic sensor list produced by librehardwaremonitor.get_all_sensor_infos()
+            sensor_infos = getattr(cm, "sensor_infos", []) or []
+
+            if sensor_infos:
+                for sensor in sensor_infos:
+                    param_id = sensor.get("parameter_id")
+                    enable_tag = f"input_{param_id}_enable"
+                    upper_tag = f"input_{param_id}_upper"
+
+                    # Skip if UI element or sensor entry missing
+                    if not param_id or not self.dpg.does_item_exist(enable_tag):
+                        continue
+
+                    try:
+                        if not self.dpg.get_value(enable_tag):
+                            continue
+                    except Exception:
+                        continue
+
+                    try:
+                        upper = float(self.dpg.get_value(upper_tag))
+                    except Exception:
+                        # invalid upper value -> skip
+                        continue
+
+                    sensor_type = sensor.get("sensor_type")
+                    sensor_name = sensor.get("sensor_name")
+                    hw_name = sensor.get("hw_name")
+                    hw_type = sensor.get("hw_type")
+                    value = None
+
+                    # CPU sensors use exact name keys in cpu_percentiles
+                    if hw_type == HardwareType.Cpu:
+                        key = (sensor_type, sensor_name)
+                        value = lhm_sensor.cpu_percentiles.get(key)
                     else:
-                        triggered.append(False)
-            return any(triggered) if triggered else False
+                        # Prefer an indexed sensor name provided by get_all_sensor_infos()
+                        sensor_name_indexed = sensor.get("sensor_name_indexed") or sensor_name
+                        key = (sensor_type, sensor_name_indexed)
+                        value = lhm_sensor.gpu_percentiles.get(key)
+                        # If not found, fall back to the previous gpu_hw_names / suffix-matching logic
+                        if value is None:
+                            if hasattr(lhm_sensor, "gpu_hw_names"):
+                                try:
+                                    idx = lhm_sensor.gpu_hw_names.index(hw_name) + 1
+                                    key2 = (sensor_type, f"{idx} {sensor_name}")
+                                    value = lhm_sensor.gpu_percentiles.get(key2)
+                                except ValueError:
+                                    value = None
+                            if value is None:
+                                for k, v in lhm_sensor.gpu_percentiles.items():
+                                    if k[0] == sensor_type and k[1].endswith(sensor_name):
+                                        value = v
+                                        break
+
+                    self.logger.add_log(f"Checking LibreHM sensor {hw_name}/{sensor_name} against upper {upper}: {value}")
+                    triggered.append(bool(value is not None and value >= upper))
+
+                return any(triggered) if triggered else False
 
     def should_increase_fps_cap(self, gpu_values, cpu_values):
         monitoring_method = self.dpg.get_value("input_monitoring_method")
