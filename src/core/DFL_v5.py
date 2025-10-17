@@ -104,25 +104,11 @@ def hide_unselected_callback(sender, app_data, user_data):
             enabled = bool(dpg.get_value(enable_tag))
         except Exception:
             enabled = True
+        row_tag = f"param_row_{param_id}"
 
-        # the tags we will toggle (label, lower, dash, upper, unit)
-        tags_to_toggle = [
-            f"input_{param_id}_enable",
-            f"input_{param_id}_label",
-            f"input_{param_id}_lower",
-            f"input_{param_id}_dash",
-            f"input_{param_id}_upper",
-            f"input_{param_id}_unit",
-        ]
-
-        for t in tags_to_toggle:
-            if dpg.does_item_exist(t):
-                if hide:
-                    # show only if the parameter's enable checkbox is checked
-                    dpg.configure_item(t, show=enabled)
-                else:
-                    # show all when hide_unselected is unchecked
-                    dpg.configure_item(t, show=True)
+        if dpg.does_item_exist(row_tag):
+            # show full row only if we're not hiding, or the parameter is enabled
+            dpg.configure_item(row_tag, show=(not hide) or enabled)
 
 running = False  # Flag to control the monitoring loop
 
@@ -936,14 +922,14 @@ with dpg.window(label=app_title, tag="Primary Window"):
                                     param_id = param['parameter_id']
                                     label = param['sensor_name']#[:18] + ("..." if len(param['sensor_name']) > 18 else "")
                                     unit = "°C" if "temp" in param_id or "temperature" in param_id else "%" if "load" in param_id else "W" if "power" in param_id else ""
-                                    with dpg.table_row():
+                                    with dpg.table_row(tag=f"param_row_{param_id}"):
                                         dpg.add_checkbox(tag=f"input_{param_id}_enable", default_value=False)
-                                        dpg.add_text(label, tag=f"input_{param_id}_label")
+                                        dpg.add_text(label)
                                         dpg.add_input_text(tag=f"input_{param_id}_lower", width=40, default_value=0)
-                                        dpg.add_text("-", wrap=300, tag=f"input_{param_id}_dash")
+                                        dpg.add_text("-", wrap=300)
                                         dpg.add_input_text(tag=f"input_{param_id}_upper", width=40, default_value=100)
-                                        dpg.add_text(unit, wrap=300, tag=f"input_{param_id}_unit")
-                            dpg.add_spacer(height=1)
+                                        dpg.add_text(unit, wrap=300)
+                        dpg.add_spacer(height=1)
             dpg.add_spacer(height=1)
             with dpg.group(horizontal=True):
                 dpg.add_button(label="Show readings", width=120)
