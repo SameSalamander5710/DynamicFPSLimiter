@@ -88,6 +88,42 @@ def autopilot_checkbox_callback(sender, app_data, user_data):
     else:
         dpg.configure_item("start_stop_button", enabled=True)
 
+def hide_unselected_callback(sender, app_data, user_data):
+    """
+    When 'Hide unselected' is checked, hide all UI elements for a sensor
+    unless its input_{param_id}_enable checkbox is True.
+    """
+    hide = bool(app_data)
+    # cm.sensor_infos contains all parameters created in the LibreHM section
+    for sensor in cm.sensor_infos:
+        param_id = sensor.get('parameter_id')
+        if not param_id:
+            continue
+        enable_tag = f"input_{param_id}_enable"
+        try:
+            enabled = bool(dpg.get_value(enable_tag))
+        except Exception:
+            enabled = True
+
+        # the tags we will toggle (label, lower, dash, upper, unit)
+        tags_to_toggle = [
+            f"input_{param_id}_enable",
+            f"input_{param_id}_label",
+            f"input_{param_id}_lower",
+            f"input_{param_id}_dash",
+            f"input_{param_id}_upper",
+            f"input_{param_id}_unit",
+        ]
+
+        for t in tags_to_toggle:
+            if dpg.does_item_exist(t):
+                if hide:
+                    # show only if the parameter's enable checkbox is checked
+                    dpg.configure_item(t, show=enabled)
+                else:
+                    # show all when hide_unselected is unchecked
+                    dpg.configure_item(t, show=True)
+
 running = False  # Flag to control the monitoring loop
 
 cm.update_global_variables()
@@ -902,17 +938,17 @@ with dpg.window(label=app_title, tag="Primary Window"):
                                     unit = "°C" if "temp" in param_id or "temperature" in param_id else "%" if "load" in param_id else "W" if "power" in param_id else ""
                                     with dpg.table_row():
                                         dpg.add_checkbox(tag=f"input_{param_id}_enable", default_value=False)
-                                        dpg.add_text(label)
+                                        dpg.add_text(label, tag=f"input_{param_id}_label")
                                         dpg.add_input_text(tag=f"input_{param_id}_lower", width=40, default_value=0)
-                                        dpg.add_text("-", wrap=300)
+                                        dpg.add_text("-", wrap=300, tag=f"input_{param_id}_dash")
                                         dpg.add_input_text(tag=f"input_{param_id}_upper", width=40, default_value=100)
-                                        dpg.add_text(unit, wrap=300)
+                                        dpg.add_text(unit, wrap=300, tag=f"input_{param_id}_unit")
                             dpg.add_spacer(height=1)
             dpg.add_spacer(height=1)
             with dpg.group(horizontal=True):
                 dpg.add_button(label="Show readings", width=120)
                 dpg.add_text(" | ")
-                dpg.add_checkbox(label="Hide unselected", tag="hide_unselected_checkbox", default_value=False)
+                dpg.add_checkbox(label="Hide unselected", tag="hide_unselected_checkbox", default_value=False, callback=hide_unselected_callback)
                 #TODO: Add function + save to config
 
         with dpg.child_window(width=-1, height=mid_window_height+80, border=True, tag="LHwM_childwindow_old", show=False):
