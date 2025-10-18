@@ -93,6 +93,8 @@ def hide_unselected_callback(sender, app_data, user_data):
     When 'Hide unselected' is checked, hide all UI elements for a sensor
     unless its input_{param_id}_enable checkbox is True.
     """
+    cm.update_preference_setting('hide_unselected', sender, app_data, user_data)
+
     hide = bool(app_data)
     # cm.sensor_infos contains all parameters created in the LibreHM section
     for sensor in cm.sensor_infos:
@@ -956,7 +958,7 @@ with dpg.window(label=app_title, tag="Primary Window"):
                 )
                 #TODO: Add function to show readings window (bring it here from the settings)
                 dpg.add_text(" | ")
-                dpg.add_checkbox(label="Hide unselected", tag="hide_unselected_checkbox", default_value=False, callback=hide_unselected_callback)
+                dpg.add_checkbox(label="Hide unselected", tag="hide_unselected_checkbox", default_value=cm.hide_unselected, callback=hide_unselected_callback)
                 #TODO: Add function + save to config
 
         with dpg.child_window(width=-1, height=mid_window_height+80, border=True, tag="LHwM_childwindow_old", show=False):
