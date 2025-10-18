@@ -585,6 +585,26 @@ def build_plot_window():
 
 #TODO: add theme for nested window with border
 
+def build_readings_window():
+    """
+    Popup window that shows the same LibreHardwareMonitor readings shown
+    in the Settings -> Readings tab. The popup contains a read-only,
+    monospaced input text and a Refresh / Hide set of controls.
+    """
+    if not dpg.does_item_exist("readings_popup_window"):
+        with dpg.window(label="Readings", tag="readings_popup_window", width=570, height=420,
+                        modal=False, show=False, no_title_bar=True, pos=(20, 200)):
+            with dpg.child_window(tag="readings_childwindow", width=-1, height=370, border=False):
+                dpg.add_text("Sensor Readings from LibreHardwareMonitor:")
+                dpg.add_input_text(tag="ReadingsText", multiline=True, readonly=True, width=-1, height=330)
+                dpg.bind_item_theme("ReadingsText", themes_manager.themes["transparent_input_theme"])
+                themes_manager.bind_font_to_item("ReadingsText", "monospaced_font")
+            with dpg.group(horizontal=True):
+                dpg.add_spacer(width=1)
+                dpg.add_button(label="Hide Readings", width=100, callback=lambda: dpg.configure_item("readings_popup_window", show=False))
+            dpg.bind_item_theme("readings_popup_window", themes_manager.themes["nested_window_theme"])
+
+
 def build_settings_window():
     if not dpg.does_item_exist("settings_window"):
         with dpg.window(label="Settings", tag="settings_window", width=570, height=420, 
@@ -634,13 +654,6 @@ def build_settings_window():
                             dpg.add_text(question, tag=key, bullet=True)
                             with dpg.tooltip(parent=key, delay=0.5):
                                 dpg.add_text(answer, wrap=300)
-
-                with dpg.tab(label=" Readings", tag="tab5"):
-                    with dpg.child_window(tag="ReadingsWindow", autosize_x=True, height=tab_height, border=True):
-                        dpg.add_text("Sensor Readings from LibreHardwareMonitor:")
-                        dpg.add_input_text(tag="ReadingsText", multiline=True, readonly=True, width=-1, height=tab_height-50)
-                        dpg.bind_item_theme("ReadingsText", themes_manager.themes["transparent_input_theme"])
-                        themes_manager.bind_font_to_item("ReadingsText", "monospaced_font")
 
             # Add Hide Settings button just below the tabs
             dpg.add_spacer(height=1)
@@ -936,7 +949,12 @@ with dpg.window(label=app_title, tag="Primary Window"):
                         dpg.add_spacer(height=1)
             dpg.add_spacer(height=1)
             with dpg.group(horizontal=True):
-                dpg.add_button(label="Show readings", width=120)
+                dpg.add_button(label="Show readings", width=120,
+                               callback=lambda: dpg.configure_item(
+                                "readings_popup_window",
+                                show=not dpg.is_item_shown("readings_popup_window"))
+                )
+                #TODO: Add function to show readings window (bring it here from the settings)
                 dpg.add_text(" | ")
                 dpg.add_checkbox(label="Hide unselected", tag="hide_unselected_checkbox", default_value=False, callback=hide_unselected_callback)
                 #TODO: Add function + save to config
@@ -1109,6 +1127,7 @@ with dpg.window(label=app_title, tag="Primary Window"):
     #TODO Remove unnecessary theme functions if unused
 
 build_plot_window()
+build_readings_window()
 build_settings_window()
 
 viewport_x_pos, viewport_y_pos = TrayManager.get_centered_viewport_position(Viewport_width, Viewport_height)
