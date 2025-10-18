@@ -597,6 +597,11 @@ def build_settings_window():
                                          default_value=cm.minimizeonstartup, 
                                          callback=cm.make_update_preference_callback('minimizeonstartup')
                         )
+                        dpg.add_checkbox(label="Autostart on launch with Global profile. Requires Autopilot disabled.", tag="autorun_global_checkbox",
+                                         default_value=cm.autorun_global, 
+                                         callback=cm.make_update_preference_callback('autorun_global')
+                        )
+                        #TODO: Add tooltip saying that this overrides the profile on startup setting
                         with dpg.group(horizontal=True):
                             dpg.add_checkbox(label="Set", tag="profile_on_startup_checkbox",
                                             default_value=cm.profileonstartup, 

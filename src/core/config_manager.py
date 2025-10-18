@@ -106,7 +106,8 @@ class ConfigManager:
                 'launchonstartup': 'False',
                 'minimizeonstartup': 'False',
                 'autopilot': 'False',
-                'hide_unselected': 'False'
+                'hide_unselected': 'False',
+                'autorun_global': 'False'
             }
             self.settings_config["GlobalSettings"] = {
                 'minvalidgpu': '14',
@@ -257,7 +258,8 @@ class ConfigManager:
             'launchonstartup': bool,
             'minimizeonstartup': bool,
             'autopilot': bool,
-            'hide_unselected': bool
+            'hide_unselected': bool,
+            'autorun_global': bool
         }
 
         self.current_profile = "Global"
@@ -583,14 +585,13 @@ class ConfigManager:
         When 'Hide unselected' is toggled, save preference and hide/show LibreHM parameter rows
         unless the parameter's enable checkbox is True.
         """
-        # Persist preference using existing helper so behaviour matches other preference callbacks
-        self.update_preference_setting('hide_unselected', sender, app_data, user_data)
-
         # Resolve boolean value (fallback to the checkbox value if app_data is None)
         try:
             hide = bool(app_data) if app_data is not None else bool(self.dpg.get_value("hide_unselected_checkbox"))
         except Exception:
             hide = False
+
+        self.update_preference_setting('hide_unselected', sender, hide, user_data)
 
         # Iterate sensor infos created for the LibreHM UI and hide/show rows
         for sensor in self.sensor_infos:
