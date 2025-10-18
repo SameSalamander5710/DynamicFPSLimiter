@@ -427,8 +427,7 @@ class ConfigManager:
         if gpu_names and idx < len(gpu_names):
             dpg.set_value("gpu_dropdown", gpu_names[idx])
         #dpg.configure_item("game_name", label=profile_name)
-        self.current_method_callback()  # Update method-specific UI elements
-        self.monitoring_method_callback()
+        self.refresh_ui_callbacks()
 
     def save_profile(self, profile_name):
         self.profiles_config[profile_name] = {}
@@ -488,8 +487,7 @@ class ConfigManager:
 
             self.logger.add_log(f"Deleted profile: {profile_to_delete}")
             self.current_profile = "Global"
-        self.current_method_callback()  # Update method-specific UI elements
-        self.monitoring_method_callback()
+        self.refresh_ui_callbacks()
 
     # Function to sync settings with variables
     def update_global_variables(self):
@@ -523,16 +521,14 @@ class ConfigManager:
             dpg.set_value(f"input_{key}", parsed_value)
         self.update_global_variables()
         self.logger.add_log("Settings quick loaded")
-        self.current_method_callback()  # Update method-specific UI elements
-        self.monitoring_method_callback()
+        self.refresh_ui_callbacks()
 
     def reset_to_program_default(self):
         for key in self.input_field_keys:
             value = self.Default_settings_original[key]
             parsed_value = self.parse_input_value(key, value)
             dpg.set_value(f"input_{key}", parsed_value)
-        self.current_method_callback()  # Update method-specific UI elements
-        self.monitoring_method_callback()
+        self.refresh_ui_callbacks()
         self.logger.add_log("Settings reset to program default")
 
     def startup_profile_selection(self):
@@ -579,6 +575,57 @@ class ConfigManager:
         else:
             self.dpg.configure_item("LHwM_childwindow", show=False)
             self.dpg.configure_item("legacy_childwindow", show=True)
+
+        self.logger.add_log(f"Method selection changed: {app_data}")
+
+    def hide_unselected_callback(self, sender=None, app_data=None, user_data=None):
+        """
+        When 'Hide unselected' is toggled, save preference and hide/show LibreHM parameter rows
+        unless the parameter's enable checkbox is True.
+        """
+        # Persist preference using existing helper so behaviour matches other preference callbacks
+        self.update_preference_setting('hide_unselected', sender, app_data, user_data)
+
+        # Resolve boolean value (fallback to the checkbox value if app_data is None)
+        try:
+            hide = bool(app_data) if app_data is not None else bool(self.dpg.get_value("hide_unselected_checkbox"))
+        except Exception:
+            hide = False
+
+        # Iterate sensor infos created for the LibreHM UI and hide/show rows
+        for sensor in self.sensor_infos:
+            param_id = sensor.get('parameter_id')
+            if not param_id:
+                continue
+            enable_tag = f"input_{param_id}_enable"
+            try:
+                enabled = bool(self.dpg.get_value(enable_tag))
+            except Exception:
+                enabled = True
+            row_tag = f"param_row_{param_id}"
+
+            if self.dpg.does_item_exist(row_tag):
+                # show full row only if we're not hiding, or the parameter is enabled
+                self.dpg.configure_item(row_tag, show=(not hide) or enabled)
+
+    def refresh_ui_callbacks(self, sender=None, app_data=None, user_data=None):
+        """
+        Centralized place to run common UI update callbacks.
+        Call this whenever you need to run all UI-refresh callbacks (method, monitoring, hide_unselected).
+        """
+        # call each callback but protect against exceptions so one failing callback doesn't stop others
+        try:
+            self.current_method_callback(sender, app_data, user_data)
+        except Exception as e:
+            self.logger.add_log(f"Error in current_method_callback: {e}")
+        try:
+            self.monitoring_method_callback(sender, app_data, user_data)
+        except Exception as e:
+            self.logger.add_log(f"Error in monitoring_method_callback: {e}")
+        try:
+            self.hide_unselected_callback(sender, app_data, user_data)
+        except Exception as e:
+            self.logger.add_log(f"Error in hide_unselected_callback: {e}")
 
     def gpu_dropdown_callback(self, sender, app_data, user_data):
         gpu_names = self.dpg.get_item_configuration(sender).get("items", [])

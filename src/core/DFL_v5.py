@@ -88,30 +88,6 @@ def autopilot_checkbox_callback(sender, app_data, user_data):
     else:
         dpg.configure_item("start_stop_button", enabled=True)
 
-def hide_unselected_callback(sender, app_data, user_data):
-    """
-    When 'Hide unselected' is checked, hide all UI elements for a sensor
-    unless its input_{param_id}_enable checkbox is True.
-    """
-    cm.update_preference_setting('hide_unselected', sender, app_data, user_data)
-
-    hide = bool(app_data)
-    # cm.sensor_infos contains all parameters created in the LibreHM section
-    for sensor in cm.sensor_infos:
-        param_id = sensor.get('parameter_id')
-        if not param_id:
-            continue
-        enable_tag = f"input_{param_id}_enable"
-        try:
-            enabled = bool(dpg.get_value(enable_tag))
-        except Exception:
-            enabled = True
-        row_tag = f"param_row_{param_id}"
-
-        if dpg.does_item_exist(row_tag):
-            # show full row only if we're not hiding, or the parameter is enabled
-            dpg.configure_item(row_tag, show=(not hide) or enabled)
-
 running = False  # Flag to control the monitoring loop
 
 cm.update_global_variables()
@@ -958,7 +934,7 @@ with dpg.window(label=app_title, tag="Primary Window"):
                 )
                 #TODO: Add function to show readings window (bring it here from the settings)
                 dpg.add_text(" | ")
-                dpg.add_checkbox(label="Hide unselected", tag="hide_unselected_checkbox", default_value=cm.hide_unselected, callback=hide_unselected_callback)
+                dpg.add_checkbox(label="Hide unselected", tag="hide_unselected_checkbox", default_value=cm.hide_unselected, callback=cm.hide_unselected_callback)
                 #TODO: Add function + save to config
 
         with dpg.child_window(width=-1, height=mid_window_height+80, border=True, tag="LHwM_childwindow_old", show=False):
@@ -1187,8 +1163,7 @@ autopilot_thread = threading.Thread(target=autopilot_loop, daemon=True)
 autopilot_thread.start()
 
 apply_all_tooltips(dpg, get_tooltips(), cm.showtooltip, cm, logger)
-cm.current_method_callback()
-cm.monitoring_method_callback()
+cm.refresh_ui_callbacks()
 
 autostart = AutoStartManager(app_path=os.path.join(os.path.dirname(Base_dir), "DynamicFPSLimiter.exe"))
 autostart.update_if_needed(cm.launchonstartup)
