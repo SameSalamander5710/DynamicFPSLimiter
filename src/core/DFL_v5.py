@@ -597,7 +597,7 @@ def build_settings_window():
                                          default_value=cm.minimizeonstartup, 
                                          callback=cm.make_update_preference_callback('minimizeonstartup')
                         )
-                        dpg.add_checkbox(label="Autostart on launch with Global profile. Requires Autopilot disabled.", tag="autorun_global_checkbox",
+                        dpg.add_checkbox(label="Autopilot mod: stop when no specific profile is detected", tag="autorun_global_checkbox", #TODO: change behavious of autopilot to always run, unless this option is enabled, in which case it does its current function
                                          default_value=cm.autorun_global, 
                                          callback=cm.make_update_preference_callback('autorun_global')
                         )
