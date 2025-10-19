@@ -26,8 +26,22 @@ def run_app():
     import core.DFL_v5
 
 def build_executable():
-    PyInstaller.__main__.run([
-        'src/core/DFL_v4.py',
+    assets_dir = os.path.join(os.path.dirname(__file__), 'core', 'assets')
+    add_data_args = []
+
+    for root, _, files in os.walk(assets_dir):
+        for fname in files:
+            src_path = os.path.join(root, fname)
+            rel_dir = os.path.relpath(root, assets_dir)
+            if rel_dir == '.' or rel_dir == os.curdir:
+                dest = 'assets'
+            else:
+                dest = os.path.join('assets', rel_dir)
+            # Use os.pathsep so this works on Windows (PyInstaller expects ';' on Windows)
+            add_data_args.extend(['--add-data', f'{src_path}{os.pathsep}{dest}'])
+
+    base_args = [
+        'src/core/DFL_v5.py',
         '--onedir',
         '--uac-admin',
         '--clean',
@@ -36,19 +50,11 @@ def build_executable():
         '--name', 'DynamicFPSLimiter',
         '--icon', 'src/core/assets/DynamicFPSLimiter.ico',
         '--version-file', 'src/metadata/version.txt',
-        '--add-data', 'src/core/assets/DynamicFPSLimiter.ico:assets',
-        '--add-data', 'src/core/assets/DynamicFPSLimiter_red.ico:assets',
-        '--add-data', 'src/core/assets/DynamicFPSLimiter_dark_green.ico:assets',
-        '--add-data', 'src/core/assets/DynamicFPSLimiter_dark_red.ico:assets',
-        '--add-data', 'src/core/assets/DynamicFPSLimiter_icon.png:assets',
-        '--add-data', 'src/core/assets/close_button.png:assets',
-        '--add-data', 'src/core/assets/minimize_button.png:assets',
-        '--add-data', 'src/core/assets/faqs.csv:assets',
-        '--add-data', 'src/core/assets/LibreHardwareMonitorLib.dll:assets',
-        '--add-data', 'src/core/assets/LICENSE.txt:assets',
         '--distpath', 'output/dist',
-        '--workpath', 'output/build'
-    ])
+        '--workpath', 'output/build',
+    ]
+
+    PyInstaller.__main__.run(base_args + add_data_args)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Dynamic FPS Limiter')
