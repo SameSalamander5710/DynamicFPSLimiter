@@ -597,11 +597,11 @@ def build_settings_window():
                                          default_value=cm.minimizeonstartup, 
                                          callback=cm.make_update_preference_callback('minimizeonstartup')
                         )
-                        dpg.add_checkbox(label="Autopilot mod: stop when no specific profile is detected", tag="autorun_global_checkbox", #TODO: change behavious of autopilot to always run, unless this option is enabled, in which case it does its current function
-                                         default_value=cm.autorun_global, 
-                                         callback=cm.make_update_preference_callback('autorun_global')
+                        dpg.add_checkbox(label="Autopilot mod: Only run when a specific profile is detected", tag="autopilot_only_profiles_checkbox", #TODO: change behavious of autopilot to always run, unless this option is enabled, in which case it does its current function
+                                         default_value=cm.autopilot_only_profiles, 
+                                         callback=cm.make_update_preference_callback('autopilot_only_profiles')
                         )
-                        #TODO: Add tooltip saying that this overrides the profile on startup setting
+                        #TODO: Add tooltip - bby default, will run in global until a specific profile is detected. With this option, will only run when a specific profile is detected.
                         with dpg.group(horizontal=True):
                             dpg.add_checkbox(label="Set", tag="profile_on_startup_checkbox",
                                             default_value=cm.profileonstartup, 
