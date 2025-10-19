@@ -53,6 +53,9 @@ def autopilot_on_check(cm, rtss_manager, dpg, logger, running, start_stop_callba
         return
 
     profiles = cm.profiles_config.sections() if hasattr(cm, "profiles_config") else []
+    
+    print(f"Autopilot detected active process: {process_name}")  #TODO: remove
+    print(f"Autopilot only profiles enabled: {cm.autopilot_only_profiles}")  #TODO: remove
 
     if cm.autopilot_only_profiles:
         # Legacy behavior: only act when a specific profile matches the active process

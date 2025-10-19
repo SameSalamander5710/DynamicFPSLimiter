@@ -123,7 +123,8 @@ def start_stop_callback(sender, app_data, user_data):
         dpg.configure_item(tag, enabled=not running)
 
     dpg.configure_item("profile_dropdown", enabled=not running)
-    dpg.configure_item("autopilot_checkbox", enabled=not running)
+    if not cm.autopilot:
+        dpg.configure_item("autopilot_checkbox", enabled=not running)
 
     if running:
         
@@ -459,6 +460,7 @@ def autopilot_loop():
     while gui_running:
         if cm.autopilot and not running:
             autopilot_on_check(cm, rtss_manager, dpg, logger, running, start_stop_callback)
+            print("Autopilot check executed.") #TODO: remove
         time.sleep(1)  # Tune interval as needed
 
 def exit_gui():
