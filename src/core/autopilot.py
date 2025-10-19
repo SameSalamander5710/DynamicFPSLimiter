@@ -37,6 +37,9 @@ def get_foreground_process_name():
 def autopilot_on_check(cm, rtss_manager, dpg, logger, running, start_stop_callback):
     """
     Checks if the active process matches a profile and switches profile/running state if needed.
+    Behavior depends on cm.autopilot_only_profiles:
+      - If True: only start/stop when a specific profile is detected (legacy behavior).
+      - If False: when a specific profile is detected, switch to it; otherwise start/continue with the Global profile.
     """
     if not (cm and rtss_manager and rtss_manager.is_rtss_running()):
         return
@@ -50,10 +53,27 @@ def autopilot_on_check(cm, rtss_manager, dpg, logger, running, start_stop_callba
         return
 
     profiles = cm.profiles_config.sections() if hasattr(cm, "profiles_config") else []
-    if process_name in profiles:
-        # Switch profile in UI and config manager
-        dpg.set_value("profile_dropdown", process_name)
-        cm.load_profile_callback(None, process_name, None)
-        if not running:
-            logger.add_log(f"AutoPilot: Switched to profile '{process_name}' and started monitoring.")
-            start_stop_callback(None, None, cm)  # Call with expected arguments
+
+    if cm.autopilot_only_profiles:
+        # Legacy behavior: only act when a specific profile matches the active process
+        if process_name in profiles:
+            dpg.set_value("profile_dropdown", process_name)
+            cm.load_profile_callback(None, process_name, None)
+            if not running:
+                logger.add_log(f"AutoPilot: Switched to profile '{process_name}' and started monitoring.")
+                start_stop_callback(None, None, cm)
+    else:
+        # New default: start with detected specific profile if present; otherwise start with Global
+        if process_name in profiles:
+            dpg.set_value("profile_dropdown", process_name)
+            cm.load_profile_callback(None, process_name, None)
+            if not running:
+                logger.add_log(f"AutoPilot: Switched to profile '{process_name}' and started monitoring.")
+                start_stop_callback(None, None, cm)
+        else:
+            # No specific profile for the active process -> start with Global when not running
+            if not running:
+                dpg.set_value("profile_dropdown", "Global")
+                cm.load_profile_callback(None, "Global", None)
+                logger.add_log("AutoPilot: No specific profile detected; starting with 'Global' profile.")
+                start_stop_callback(None, None, cm)

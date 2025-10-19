@@ -271,8 +271,25 @@ def monitoring_loop():
 
         if cm.autopilot:
             selected_game = dpg.get_value("profile_dropdown")
-            if selected_game != "Global" and get_foreground_process_name() != selected_game and running:
-                start_stop_callback(None, None, cm)
+            fg_process = get_foreground_process_name()
+            if cm.autopilot_only_profiles:
+                # Legacy behavior: stop monitoring when the selected specific profile is no longer active
+                if selected_game != "Global" and fg_process != selected_game and running:
+                    logger.add_log(f"AutoPilot: Active process changed to '{fg_process}' != selected profile '{selected_game}'; stopping (autopilot_only_profiles).")
+                    start_stop_callback(None, None, cm)
+            else:
+                # New default: if a specific profile was selected but the foreground process no longer matches,
+                # switch to Global profile and keep monitoring running.
+                if selected_game != "Global" and fg_process != selected_game:
+                    logger.add_log(f"AutoPilot: Active process changed to '{fg_process}'; switching to 'Global' profile and keeping monitoring.")
+                    dpg.set_value("profile_dropdown", "Global")
+                    cm.load_profile_callback(None, "Global", None)
+                    # Ensure the running monitor uses the newly loaded Global profile values
+                    try:
+                        cm.apply_current_input_values() #TODO: check if this is enough
+                    except Exception:
+                        # Guard in case apply_current_input_values is unavailable or fails
+                        logger.add_log("AutoPilot: Failed to apply Global profile immediately.")
 
         if process_name and process_name != last_process_name:
             last_process_name = process_name
