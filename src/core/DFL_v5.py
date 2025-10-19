@@ -924,7 +924,7 @@ with dpg.window(label=app_title, tag="Primary Window"):
 
                 dpg.add_spacer(height=1)
                 for hw_name, sensors in reversed(list(sensors_by_hw.items())):
-                    with dpg.collapsing_header(label=hw_name, default_open=False):
+                    with dpg.collapsing_header(label=hw_name, default_open=True):
                         # Group sensors by sensor type
                         sensors_by_type = {}
                         for sensor in sensors:
@@ -1077,6 +1077,20 @@ logger.add_log("Initialized successfully.")
 #dpg.show_style_editor()
 #dpg.show_imgui_demo()
 
-dpg.set_frame_callback(1, lambda: tray.minimize_on_startup_if_needed(cm.minimizeonstartup))
+def _on_first_frame():
+    try:
+        tray.minimize_on_startup_if_needed(cm.minimizeonstartup)
+    except Exception:
+        pass
+    # mark DPG/UI initialization complete for ConfigManager
+    try:
+        cm.ui_initialized = True
+        # run hide_unselected once now that tables/layouts have been initialized
+        cm.hide_unselected_callback(None, None, None)
+        #TODO: add function to now hide the collapsing headers
+    except Exception:
+        pass
+
+dpg.set_frame_callback(1, _on_first_frame)
 
 dpg.start_dearpygui()

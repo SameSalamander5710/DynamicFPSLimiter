@@ -49,6 +49,9 @@ class ConfigManager:
         self.load_preferences()
         self.sensor_infos = get_all_sensor_infos(base_dir)
 
+        # flag set externally (first-frame) to indicate tables/layouts are ready, to overcome Dear ImGui table bug
+        self.ui_initialized = False
+
     def load_or_init_configs(self):
         # Settings
         if os.path.exists(self.settings_path):
@@ -547,6 +550,17 @@ class ConfigManager:
         When 'Hide unselected' is toggled, save preference and hide/show LibreHM parameter rows
         unless the parameter's enable checkbox is True.
         """
+
+        # If UI is not fully initialized (ImGui table layout may be uninitialized),
+        # schedule a retry next frame and exit early.
+        if not getattr(self, "ui_initialized", False):
+            try:
+                # schedule to re-run once UI has had a frame to initialize
+                self.dpg.add_frame_callback(lambda: self.hide_unselected_callback(None, None, None))
+            except Exception:
+                pass
+            return
+
         # Resolve boolean value (fallback to the checkbox value if app_data is None)
         try:
             hide = bool(app_data) if app_data is not None else bool(self.dpg.get_value("hide_unselected_checkbox"))
