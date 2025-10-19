@@ -88,6 +88,9 @@ def autopilot_checkbox_callback(sender, app_data, user_data):
     else:
         dpg.configure_item("start_stop_button", enabled=True)
 
+    if  (not cm.autopilot_only_profiles) and running:
+        start_stop_callback(None, None, cm)
+
 running = False  # Flag to control the monitoring loop
 
 cm.update_global_variables()
