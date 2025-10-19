@@ -29,37 +29,6 @@ class ConfigManager:
             "capmethod": "ratio",
             "customfpslimits": '30.01, 45.00, 59.99',
             "monitoring_method": "librehm",
-            "lhm_gpu_priority": 0,
-            "load_gpucore_enable": True,
-            "load_gpucore_lower": 75,
-            "load_gpucore_upper": 90,
-            "load_d3d3d_enable": True,
-            "load_d3d3d_lower": 75,
-            "load_d3d3d_upper": 90,
-            "load_d3dcopy1_enable": False,
-            "load_d3dcopy1_lower": 75,
-            "load_d3dcopy1_upper": 90,
-            "load_cputotal_enable": True,
-            "load_cputotal_lower": 75,
-            "load_cputotal_upper": 90,
-            "load_cpucoremax_enable": True,
-            "load_cpucoremax_lower": 75,
-            "load_cpucoremax_upper": 90,
-            "temp_gpuhotspot_enable": True,
-            "temp_gpuhotspot_lower": 75,
-            "temp_gpuhotspot_upper": 90,
-            "temp_gpucore_enable": True,
-            "temp_gpucore_lower": 75,
-            "temp_gpucore_upper": 90,
-            "temp_cpupackage_enable": True,
-            "temp_cpupackage_lower": 75,
-            "temp_cpupackage_upper": 90,
-            "power_gpupackage_enable": True,
-            "power_gpupackage_lower": 75,
-            "power_gpupackage_upper": 90,
-            "power_cpupackage_enable": True,
-            "power_cpupackage_lower": 75,
-            "power_cpupackage_upper": 90,
             "minvalidgpu": 14,
             "minvalidfps": 14,
             "globallimitonexit_fps": 98,
@@ -129,38 +98,7 @@ class ConfigManager:
                 'delaybeforeincrease': '10',
                 'capmethod': 'ratio',
                 'customfpslimits': '30.01, 45.00, 59.99',
-                'monitoring_method': 'librehm',
-                'lhm_gpu_priority': '0',
-                'load_gpucore_enable': 'True',
-                'load_gpucore_lower': '75',
-                'load_gpucore_upper': '90',
-                'load_d3d3d_enable': 'True',
-                'load_d3d3d_lower': '75',
-                'load_d3d3d_upper': '90',
-                'load_d3dcopy1_enable': 'False',
-                'load_d3dcopy1_lower': '75',
-                'load_d3dcopy1_upper': '90',
-                'load_cputotal_enable': 'True',
-                'load_cputotal_lower': '75',
-                'load_cputotal_upper': '90',
-                'load_cpucoremax_enable': 'True',
-                'load_cpucoremax_lower': '75',
-                'load_cpucoremax_upper': '90',
-                'temp_gpuhotspot_enable': 'True',
-                'temp_gpuhotspot_lower': '75',
-                'temp_gpuhotspot_upper': '90',
-                'temp_gpucore_enable': 'True',
-                'temp_gpucore_lower': '75',
-                'temp_gpucore_upper': '90',
-                'temp_cpupackage_enable': 'True',
-                'temp_cpupackage_lower': '75',
-                'temp_cpupackage_upper': '90',
-                'power_gpupackage_enable': 'True',
-                'power_gpupackage_lower': '75',
-                'power_gpupackage_upper': '90',
-                'power_cpupackage_enable': 'True',
-                'power_cpupackage_lower': '75',
-                'power_cpupackage_upper': '90'
+                'monitoring_method': 'librehm'
             }
             with open(self.profiles_path, 'w') as f:
                 self.profiles_config.write(f)
@@ -168,14 +106,7 @@ class ConfigManager:
         self.input_field_keys = ["maxcap", "mincap", "capstep", "capratio",
                 "gpucutofffordecrease", "gpucutoffforincrease", "cpucutofffordecrease", "cpucutoffforincrease",
                 "capmethod", "customfpslimits", "delaybeforedecrease", "delaybeforeincrease",
-                "monitoring_method", "load_gpucore_enable", "load_gpucore_lower", "load_gpucore_upper",
-                "load_d3d3d_enable", "load_d3d3d_lower", "load_d3d3d_upper", "load_d3dcopy1_enable",
-                "load_d3dcopy1_lower", "load_d3dcopy1_upper", "load_cputotal_enable", "load_cputotal_lower",
-                "load_cputotal_upper", "load_cpucoremax_enable", "load_cpucoremax_lower", "load_cpucoremax_upper",
-                "temp_gpuhotspot_enable", "temp_gpuhotspot_lower", "temp_gpuhotspot_upper", "temp_gpucore_enable",
-                "temp_gpucore_lower", "temp_gpucore_upper", "temp_cpupackage_enable", "temp_cpupackage_lower",
-                "temp_cpupackage_upper", "power_gpupackage_enable", "power_gpupackage_lower", "power_gpupackage_upper",
-                "power_cpupackage_enable", "power_cpupackage_lower", "power_cpupackage_upper"
+                "monitoring_method"
             ]
 
         self.input_button_tags = ["rest_fps_cap_button", "autofill_fps_caps", "quick_save", "quick_load", "Reset_Default", "SaveToProfile"]
@@ -192,37 +123,6 @@ class ConfigManager:
             "capmethod": str,
             "customfpslimits": str,
             "monitoring_method": str,
-            "lhm_gpu_priority": int,
-            "load_gpucore_enable": bool,
-            "load_gpucore_lower": int,
-            "load_gpucore_upper": int,
-            "load_d3d3d_enable": bool,
-            "load_d3d3d_lower": int,
-            "load_d3d3d_upper": int,
-            "load_d3dcopy1_enable": bool,
-            "load_d3dcopy1_lower": int,
-            "load_d3dcopy1_upper": int,
-            "load_cputotal_enable": bool,
-            "load_cputotal_lower": int,
-            "load_cputotal_upper": int,
-            "load_cpucoremax_enable": bool,
-            "load_cpucoremax_lower": int,
-            "load_cpucoremax_upper": int,
-            "temp_gpuhotspot_enable": bool,
-            "temp_gpuhotspot_lower": int,
-            "temp_gpuhotspot_upper": int,
-            "temp_gpucore_enable": bool,
-            "temp_gpucore_lower": int,
-            "temp_gpucore_upper": int,
-            "temp_cpupackage_enable": bool,
-            "temp_cpupackage_lower": int,
-            "temp_cpupackage_upper": int,
-            "power_gpupackage_enable": bool,
-            "power_gpupackage_lower": int,
-            "power_gpupackage_upper": int,
-            "power_cpupackage_enable": bool,
-            "power_cpupackage_lower": int,
-            "power_cpupackage_upper": int,
             "delaybeforedecrease": int,
             "delaybeforeincrease": int,
             "minvalidgpu": int,
@@ -266,14 +166,7 @@ class ConfigManager:
             "maxcap", "mincap", "capstep", "capratio",
             "gpucutofffordecrease", "gpucutoffforincrease", "cpucutofffordecrease", "cpucutoffforincrease",
             "capmethod", "customfpslimits", "delaybeforedecrease", "delaybeforeincrease",
-            "monitoring_method", "load_gpucore_enable", "load_gpucore_lower", "load_gpucore_upper",
-            "load_d3d3d_enable", "load_d3d3d_lower", "load_d3d3d_upper", "load_d3dcopy1_enable",
-            "load_d3dcopy1_lower", "load_d3dcopy1_upper", "load_cputotal_enable", "load_cputotal_lower",
-            "load_cputotal_upper", "load_cpucoremax_enable", "load_cpucoremax_lower", "load_cpucoremax_upper",
-            "temp_gpuhotspot_enable", "temp_gpuhotspot_lower", "temp_gpuhotspot_upper", "temp_gpucore_enable",
-            "temp_gpucore_lower", "temp_gpucore_upper", "temp_cpupackage_enable", "temp_cpupackage_lower",
-            "temp_cpupackage_upper", "power_gpupackage_enable", "power_gpupackage_lower", "power_gpupackage_upper",
-            "power_cpupackage_enable", "power_cpupackage_lower", "power_cpupackage_upper"
+            "monitoring_method"
         ]
 
         # Dynamic keys from sensors (parameter_id for each sensor)
@@ -497,11 +390,6 @@ class ConfigManager:
         dpg.set_value("new_profile_input", "")
         dpg.set_value("game_name", profile_name)
 
-        # Set GPU dropdown based on lhm_gpu_priority
-        gpu_names = dpg.get_item_configuration("gpu_dropdown").get("items", [])
-        idx = int(self.profiles_config[profile_name].get("lhm_gpu_priority", 0))
-        if gpu_names and idx < len(gpu_names):
-            dpg.set_value("gpu_dropdown", gpu_names[idx])
         #dpg.configure_item("game_name", label=profile_name)
         self.refresh_ui_callbacks()
 
@@ -701,18 +589,6 @@ class ConfigManager:
             self.hide_unselected_callback(sender, app_data, user_data)
         except Exception as e:
             self.logger.add_log(f"Error in hide_unselected_callback: {e}")
-
-    def gpu_dropdown_callback(self, sender, app_data, user_data):
-        gpu_names = self.dpg.get_item_configuration(sender).get("items", [])
-        if app_data in gpu_names:
-            idx = gpu_names.index(app_data)
-            self.lhm_gpu_priority = idx
-            # Save to current profile in profiles_config
-            profile = self.current_profile
-            self.profiles_config[profile]["lhm_gpu_priority"] = str(idx)
-            with open(self.profiles_path, 'w') as f:
-                self.profiles_config.write(f)
-            self.logger.add_log(f"Selected GPU index set to {idx} ({app_data}) for profile {profile}")
 
     def update_preference_setting(self, key, sender, app_data, user_data):
         """

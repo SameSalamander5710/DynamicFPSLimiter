@@ -168,7 +168,6 @@ class LHMSensor:
         self._should_stop.clear()
         self._thread = threading.Thread(target=self._poll_loop, daemon=True)
         self._thread.start()
-        self.logger.add_log(f"Started LibreHardwareMonitor polling for GPU: {self.dpg.get_value('gpu_dropdown')}, CPU: {self.cpu_name}")
 
     def stop(self):
         self._should_stop.set()
