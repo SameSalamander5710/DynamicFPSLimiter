@@ -95,8 +95,12 @@ running = False  # Flag to control the monitoring loop
 
 cm.update_global_variables()
 
-lhm_sensor = LHMSensor(lambda: running, logger, dpg, themes_manager, interval=(cm.lhwmonitorpollinginterval/1000), max_samples=cm.lhwmonitoringsamples, percentile=cm.lhwmonitorpercentile)
-fps_utils = FPSUtils(cm, lhm_sensor, logger, dpg, Viewport_width)
+lhm_sensor = LHMSensor(lambda: running, logger, dpg, themes_manager, 
+                       interval=(cm.lhwmonitorpollinginterval/1000), 
+                       max_samples=cm.lhwmonitoringsamples, 
+                       percentile=cm.lhwmonitorpercentile,
+                       base_dir=Base_dir)
+fps_utils = FPSUtils(cm, lhm_sensor, logger, dpg, Viewport_width, base_dir=Base_dir)
 
 
 def start_stop_callback(sender, app_data, user_data):

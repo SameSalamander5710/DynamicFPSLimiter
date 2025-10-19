@@ -1,35 +1,27 @@
-import dearpygui.dearpygui as dpg
-import clr
-from pathlib import Path
+from core.lhm_loader import ensure_loaded, get_types
 import os
-import sys
-
-# Add the src directory to the Python path for imports
-#_this_dir = os.path.abspath(os.path.dirname(__file__))
-
-#TODO: get path in the main DFL_v5.py and get that here 
-core_dir = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
-parent_dir = os.path.dirname(core_dir)
-dll_path = os.path.join(parent_dir, '_internal\\assets\\LibreHardwareMonitorLib.dll')
-
-clr.AddReference(str(dll_path))
-
-from LibreHardwareMonitor.Hardware import SensorType, HardwareType  # Add this import at the top
-
-sensor_type_map = {
-    "Load": SensorType.Load,
-    "Temperature": SensorType.Temperature,
-    "Power": SensorType.Power,
-}
+from pathlib import Path
+import dearpygui.dearpygui as dpg
 
 class FPSUtils:
-    def __init__(self, cm, lhm_sensor, logger=None, dpg=None, viewport_width=610):
+    def __init__(self, cm, lhm_sensor, logger=None, dpg=None, viewport_width=610, base_dir=None):
         self.cm = cm
         self.lhm_sensor = lhm_sensor
         self.logger = logger
         self.dpg = dpg or dpg  # fallback to global if not passed
         self.viewport_width = viewport_width
         self.last_fps_limits = []
+
+        # Ensure LHM assembly loaded and get types (pass Base_dir from caller)
+        SensorType, HardwareType = None, None
+        try:
+            Computer, SensorType, HardwareType = get_types(base_dir)
+        except Exception:
+            # fallback: call ensure_loaded explicitly
+            Computer, SensorType, HardwareType = ensure_loaded(base_dir)
+        # store types if needed: self.SensorType = SensorType, etc.
+        self.SensorType = SensorType
+        self.HardwareType = HardwareType
 
     def current_stepped_limits(self):
         maximum = int(dpg.get_value("input_maxcap"))

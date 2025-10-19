@@ -78,7 +78,7 @@ class ConfigManager:
         self.profiles_config = configparser.ConfigParser()
         self.load_or_init_configs()
         self.load_preferences()
-        self.sensor_infos = get_all_sensor_infos()
+        self.sensor_infos = get_all_sensor_infos(base_dir)
 
     def load_or_init_configs(self):
         # Settings

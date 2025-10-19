@@ -1,4 +1,4 @@
-import clr
+from core.lhm_loader import ensure_loaded, get_types
 from pathlib import Path
 from collections import deque, defaultdict
 import time
@@ -6,34 +6,6 @@ import threading
 import numpy as np
 import os
 import sys
-
-#TODO: get path in the main DFL_v5.py and get that here 
-core_dir = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
-parent_dir = os.path.dirname(core_dir)
-dll_path = os.path.join(parent_dir, '_internal\\assets\\LibreHardwareMonitorLib.dll')
-
-clr.AddReference(str(dll_path))
-
-from LibreHardwareMonitor.Hardware import Computer, SensorType, HardwareType
-
-# Initialize computer
-computer = Computer()
-computer.IsGpuEnabled = True
-computer.IsCpuEnabled = True
-computer.Open()
-
-# Define which sensors to extract for each hardware type and sensor type
-CPU_SENSORS = {
-    SensorType.Load: None, #['CPU Total', 'CPU Core Max'],
-    SensorType.Temperature: None, #['CPU Package'],
-    SensorType.Power: None,  #['CPU Package'],
-}
-
-GPU_SENSORS = {
-    SensorType.Load: None,  # None means all available
-    SensorType.Temperature: None, #['GPU Core', 'GPU Hot Spot'],
-    SensorType.Power: None, #['GPU Package'],
-}
 
 def get_selected_sensor_values(hardware, sensor_map):
     """Return a dict of selected sensor values for the given hardware, only for specified sensor types."""
@@ -61,10 +33,24 @@ def get_selected_sensor_values(hardware, sensor_map):
             result.setdefault(sensor.SensorType, {})[name] = sensor.Value
     return result
 
-def get_all_sensor_infos():
+def get_all_sensor_infos(base_dir):
+
+    try:
+        Computer, SensorType, HardwareType = get_types(base_dir)
+    except Exception:
+        # fallback: call ensure_loaded explicitly
+        Computer, SensorType, HardwareType = ensure_loaded(base_dir)
+
     sensors = []
     cpu_count = 0
     gpu_count = 0
+
+    computer = Computer()
+
+    computer.IsGpuEnabled = True
+    computer.IsCpuEnabled = True
+    computer.Open()
+
     for hw in computer.Hardware:
         hw.Update()
         if hw.HardwareType == HardwareType.Cpu:
@@ -104,7 +90,7 @@ def get_all_sensor_infos():
     return sensors
 
 class LHMSensor:
-    def __init__(self, get_running, logger_instance, dpg_instance, themes_instance, interval=0.1, max_samples=20, percentile=70):
+    def __init__(self, get_running, logger_instance, dpg_instance, themes_instance, interval=0.1, max_samples=20, percentile=70, base_dir=None):
         self._running = get_running  # This should be a callable, e.g. lambda: running
         self.logger = logger_instance
         self.dpg = dpg_instance
@@ -118,27 +104,55 @@ class LHMSensor:
         self.gpu_percentiles = defaultdict(float)
         self._thread = None
         self._lock = threading.Lock()
-        self.cpu_name = self.get_cpu_name()
-        self.gpu_name = self.get_gpu_name()
         self._should_stop = threading.Event()
 
+        # Ensure assembly loaded and types available
+        Computer, SensorType, HardwareType = ensure_loaded(base_dir)
+
+        self.Computer = Computer
+        self.SensorType = SensorType
+        self.HardwareType = HardwareType
+
+        # Initialize computer
+        self.computer = Computer()
+        self.computer.IsGpuEnabled = True
+        self.computer.IsCpuEnabled = True
+        self.computer.Open()
+
+
+        # Define which sensors to extract for each hardware type and sensor type
+        self.CPU_SENSORS = {
+            SensorType.Load: None, #['CPU Total', 'CPU Core Max'],
+            SensorType.Temperature: None, #['CPU Package'],
+            SensorType.Power: None,  #['CPU Package'],
+        }
+
+        self.GPU_SENSORS = {
+            SensorType.Load: None,  # None means all available
+            SensorType.Temperature: None, #['GPU Core', 'GPU Hot Spot'],
+            SensorType.Power: None, #['GPU Package'],
+        }
+
+        self.cpu_name = self.get_cpu_name()
+        self.gpu_name = self.get_gpu_name()
+
     def get_cpu_name(self):
-        for hw in computer.Hardware:
-            if hw.HardwareType == HardwareType.Cpu:
+        for hw in self.computer.Hardware:
+            if hw.HardwareType == self.HardwareType.Cpu:
                 return hw.Name
         return None
 
     def get_gpu_name(self): #TODO Remove this if unused
-        for hw in computer.Hardware:
-            if hw.HardwareType in (HardwareType.GpuAmd, HardwareType.GpuNvidia):
+        for hw in self.computer.Hardware:
+            if hw.HardwareType in (self.HardwareType.GpuAmd, self.HardwareType.GpuNvidia):
                 return hw.Name
         return None
 
     def get_gpu_names(self):
         """Return a list of all detected GPU names."""
         names = []
-        for hw in computer.Hardware:
-            if hw.HardwareType in (HardwareType.GpuAmd, HardwareType.GpuNvidia):
+        for hw in self.computer.Hardware:
+            if hw.HardwareType in (self.HardwareType.GpuAmd, self.HardwareType.GpuNvidia):
                 names.append(hw.Name)
         return names
 
@@ -160,7 +174,7 @@ class LHMSensor:
         self._should_stop.set()
         if self._thread:
             self._thread.join(timeout=2)
-        computer.Close()
+        self.computer.Close()
         self.logger.add_log("Stopped LibreHardwareMonitor polling.")
 
     def _poll_loop(self):
@@ -174,11 +188,11 @@ class LHMSensor:
 
         while not self._should_stop.is_set() and self._running():
             gpu_index = 1
-            for hw in computer.Hardware:
+            for hw in self.computer.Hardware:
                 # CPU logic unchanged
-                if hw.Name == self.cpu_name and hw.HardwareType == HardwareType.Cpu:
+                if hw.Name == self.cpu_name and hw.HardwareType == self.HardwareType.Cpu:
                     hw.Update()
-                    values = get_selected_sensor_values(hw, CPU_SENSORS)
+                    values = get_selected_sensor_values(hw, self.CPU_SENSORS)
                     with self._lock:
                         for sensor_type, sensors in values.items():
                             for name, value in sensors.items():
@@ -189,9 +203,9 @@ class LHMSensor:
                                 )
                     cpu_hw_name = hw.Name  # Save for display
                 # Loop through all GPUs
-                elif hw.HardwareType in (HardwareType.GpuAmd, HardwareType.GpuNvidia):
+                elif hw.HardwareType in (self.HardwareType.GpuAmd, self.HardwareType.GpuNvidia):
                     hw.Update()
-                    values = get_selected_sensor_values(hw, GPU_SENSORS)
+                    values = get_selected_sensor_values(hw, self.GPU_SENSORS)
                     with self._lock:
                         for sensor_type, sensors in values.items():
                             for name, value in sensors.items():
@@ -253,17 +267,3 @@ class LHMSensor:
         with self._lock:
             return dict(self.gpu_history)
 
-# Example usage:
-if __name__ == "__main__":
-    monitor = LHMSensor()
-    monitor.start()
-    try:
-        # Run for a few seconds as a demo
-        for _ in range(30):
-            time.sleep(0.1)
-        cpu_total_load = list(monitor.get_cpu_history().get((SensorType.Load, 'CPU Total'), []))
-        print("CPU Total Load (last 20):", cpu_total_load)
-        gpu_core_load = list(monitor.get_gpu_history().get((SensorType.Load, 'GPU Core (1)'), []))
-        print("GPU Core load (last 20):", gpu_core_load)
-    finally:
-        monitor.stop()
