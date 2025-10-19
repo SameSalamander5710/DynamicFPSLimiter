@@ -7,7 +7,7 @@ import sys
 # Add the src directory to the Python path for imports
 #_this_dir = os.path.abspath(os.path.dirname(__file__))
 
-# Path to the DLL
+#TODO: get path in the main DFL_v5.py and get that here 
 core_dir = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
 parent_dir = os.path.dirname(core_dir)
 dll_path = os.path.join(parent_dir, '_internal\\assets\\LibreHardwareMonitorLib.dll')

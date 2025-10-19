@@ -7,6 +7,7 @@ import numpy as np
 import os
 import sys
 
+#TODO: get path in the main DFL_v5.py and get that here 
 core_dir = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
 parent_dir = os.path.dirname(core_dir)
 dll_path = os.path.join(parent_dir, '_internal\\assets\\LibreHardwareMonitorLib.dll')
