@@ -281,3 +281,5 @@ class FPSUtils:
 
                     self.logger.add_log(f"Checking LibreHM sensor {hw_name}/{sensor_name} against lower {lower}: {value}")
                     results.append(bool(value is not None and value <= lower))
+
+                return all(results) if results else False
