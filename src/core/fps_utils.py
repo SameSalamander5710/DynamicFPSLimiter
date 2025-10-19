@@ -1,12 +1,17 @@
 import dearpygui.dearpygui as dpg
 import clr
 from pathlib import Path
+import os
+import sys
 
 # Add the src directory to the Python path for imports
 #_this_dir = os.path.abspath(os.path.dirname(__file__))
 
 # Path to the DLL
-dll_path = Path(__file__).parent / "assets" / "LibreHardwareMonitorLib.dll"
+core_dir = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
+parent_dir = os.path.dirname(core_dir)
+dll_path = os.path.join(parent_dir, '_internal\\assets\\LibreHardwareMonitorLib.dll')
+
 clr.AddReference(str(dll_path))
 
 from LibreHardwareMonitor.Hardware import SensorType, HardwareType  # Add this import at the top

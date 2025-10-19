@@ -4,9 +4,13 @@ from collections import deque, defaultdict
 import time
 import threading
 import numpy as np
+import os
+import sys
 
-# Path to the DLL
-dll_path = Path(__file__).parent / "assets" / "LibreHardwareMonitorLib.dll"
+core_dir = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
+parent_dir = os.path.dirname(core_dir)
+dll_path = os.path.join(parent_dir, '_internal\\assets\\LibreHardwareMonitorLib.dll')
+
 clr.AddReference(str(dll_path))
 
 from LibreHardwareMonitor.Hardware import Computer, SensorType, HardwareType
