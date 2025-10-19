@@ -23,7 +23,7 @@ def ensure_loaded(base_dir=None):
         # best-effort; other modules may still import
         pass
 
-    from LibreHardwareMonitor.Hardware import Computer, SensorType, HardwareType  # noqa: E402
+    from LibreHardwareMonitor.Hardware import Computer, SensorType, HardwareType
     _Computer, _SensorType, _HardwareType = Computer, SensorType, HardwareType
     _LOADED = True
     return _Computer, _SensorType, _HardwareType

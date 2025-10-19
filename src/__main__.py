@@ -22,7 +22,7 @@ def relaunch_as_admin():
     sys.exit()
 
 def run_app():
-    # Import and run DFL_v4 directly
+    # Import and run DFL_v5 directly
     import core.DFL_v5
 
 def build_executable():

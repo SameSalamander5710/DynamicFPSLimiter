@@ -176,7 +176,7 @@ class FPSUtils:
                     value = None
 
                     # CPU sensors use exact name keys in cpu_percentiles
-                    if hw_type == HardwareType.Cpu:
+                    if hw_type == self.HardwareType.Cpu:
                         key = (sensor_type, sensor_name)
                         value = lhm_sensor.cpu_percentiles.get(key)
                     else:
@@ -253,7 +253,7 @@ class FPSUtils:
                     value = None
 
                     # CPU sensors use exact name keys in cpu_percentiles
-                    if hw_type == HardwareType.Cpu:
+                    if hw_type == self.HardwareType.Cpu:
                         key = (sensor_type, sensor_name)
                         value = lhm_sensor.cpu_percentiles.get(key)
                     else:
