@@ -865,47 +865,49 @@ with dpg.window(label=app_title, tag="Primary Window"):
 
             dpg.add_spacer(height=10)
 
-            with dpg.group(horizontal=True):
-                dpg.add_image_button(
-                    texture_tag=textures["icon_settings"],
-                    tag="show_settings_button",
-                    width=24,
-                    height=24,
-                    callback=lambda: dpg.configure_item(
-                        "settings_window",
-                        show=not dpg.is_item_shown("settings_window")
+            with dpg.child_window(width=230, height=85, border=True):
+                with dpg.group(horizontal=True):
+                    dpg.add_image_button(
+                        texture_tag=textures["icon_settings"],
+                        tag="show_settings_button",
+                        width=24,
+                        height=24,
+                        callback=lambda: dpg.configure_item(
+                            "settings_window",
+                            show=not dpg.is_item_shown("settings_window")
+                        )
                     )
-                )
-                dpg.add_button(
-                    label="Quick save",
-                    tag="quick_save",
-                    callback=cm.quick_save_settings,
-                    width=89,
-                    height=30,  # Set height as needed for your icon
-                )
-                dpg.add_button(
-                    label="Quick load",
-                    tag="quick_load",
-                    callback=cm.quick_load_settings,
-                    width=89,
-                    height=30,  # Set height as needed for your icon
-                )
-            with dpg.group(horizontal=True):
-                dpg.add_image_button(
-                    texture_tag=textures["icon_reset"],
-                    tag="Reset_Default",
-                    callback=cm.reset_to_program_default,
-                    width=24,
-                    height=24,  # Set height as needed for your icon
-                )
-                dpg.add_button(
-                    label="Save to Profile",
-                    tag="SaveToProfile",
-                    callback=cm.save_to_profile,
-                    width=186,
-                    height=30
-                )
-                dpg.bind_item_theme("SaveToProfile", themes_manager.themes["revert_gpu_theme"])
+                    dpg.add_button(
+                        label="Quick save",
+                        tag="quick_save",
+                        callback=cm.quick_save_settings,
+                        width=80,
+                        height=30,  # Set height as needed for your icon
+                    )
+                    dpg.add_button(
+                        label="Quick load",
+                        tag="quick_load",
+                        callback=cm.quick_load_settings,
+                        width=80,
+                        height=30,  # Set height as needed for your icon
+                    )
+                dpg.add_spacer(height=1)
+                with dpg.group(horizontal=True):
+                    dpg.add_image_button(
+                        texture_tag=textures["icon_reset"],
+                        tag="Reset_Default",
+                        callback=cm.reset_to_program_default,
+                        width=24,
+                        height=24,  # Set height as needed for your icon
+                    )
+                    dpg.add_button(
+                        label="Save to Profile",
+                        tag="SaveToProfile",
+                        callback=cm.save_to_profile,
+                        width=168,
+                        height=30
+                    )
+                    dpg.bind_item_theme("SaveToProfile", themes_manager.themes["revert_gpu_theme"])
 
         with dpg.child_window(width=-1, height=mid_window_height+100, border=True, tag="LHwM_childwindow", show=False):
             with dpg.group(horizontal=True):
