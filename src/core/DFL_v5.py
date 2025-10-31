@@ -795,7 +795,7 @@ with dpg.window(label=app_title, tag="Primary Window"):
     with dpg.group(horizontal=True):
         mid_window_height = 285
         with dpg.group(horizontal=False):
-            with dpg.child_window(width=230, height=mid_window_height - 10, border=True):
+            with dpg.child_window(width=230, height=mid_window_height+5, border=True):
                 with dpg.group(horizontal=True):
                     with dpg.drawlist(width=15, height=15):
                         dpg.draw_line((0, 13), (15, 13), color=(180,180,180), thickness=1)
@@ -851,19 +851,20 @@ with dpg.window(label=app_title, tag="Primary Window"):
                             dpg.add_input_int(tag=f"input_delaybeforeincrease", default_value=int(cm.settings["delaybeforeincrease"]), 
                                                 width=90, step=1, step_fast=10, 
                                                 min_clamped=True, min_value=1, max_value=99, max_clamped=True)
-                dpg.add_spacer(height=1)
+                dpg.add_spacer(height=5)
                 dpg.add_input_text(
                     tag="input_customfpslimits",
                     default_value=cm.settings["customfpslimits"],
                     width=210,
                     callback=cm.sort_customfpslimits_callback,
                     on_enter=True)
+                dpg.add_spacer(height=5)
                 with dpg.group(horizontal=True):
                     dpg.add_button(label="Reset", tag="rest_fps_cap_button", width=65, callback=fps_utils.reset_custom_limits)
                     dpg.add_button(label="Copy from above", tag="autofill_fps_caps", width=135, callback=fps_utils.copy_from_plot)
 
 
-            dpg.add_spacer(height=10)
+            dpg.add_spacer(height=1)
 
             with dpg.child_window(width=230, height=85, border=True):
                 with dpg.group(horizontal=True):
