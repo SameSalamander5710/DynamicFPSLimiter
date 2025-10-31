@@ -127,7 +127,7 @@ def _choose_asset_variant(base_dir):
     return None
 
 
-def ensure_loaded(base_dir=None):
+def ensure_loaded(base_dir=None, logger=None):
     """
     Ensure the LibreHardwareMonitor assembly is loaded and return (Computer, SensorType, HardwareType).
     Call with base_dir from the main module (Base_dir) when available.
@@ -141,7 +141,17 @@ def ensure_loaded(base_dir=None):
         base_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))  # project root guess
 
     variant = _choose_asset_variant(base_dir)
-    print(f"Loading LibreHardwareMonitorLib.dll variant: {variant or 'default'}") #TODO: remove debug print
+    msg = f"Loading LibreHardwareMonitorLib.dll variant: {variant or 'default'}"
+
+    if logger is not None and hasattr(logger, "add_log"):
+        try:
+            logger.add_log(msg)
+        except Exception:
+            # swallow logger errors to avoid breaking loading
+            pass
+    else:
+        print(msg)  # TODO: remove or route to logger in production
+
     if variant:
         dll_path = os.path.join(base_dir, 'assets', variant, 'LibreHardwareMonitorLib.dll')
         if not os.path.isfile(dll_path):

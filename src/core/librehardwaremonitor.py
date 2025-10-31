@@ -107,7 +107,7 @@ class LHMSensor:
         self._should_stop = threading.Event()
 
         # Ensure assembly loaded and types available
-        Computer, SensorType, HardwareType = ensure_loaded(base_dir)
+        Computer, SensorType, HardwareType = ensure_loaded(base_dir, self.logger)
 
         self.Computer = Computer
         self.SensorType = SensorType
