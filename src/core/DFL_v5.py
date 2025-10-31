@@ -467,8 +467,7 @@ def autopilot_loop():
     while gui_running:
         if cm.autopilot and not running:
             autopilot_on_check(cm, rtss_manager, dpg, logger, running, start_stop_callback)
-            print("Autopilot check executed.") #TODO: remove
-        time.sleep(1)  # Tune interval as needed
+        time.sleep(1)  
 
 def exit_gui():
     global running, gui_running, rtss_manager, monitoring_thread, plotting_thread
@@ -512,8 +511,6 @@ def toggle_luid_selection():
     gpu_monitor.toggle_luid_selection()
 
 # Defining short sections of the GUI
-# TODO: Refactor main GUI into a separate module for better organization
-# TODO: mention legacy in plot, add specifics (3D, core max)
 def build_profile_section():
     with dpg.child_window(width=-1, height=140):
         with dpg.group(horizontal=True):
@@ -623,7 +620,7 @@ def build_settings_window():
                                          default_value=cm.minimizeonstartup, 
                                          callback=cm.make_update_preference_callback('minimizeonstartup')
                         )
-                        dpg.add_checkbox(label="Autopilot mod: Only run when a specific profile is detected", tag="autopilot_only_profiles_checkbox", #TODO: change behavious of autopilot to always run, unless this option is enabled, in which case it does its current function
+                        dpg.add_checkbox(label="Autopilot mod: Only run when a specific profile is detected", tag="autopilot_only_profiles_checkbox",
                                          default_value=cm.autopilot_only_profiles, 
                                          callback=cm.make_update_preference_callback('autopilot_only_profiles')
                         )
@@ -966,10 +963,8 @@ with dpg.window(label=app_title, tag="Primary Window"):
                                 "readings_popup_window",
                                 show=not dpg.is_item_shown("readings_popup_window"))
                 )
-                #TODO: Add function to show readings window (bring it here from the settings)
                 dpg.add_text(" | ")
                 dpg.add_checkbox(label="Hide unselected", tag="hide_unselected_checkbox", default_value=cm.hide_unselected, callback=cm.hide_unselected_callback)
-                #TODO: Add function + save to config
 
 #TODO Add checkboxes to legacy options as well
         with dpg.child_window(width=-1, height=mid_window_height+100, border=True, tag="legacy_childwindow", show=False):
@@ -1006,8 +1001,6 @@ with dpg.window(label=app_title, tag="Primary Window"):
                                 "plot_popup_window",
                                 show=not dpg.is_item_shown("plot_popup_window")
                             ))
-
-    #TODO Remove unnecessary theme functions if unused
 
 build_plot_window()
 build_readings_window()

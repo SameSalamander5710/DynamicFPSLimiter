@@ -164,7 +164,6 @@ class ConfigManager:
         Uses parameter IDs from self.sensor_infos and known static keys, instead of scanning all DPG items.
         """
         # Static keys from legacy/static UI
-        #TODO: remove these from the main config_manager.py
         static_keys = [
             "maxcap", "mincap", "capstep", "capratio",
             "gpucutofffordecrease", "gpucutoffforincrease", "cpucutofffordecrease", "cpucutoffforincrease",

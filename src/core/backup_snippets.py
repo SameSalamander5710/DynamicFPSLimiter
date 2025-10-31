@@ -2,7 +2,7 @@
 #LHM GUI elements from DFL_v5
 
             with dpg.group(horizontal=True, tag="LHwM_group"):
-                with dpg.child_window(width=280, height=205, border=False, tag="load_childwindow", show=False): #TODO: Change defaults to selected states
+                with dpg.child_window(width=280, height=205, border=False, tag="load_childwindow", show=False): 
                     dpg.add_spacer(height=1)
                     with dpg.group(horizontal=True):
                         dpg.add_text("GPU:")
