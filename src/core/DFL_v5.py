@@ -863,7 +863,7 @@ with dpg.window(label=app_title, tag="Primary Window"):
                     dpg.add_button(label="Copy from above", tag="autofill_fps_caps", width=135, callback=fps_utils.copy_from_plot)
 
 
-            dpg.add_spacer(height=1)
+            dpg.add_spacer(height=10)
 
             with dpg.group(horizontal=True):
                 dpg.add_image_button(
@@ -907,7 +907,7 @@ with dpg.window(label=app_title, tag="Primary Window"):
                 )
                 dpg.bind_item_theme("SaveToProfile", themes_manager.themes["revert_gpu_theme"])
 
-        with dpg.child_window(width=-1, height=mid_window_height+80, border=True, tag="LHwM_childwindow", show=False):
+        with dpg.child_window(width=-1, height=mid_window_height+100, border=True, tag="LHwM_childwindow", show=False):
             with dpg.group(horizontal=True):
                 with dpg.drawlist(width=15, height=15):
                     dpg.draw_line((0, 13), (15, 13), color=(180,180,180), thickness=1)
@@ -915,7 +915,7 @@ with dpg.window(label=app_title, tag="Primary Window"):
                 with dpg.drawlist(width=100, height=15):
                     dpg.draw_line((0, 13), (100, 13), color=(180,180,180), thickness=1)
 
-            with dpg.child_window(width=-1, height=mid_window_height, border=False):
+            with dpg.child_window(width=-1, height=mid_window_height+15, border=False):
                 # Group sensors by hardware name
                 sensors_by_hw = {}
                 for sensor in cm.sensor_infos:
@@ -956,7 +956,7 @@ with dpg.window(label=app_title, tag="Primary Window"):
                                         dpg.add_input_text(tag=f"input_{param_id}_upper", width=40, default_value=100)
                                         dpg.add_text(unit, wrap=300)
                         dpg.add_spacer(height=1)
-            dpg.add_spacer(height=1)
+            dpg.add_spacer(height=5)
             with dpg.group(horizontal=True):
                 dpg.add_button(label="Show readings", width=120,
                                callback=lambda: dpg.configure_item(
@@ -969,7 +969,7 @@ with dpg.window(label=app_title, tag="Primary Window"):
                 #TODO: Add function + save to config
 
 #TODO Add checkboxes to legacy options as well
-        with dpg.child_window(width=-1, height=mid_window_height+80, border=True, tag="legacy_childwindow", show=False):
+        with dpg.child_window(width=-1, height=mid_window_height+100, border=True, tag="legacy_childwindow", show=False):
             with dpg.group(horizontal=True):
                 with dpg.drawlist(width=15, height=15):
                     dpg.draw_line((0, 13), (15, 13), color=(180,180,180), thickness=1)
@@ -1003,10 +1003,7 @@ with dpg.window(label=app_title, tag="Primary Window"):
                                 "plot_popup_window",
                                 show=not dpg.is_item_shown("plot_popup_window")
                             ))
-    dpg.add_spacer(height=1)
 
-
-    dpg.add_spacer(height=1)
     #TODO Remove unnecessary theme functions if unused
 
 build_plot_window()
