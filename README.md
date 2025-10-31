@@ -1,4 +1,4 @@
-# Dynamic FPS Limiter v4.4
+# Dynamic FPS Limiter v4.4 [Not updated!] #TODO: Update info, changelog, screenshots
 
 A lightweight companion app for RTSS that uses it's profile modification API to dynamically adjust framerate limits based on real-time GPU and CPU usage. 
 - Instead of relying on a fixed FPS cap below average framerates for smooth gameplay, it intelligently raises the cap when performance headroom is available, allowing consistently smooth frametimes, with the caveat of a momentary stutter during FPS limit transition.
