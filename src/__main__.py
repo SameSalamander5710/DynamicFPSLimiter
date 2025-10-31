@@ -42,6 +42,10 @@ def build_executable():
 
     base_args = [
         'src/core/DFL_v5.py',
+        '--hidden-import=clr',
+        '--hidden-import=clr_loader.netfx',
+        '--hidden-import=pythonnet',
+        '--hidden-import=clr_loader',
         '--onedir',
         '--uac-admin',
         '--clean',
