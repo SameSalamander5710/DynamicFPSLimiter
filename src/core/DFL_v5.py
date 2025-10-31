@@ -164,8 +164,8 @@ def start_stop_callback(sender, app_data, user_data):
 
 def reset_stats():
     
-    dpg.configure_item("gpu_usage_series", label="GPU: --")
-    dpg.configure_item("cpu_usage_series", label="CPU: --")
+    dpg.configure_item("gpu_usage_series", label="GPU 3D: --")
+    dpg.configure_item("cpu_usage_series", label="CPU Core Max: --")
     dpg.configure_item("fps_series", label="FPS: --")
     dpg.configure_item("cap_series", label="FPS Cap: --")
     time_series.clear()
@@ -396,11 +396,11 @@ def monitoring_loop():
 
         if running:
             # Update legend labels with current values
-            dpg.configure_item("gpu_usage_series", label=f"GPU: {gpuUsage}%")
+            dpg.configure_item("gpu_usage_series", label=f"GPU 3D: {gpuUsage}%")
             if running and fps is not None:
                 dpg.configure_item("fps_series", label=f"FPS: {fps:.1f}")
             dpg.configure_item("cap_series", label=f"FPS Cap: {current_maxcap + CurrentFPSOffset}")
-            dpg.configure_item("cpu_usage_series", label=f"CPU: {cpuUsage}%")
+            dpg.configure_item("cpu_usage_series", label=f"CPU Core Max: {cpuUsage}%")
 
             # Update plot if fps is valid
             if fps and process_name not in {"DynamicFPSLimiter.exe"}:
@@ -561,15 +561,15 @@ def build_profile_section():
 def build_plot_window():
     if not dpg.does_item_exist("plot_popup_window"):
         with dpg.window(label="Performance Plot", tag="plot_popup_window", width=570, height=250, 
-                        modal=False, show=False, no_title_bar=True, pos=(20, 400)): #TODO: Change y position 
+                        modal=False, show=False, no_title_bar=True, pos=(20, 320)):
             with dpg.child_window(tag="plot_childwindow", width=-1, height=190, border=False):
                 with dpg.plot(height=190, width=-1, tag="plot", no_menus=True, no_box_select=True, no_inputs=True):
                     dpg.add_plot_axis(dpg.mvXAxis, label="Time (s)", tag="x_axis")
                     dpg.add_plot_legend(location=dpg.mvPlot_Location_North, horizontal=True, 
                                         no_highlight_item=True, no_highlight_axis=True, outside=True)
                     with dpg.plot_axis(dpg.mvYAxis, label="GPU/CPU Usage (%)", tag="y_axis_left", no_gridlines=True) as y_axis_left:
-                        dpg.add_line_series([], [], label="GPU: --", parent=y_axis_left, tag="gpu_usage_series")
-                        dpg.add_line_series([], [], label="CPU: --", parent=y_axis_left, tag="cpu_usage_series")
+                        dpg.add_line_series([], [], label="GPU 3D: --", parent=y_axis_left, tag="gpu_usage_series")
+                        dpg.add_line_series([], [], label="CPU Core Max: --", parent=y_axis_left, tag="cpu_usage_series")
                         dpg.add_line_series([], [cm.gpucutofffordecrease, cm.gpucutofffordecrease], parent=y_axis_left, tag="line1")
                         dpg.add_line_series([], [cm.gpucutoffforincrease, cm.gpucutoffforincrease], parent=y_axis_left, tag="line2")
                     with dpg.plot_axis(dpg.mvYAxis, label="FPS", tag="y_axis_right", no_gridlines=True) as y_axis_right:
