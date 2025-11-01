@@ -3,24 +3,29 @@ from pathlib import Path
 import glob
 import configparser
 
+def _settings_path_for_base(base):
+    config_dir = os.path.join(base, "config")
+    settings_path = os.path.join(config_dir, "settings.ini")
+    return config_dir, settings_path
+
+def _is_first_launch(base):
+    """Return True if settings.ini missing or first_launch_done is False."""
+    _, settings_path = _settings_path_for_base(base)
+    config = configparser.ConfigParser()
+    if not os.path.exists(settings_path):
+        return True
+    try:
+        config.read(settings_path)
+        print(config.get("Preferences", "first_launch_done", fallback=False))
+        return not config.getboolean("Preferences", "first_launch_done", fallback=False)
+    except Exception:
+        return True
+
 def _unblock_alternate_data_streams(root_dirs):
 
-    # determine config path (use first root if provided)
-    parent_dir = root_dirs[0]
-    config_dir = os.path.join(parent_dir, "config")
-    settings_path = os.path.join(config_dir, "settings.ini")
-
-    config = configparser.ConfigParser()
-    first_done = False
-    if os.path.exists(settings_path):
-        try:
-            config.read(settings_path)
-            first_done = config.getboolean("Preferences", "first_launch_done", fallback=False)
-        except Exception:
-            first_done = False
-
-    if first_done:
-        return  # nothing to do
+    base = root_dirs[0] if root_dirs else None
+    if not _is_first_launch(base):
+        return 
 
     for root in root_dirs:
         if not root:
@@ -33,15 +38,17 @@ def _unblock_alternate_data_streams(root_dirs):
                         os.remove(ads)
                     except Exception:
                         pass
+    print("unblocked dlls")
+    return True
 
-    # mark as completed
+def mark_first_launch_done(base, cm):
+    cm = cm
+    config_dir, settings_path = _settings_path_for_base(base)
+    config = configparser.ConfigParser()
     try:
-        os.makedirs(config_dir, exist_ok=True)
-        if not config.has_section("Preferences"):
-            config["Preferences"] = {}
-        config["Preferences"]["first_launch_done"] = "True"
-        with open(settings_path, "w") as f:
-            config.write(f)
-    except Exception:
-        # ignore write failures
-        pass
+        cm.update_preference_setting('first_launch_done', None, True, None)
+        print(f"Marked first_launch_done=True at {settings_path}")
+
+        return True
+    except Exception as exc:
+        print(f"Failed to write settings.ini at {settings_path}: {exc!r}")

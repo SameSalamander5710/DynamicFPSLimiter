@@ -23,8 +23,8 @@ if _root not in sys.path:
 Base_dir = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
 parent_dir = os.path.dirname(Base_dir)
 
-from core.pre_launch import _unblock_alternate_data_streams
-_unblock_alternate_data_streams([parent_dir])
+from core.pre_launch import _unblock_alternate_data_streams, mark_first_launch_done
+DLLs_unblocked = _unblock_alternate_data_streams([parent_dir])
 
 from core import logger
 from core.rtss_interface import RTSSInterface
@@ -1066,6 +1066,9 @@ if cm.autopilot:
 
 dpg.bind_theme(themes_manager.themes["main_theme"])
 dpg.bind_item_theme("plot_childwindow", themes_manager.themes["plot_bg_theme"])
+
+if DLLs_unblocked:
+    mark_first_launch_done(parent_dir, cm)
 
 logger.add_log("Initialized successfully.")
 
