@@ -19,6 +19,13 @@ _root = os.path.dirname(_this_dir)  # Gets src directory
 if _root not in sys.path:
     sys.path.insert(0, _root)
 
+# Always get absolute path to EXE or script location
+Base_dir = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
+parent_dir = os.path.dirname(Base_dir)
+
+from core.pre_launch import _unblock_alternate_data_streams
+_unblock_alternate_data_streams([parent_dir])
+
 from core import logger
 from core.rtss_interface import RTSSInterface
 from core.cpu_monitor import CPUUsageMonitor
@@ -38,14 +45,9 @@ from core.autopilot import autopilot_on_check, get_foreground_process_name
 Viewport_width = 610
 Viewport_height = 700
 
-# Always get absolute path to EXE or script location
-Base_dir = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
 rtss = RTSSController(logger)
 themes_manager = ThemesManager(Base_dir)
 cm = ConfigManager(logger, dpg, rtss, None, themes_manager, Base_dir)
-
-# Ensure the config folder exists in the parent directory of Base_dir
-parent_dir = os.path.dirname(Base_dir)
 
 # Paths to configuration files
 error_log_file = os.path.join(parent_dir, "error_log.txt")

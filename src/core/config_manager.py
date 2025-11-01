@@ -65,7 +65,8 @@ class ConfigManager:
                 'minimizeonstartup': 'False',
                 'autopilot': 'False',
                 'hide_unselected': 'False',
-                'autopilot_only_profiles': 'False'
+                'autopilot_only_profiles': 'False',
+                'first_launch_done': 'False'
             }
             self.settings_config["GlobalSettings"] = {
                 'minvalidgpu': '14',
@@ -148,7 +149,8 @@ class ConfigManager:
             'minimizeonstartup': bool,
             'autopilot': bool,
             'hide_unselected': bool,
-            'autopilot_only_profiles': bool
+            'autopilot_only_profiles': bool,
+            'first_launch_done': bool
         }
 
         self.current_profile = "Global"
