@@ -447,6 +447,23 @@ def gui_update_loop():
 
     while gui_running:
 
+        # (sets value of collapsing_{hw_id} to True while cm.ui_initialized is False)
+        # To overcome the imgui bug
+        try:
+            if not getattr(cm, "ui_initialized", False):
+               for sensor in getattr(cm, "sensor_infos", []) or []:
+                    hw_id = sensor.get("hw_id")
+                    if not hw_id:
+                        continue
+                    header_tag = f"input_collapsing_{hw_id}"
+                    if dpg.does_item_exist(header_tag):
+                        try:
+                            dpg.set_value(header_tag, True)
+                        except Exception:
+                            pass
+        except Exception:
+            pass
+
         # Wait until tray is not active
         while tray.is_tray_active and gui_running:
             time.sleep(1)  # Sleep until tray is not active
@@ -1118,6 +1135,8 @@ def _on_first_frame():
         cm.ui_initialized = True
         # run hide_unselected once now that tables/layouts have been initialized
         cm.hide_unselected_callback(None, None, None)
+        cm.startup_profile_selection()
+        cm.refresh_ui_callbacks()
     except Exception:
         pass
 
