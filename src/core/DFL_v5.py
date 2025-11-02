@@ -131,7 +131,14 @@ def start_stop_callback(sender, app_data, user_data):
 
     # Freeze input fields
     for key in cm.input_field_keys:
-        dpg.configure_item(f"input_{key}", enabled=not running)
+        tag = f"input_{key}"
+        if not dpg.does_item_exist(tag):
+            continue
+        try:
+            dpg.configure_item(tag, enabled=not running)
+        except Exception:
+            # Ignore items that don't support 'enabled' (safe fallback).
+            pass
 
     for tag in cm.input_button_tags:
         dpg.configure_item(tag, enabled=not running)
