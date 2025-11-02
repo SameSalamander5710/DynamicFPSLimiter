@@ -673,6 +673,24 @@ class ConfigManager:
                 # show full row only if we're not hiding, or the parameter is enabled
                 self.dpg.configure_item(row_tag, show=(not hide) or enabled)
 
+        try:
+            enable_map = self.build_sensor_enable_map(self.dpg)
+            for hw_id, info in enable_map.items():
+                sections = info.get("sections", {})
+                for sensor_type_str, sec in sections.items():
+                    section_tag = sec.get("section_tag")
+                    enabled_count = sec.get("enabled_count", 0)
+                    # when not hiding, always show; when hiding, show only if there are enabled params
+                    show_section = (not hide) or (enabled_count > 0)
+                    if section_tag and self.dpg.does_item_exist(section_tag):
+                        try:
+                            self.dpg.configure_item(section_tag, show=show_section)
+                        except Exception:
+                            pass
+        except Exception:
+            # best-effort, ignore UI timing issues
+            pass
+        
     def refresh_ui_callbacks(self, sender=None, app_data=None, user_data=None):
         """
         Centralized place to run common UI update callbacks.
