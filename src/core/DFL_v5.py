@@ -608,33 +608,28 @@ def build_profile_section():
                 dpg.add_button(tag="process_to_profile", label="Add process to Profiles", callback=cm.add_process_profile_callback, width=160)
 
 def build_plot_window():
-    if not dpg.does_item_exist("plot_popup_window"):
-        with dpg.window(label="Performance Plot", tag="plot_popup_window", width=570, height=250, 
-                        modal=False, show=False, no_title_bar=True, pos=(20, 320)):
-            with dpg.child_window(tag="plot_childwindow", width=-1, height=190, border=False):
-                with dpg.plot(height=190, width=-1, tag="plot", no_menus=True, no_box_select=True, no_inputs=True):
-                    dpg.add_plot_axis(dpg.mvXAxis, label="Time (s)", tag="x_axis")
-                    dpg.add_plot_legend(location=dpg.mvPlot_Location_North, horizontal=True, 
-                                        no_highlight_item=True, no_highlight_axis=True, outside=True)
-                    with dpg.plot_axis(dpg.mvYAxis, label="GPU/CPU Usage (%)", tag="y_axis_left", no_gridlines=True) as y_axis_left:
-                        dpg.add_line_series([], [], label="GPU 3D: --", parent=y_axis_left, tag="gpu_usage_series")
-                        dpg.add_line_series([], [], label="CPU Core Max: --", parent=y_axis_left, tag="cpu_usage_series")
-                        dpg.add_line_series([], [cm.gpucutofffordecrease, cm.gpucutofffordecrease], parent=y_axis_left, tag="line1")
-                        dpg.add_line_series([], [cm.gpucutoffforincrease, cm.gpucutoffforincrease], parent=y_axis_left, tag="line2")
-                    with dpg.plot_axis(dpg.mvYAxis, label="FPS", tag="y_axis_right", no_gridlines=True) as y_axis_right:
-                        dpg.add_line_series([], [], label="FPS: --", parent=y_axis_right, tag="fps_series")
-                        dpg.add_line_series([], [], label="FPS Cap: --", parent=y_axis_right, tag="cap_series", segments=False)
-                    dpg.set_axis_limits("y_axis_left", 0, 100)
-                    min_ft = cm.mincap - cm.capstep
-                    max_ft = cm.maxcap + cm.capstep
-                    dpg.set_axis_limits("y_axis_right", min_ft, max_ft)
-                    dpg.bind_item_theme("line1", themes_manager.themes["fixed_greyline_theme"])
-                    dpg.bind_item_theme("line2", themes_manager.themes["fixed_greyline_theme"])
-                    dpg.bind_item_theme("cap_series", themes_manager.themes["fps_cap_theme"])
-            with dpg.group(horizontal=True):
-                dpg.add_spacer(width=30)
-                dpg.add_button(label="Hide Plot", width=100, callback=lambda: dpg.configure_item("plot_popup_window", show=False))
-            dpg.bind_item_theme("plot_popup_window", themes_manager.themes["nested_window_theme"])
+
+    with dpg.child_window(tag="plot_childwindow", width=-1, height=190, border=False):
+        with dpg.plot(height=190, width=-1, tag="plot", no_menus=True, no_box_select=True, no_inputs=True):
+            dpg.add_plot_axis(dpg.mvXAxis, label="Time (s)", tag="x_axis")
+            dpg.add_plot_legend(location=dpg.mvPlot_Location_North, horizontal=True, 
+                                no_highlight_item=True, no_highlight_axis=True, outside=True)
+            with dpg.plot_axis(dpg.mvYAxis, label="GPU/CPU Usage (%)", tag="y_axis_left", no_gridlines=True) as y_axis_left:
+                dpg.add_line_series([], [], label="GPU 3D: --", parent=y_axis_left, tag="gpu_usage_series")
+                dpg.add_line_series([], [], label="CPU Core Max: --", parent=y_axis_left, tag="cpu_usage_series")
+                dpg.add_line_series([], [cm.gpucutofffordecrease, cm.gpucutofffordecrease], parent=y_axis_left, tag="line1")
+                dpg.add_line_series([], [cm.gpucutoffforincrease, cm.gpucutoffforincrease], parent=y_axis_left, tag="line2")
+            with dpg.plot_axis(dpg.mvYAxis, label="FPS", tag="y_axis_right", no_gridlines=True) as y_axis_right:
+                dpg.add_line_series([], [], label="FPS: --", parent=y_axis_right, tag="fps_series")
+                dpg.add_line_series([], [], label="FPS Cap: --", parent=y_axis_right, tag="cap_series", segments=False)
+            dpg.set_axis_limits("y_axis_left", 0, 100)
+            min_ft = cm.mincap - cm.capstep
+            max_ft = cm.maxcap + cm.capstep
+            dpg.set_axis_limits("y_axis_right", min_ft, max_ft)
+            dpg.bind_item_theme("line1", themes_manager.themes["fixed_greyline_theme"])
+            dpg.bind_item_theme("line2", themes_manager.themes["fixed_greyline_theme"])
+            dpg.bind_item_theme("cap_series", themes_manager.themes["fps_cap_theme"])
+    dpg.bind_item_theme("plot", themes_manager.themes["plot_bg_theme"]) #Change background color to dark
 
 #TODO: add theme for nested window with border
 
@@ -1056,13 +1051,8 @@ with dpg.window(label=app_title, tag="Primary Window"):
             dpg.add_input_text(tag="luid_status_text", default_value="Tracking all GPU 3D usages.", readonly=True, width=260)
             dpg.add_spacer(height=5)
             dpg.add_button(label="Detect Render GPU", callback=toggle_luid_selection, tag="luid_button", width=150)
-            dpg.add_button(label="Show Plot", tag="show_plot_button", width=150,
-                            callback=lambda: dpg.configure_item(
-                                "plot_popup_window",
-                                show=not dpg.is_item_shown("plot_popup_window")
-                            ))
+            build_plot_window()
 
-build_plot_window()
 build_readings_window()
 build_settings_window()
 
