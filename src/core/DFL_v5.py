@@ -301,7 +301,7 @@ def monitoring_loop():
                     cm.load_profile_callback(None, "Global", None)
                     # Ensure the running monitor uses the newly loaded Global profile values
                     try:
-                        cm.apply_current_input_values() #TODO: check if this is enough
+                        cm.apply_current_input_values() 
                     except Exception:
                         # Guard in case apply_current_input_values is unavailable or fails
                         logger.add_log("AutoPilot: Failed to apply Global profile immediately.")
@@ -667,7 +667,6 @@ def build_settings_window():
                                          default_value=cm.autopilot_only_profiles, 
                                          callback=cm.make_update_preference_callback('autopilot_only_profiles')
                         )
-                        #TODO: Add tooltip - bby default, will run in global until a specific profile is detected. With this option, will only run when a specific profile is detected.
                         with dpg.group(horizontal=True):
                             dpg.add_checkbox(label="Set", tag="profile_on_startup_checkbox",
                                             default_value=cm.profileonstartup, 
@@ -974,7 +973,6 @@ with dpg.window(label=app_title, tag="Primary Window"):
                     hw_name = info["hw_name"]
                     sensors = info["sensors"]
                     header_tag = f"input_collapsing_{hw_id}"
-                    print(header_tag) #TODO: remove debug print later
                     with dpg.collapsing_header(label=hw_name, default_open=True, tag=header_tag):
                         # Group sensors by sensor type
                         sensors_by_type = {}
@@ -983,7 +981,8 @@ with dpg.window(label=app_title, tag="Primary Window"):
                             sensors_by_type.setdefault(sensor_type_str, []).append(sensor)
 
                         for sensor_type, params in sensors_by_type.items():
-                            dpg.add_text(sensor_type, color=(180, 220, 255))  # Sensor type as section title
+                            section_tag = f"title_section_{hw_id}_{sensor_type}"
+                            dpg.add_text(f"{sensor_type}:", color=(180, 220, 255), tag=section_tag)  # Sensor type as section title
                             with dpg.table(header_row=False, resizable=False, policy=dpg.mvTable_SizingFixedFit):
                                 dpg.add_table_column(label="Enable")
                                 dpg.add_table_column(label="Parameter", width_fixed=True, init_width_or_weight=145)
@@ -1134,7 +1133,6 @@ def _on_first_frame():
         cm.ui_initialized = True
         # run hide_unselected once now that tables/layouts have been initialized
         cm.hide_unselected_callback(None, None, None)
-        #TODO: add function to now hide the collapsing headers
     except Exception:
         pass
 
