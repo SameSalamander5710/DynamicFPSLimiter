@@ -466,27 +466,12 @@ def gui_update_loop():
                     fps_utils.update_fps_cap_visualization()
 
                 try:
-                    # Simple pass over all sensor infos and count enabled params per hw_id
-                    hw_counts = {}
-                    hw_names = {}
-                    for sensor in cm.sensor_infos:
-                        hw_id = sensor.get('hw_id') or sensor.get('hw_name')
-                        hw_names.setdefault(hw_id, sensor.get('hw_name', hw_id))
-                        param_id = sensor.get('parameter_id')
-                        if not param_id:
-                            continue
-                        cb_tag = f"input_{param_id}_enable"
-                        try:
-                            if dpg.does_item_exist(cb_tag) and dpg.get_value(cb_tag):
-                                hw_counts[hw_id] = hw_counts.get(hw_id, 0) + 1
-                        except Exception:
-                            # ignore transient GUI access errors
-                            pass
-
-                    # Update collapsing header labels for each hw_id
-                    for hw_id, hw_name in hw_names.items():
-                        header_tag = f"input_collapsing_{hw_id}"
-                        enabled_count = hw_counts.get(hw_id, 0)
+                    # Use ConfigManager helper to build a map of enabled params per hw/section
+                    enable_map = cm.build_sensor_enable_map(dpg)
+                    for hw_id, info in enable_map.items():
+                        hw_name = info.get("hw_name", hw_id)
+                        enabled_count = info.get("enabled_count", 0)
+                        header_tag = info.get("header_tag", f"input_collapsing_{hw_id}")
                         label = f"{hw_name} : +{enabled_count}" if enabled_count > 0 else hw_name
                         if dpg.does_item_exist(header_tag):
                             try:
