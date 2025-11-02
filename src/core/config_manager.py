@@ -259,9 +259,73 @@ class ConfigManager:
                 if collapse_key not in self.key_type_map:
                     self.key_type_map[collapse_key] = bool
                     added_keys.append(collapse_key)
-                    
+
         if added_keys:
             self.logger.add_log(f"Added dynamic key_type_map entries: {added_keys}")
+
+    def build_sensor_enable_map(self, dpg_instance):
+        """
+        Build and return a dict summarizing which parameters are enabled.
+
+        Structure:
+        {
+          hw_id: {
+            "hw_name": str,
+            "header_tag": "input_collapsing_{hw_id}",
+            "sections": {
+               sensor_type_str: {
+                  "section_tag": "title_section_{hw_id}_{sensor_type_str}",
+                  "params": [param_id, ...],
+                  "enabled_params": [param_id, ...],
+                  "enabled_count": int
+               }, ...
+            },
+            "enabled_count": int   # total enabled under hw_id
+          }, ...
+        }
+
+        dpg_instance is used to query checkbox values; exceptions are caught and treated as disabled.
+        """
+        result = {}
+        if not hasattr(self, "sensor_infos"):
+            return result
+
+        for sensor in self.sensor_infos:
+            hw_id = sensor.get("hw_id")
+            hw_name = sensor.get("hw_name", hw_id)
+            sensor_type = sensor.get("sensor_type")
+            sensor_type_str = sensor_type.ToString() if hasattr(sensor_type, "ToString") else str(sensor_type)
+            param_id = sensor.get("parameter_id")
+
+            hw_entry = result.setdefault(hw_id, {
+                "hw_name": hw_name,
+                "header_tag": f"input_collapsing_{hw_id}",
+                "sections": {},
+                "enabled_count": 0
+            })
+
+            sec = hw_entry["sections"].setdefault(sensor_type_str, {
+                "section_tag": f"title_section_{hw_id}_{sensor_type_str}",
+                "params": [],
+                "enabled_params": [],
+                "enabled_count": 0
+            })
+
+            if param_id:
+                sec["params"].append(param_id)
+                cb_tag = f"input_{param_id}_enable"
+                enabled = False
+                try:
+                    if dpg_instance.does_item_exist(cb_tag):
+                        enabled = bool(dpg_instance.get_value(cb_tag))
+                except Exception:
+                    enabled = False
+                if enabled:
+                    sec["enabled_params"].append(param_id)
+                    sec["enabled_count"] += 1
+                    hw_entry["enabled_count"] += 1
+
+        return result
 
     def load_preferences(self):
         for key in self.settings_config["Preferences"]:
