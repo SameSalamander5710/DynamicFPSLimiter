@@ -44,7 +44,7 @@ from core.tray_functions import TrayManager
 from core.autopilot import autopilot_on_check, get_foreground_process_name
 from core.launch_popup import show_loading_popup, hide_loading_popup
 
-show_loading_popup(f"Loading Dynamic FPS Limiter {version}...")
+show_loading_popup(f"Loading Dynamic FPS Limiter {version}...") #TODO: add preference settings to skip this
 
 # Default viewport size
 Viewport_width = 610
@@ -374,11 +374,11 @@ def monitoring_loop():
                     last_gpu = gpu_values[-1] if gpu_values else 0
 
                     # Determine how many steps to increase
-                    steps = 1
-                    threshold = cm.gpucutoffforincrease - gpu_range
-                    while last_gpu < threshold and (threshold > cm.minvalidgpu):
-                        steps += 1
-                        threshold = cm.gpucutoffforincrease - gpu_range * steps
+                    steps = 1 # removed step logic to prevent unintended consequences with newer methods
+                    #threshold = cm.gpucutoffforincrease - gpu_range
+                    #while last_gpu < threshold and (threshold > cm.minvalidgpu):
+                    #    steps += 1
+                    #    threshold = cm.gpucutoffforincrease - gpu_range * steps
 
                     try:
                         current_index = fps_limit_list.index(current_fps)
