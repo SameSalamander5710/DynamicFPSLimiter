@@ -464,6 +464,42 @@ def gui_update_loop():
 
                 # Update FPS limit visualization based on current input values
                     fps_utils.update_fps_cap_visualization()
+
+                try:
+                    # Simple pass over all sensor infos and count enabled params per hw_id
+                    hw_counts = {}
+                    hw_names = {}
+                    for sensor in cm.sensor_infos:
+                        hw_id = sensor.get('hw_id') or sensor.get('hw_name')
+                        hw_names.setdefault(hw_id, sensor.get('hw_name', hw_id))
+                        param_id = sensor.get('parameter_id')
+                        if not param_id:
+                            continue
+                        cb_tag = f"input_{param_id}_enable"
+                        try:
+                            if dpg.does_item_exist(cb_tag) and dpg.get_value(cb_tag):
+                                hw_counts[hw_id] = hw_counts.get(hw_id, 0) + 1
+                        except Exception:
+                            # ignore transient GUI access errors
+                            pass
+
+                    # Update collapsing header labels for each hw_id
+                    for hw_id, hw_name in hw_names.items():
+                        header_tag = f"collapsing_{hw_id}"
+                        enabled_count = hw_counts.get(hw_id, 0)
+                        label = f"{hw_name} : +{enabled_count}" if enabled_count > 0 else hw_name
+                        if dpg.does_item_exist(header_tag):
+                            try:
+                                dpg.configure_item(header_tag, label=label)
+                            except Exception:
+                                pass
+
+                except Exception as e:
+                    if gui_running:
+                        logger.add_log(f"Error updating HW header counts: {e}")
+
+
+
             except Exception as e:
                 if gui_running:  # Only log if we're still supposed to be running
                     logger.add_log(f"Error in GUI update loop: {e}")
@@ -928,12 +964,18 @@ with dpg.window(label=app_title, tag="Primary Window"):
                 # Group sensors by hardware name
                 sensors_by_hw = {}
                 for sensor in cm.sensor_infos:
-                    hw_name = sensor['hw_name']
-                    sensors_by_hw.setdefault(hw_name, []).append(sensor)
+                    hw_id = sensor.get('hw_id')
+                    hw_name = sensor.get('hw_name', hw_id)
+                    entry = sensors_by_hw.setdefault(hw_id, {"hw_name": hw_name, "sensors": []})
+                    entry["sensors"].append(sensor)
 
                 dpg.add_spacer(height=1)
-                for hw_name, sensors in reversed(list(sensors_by_hw.items())):
-                    with dpg.collapsing_header(label=hw_name, default_open=True):
+                for hw_id, info in reversed(list(sensors_by_hw.items())):
+                    hw_name = info["hw_name"]
+                    sensors = info["sensors"]
+                    header_tag = f"collapsing_{hw_id}"
+                    print(header_tag) #TODO: remove debug print later
+                    with dpg.collapsing_header(label=hw_name, default_open=True, tag=header_tag):
                         # Group sensors by sensor type
                         sensors_by_type = {}
                         for sensor in sensors:
