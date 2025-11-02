@@ -235,14 +235,16 @@ class ThemesManager:
 
         with dpg.theme() as plot_bg_theme:
             with dpg.theme_component(dpg.mvAll):
-                dpg.add_theme_color(dpg.mvPlotCol_PlotBg, (0, 200, 255, 255))  # Example: cyan
+                # Make plot background match the main window background
+                dpg.add_theme_color(dpg.mvPlotCol_PlotBg, bg_colour, category=dpg.mvThemeCat_Plots)
                 dpg.add_theme_style(dpg.mvStyleVar_FrameBorderSize, 0)
-                dpg.add_theme_color(dpg.mvThemeCol_ChildBg, (0, 200, 255, 0))
-                dpg.add_theme_color(dpg.mvThemeCol_PopupBg, (0, 200, 255, 0))
-                dpg.add_theme_color(dpg.mvThemeCol_FrameBg, (0, 200, 255, 0))
-                dpg.add_theme_color(dpg.mvThemeCol_Button, (0, 200, 255, 0))
-                dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, (0, 200, 255, 0))
-                dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, (0, 200, 255, 0))
+                # Use child bg for plot child areas and keep frame/popup colors consistent
+                dpg.add_theme_color(dpg.mvThemeCol_ChildBg, bg_colour_2_child, category=dpg.mvThemeCat_Core)
+                dpg.add_theme_color(dpg.mvThemeCol_PopupBg, bg_colour, category=dpg.mvThemeCat_Core)
+                dpg.add_theme_color(dpg.mvThemeCol_FrameBg, bg_colour, category=dpg.mvThemeCat_Core)
+                dpg.add_theme_color(dpg.mvThemeCol_Button, bg_colour, category=dpg.mvThemeCat_Core)
+                dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, bg_colour_5_buttonactive, category=dpg.mvThemeCat_Core)
+                dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, bg_colour_4_buttonhover, category=dpg.mvThemeCat_Core)
                 dpg.add_theme_color(dpg.mvThemeCol_Text, bg_colour_7_text_faded)
         self.themes["plot_bg_theme"] = plot_bg_theme
 

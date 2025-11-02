@@ -629,8 +629,8 @@ def build_plot_window():
             dpg.bind_item_theme("line1", themes_manager.themes["fixed_greyline_theme"])
             dpg.bind_item_theme("line2", themes_manager.themes["fixed_greyline_theme"])
             dpg.bind_item_theme("cap_series", themes_manager.themes["fps_cap_theme"])
-    dpg.bind_item_theme("plot", themes_manager.themes["plot_bg_theme"]) #Change background color to dark
-
+    dpg.bind_item_theme("plot_childwindow", themes_manager.themes["plot_bg_theme"])
+    
 #TODO: add theme for nested window with border
 
 def build_readings_window():
