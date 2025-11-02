@@ -1030,14 +1030,15 @@ with dpg.window(label=app_title, tag="Primary Window"):
             with dpg.group(horizontal=True):
                 with dpg.drawlist(width=15, height=15):
                     dpg.draw_line((0, 13), (15, 13), color=(180,180,180), thickness=1)
-                dpg.add_text("Load")
-                with dpg.drawlist(width=268, height=15):
-                    dpg.draw_line((0, 13), (268, 13), color=(180,180,180), thickness=1)
+                dpg.add_text("Legacy: Windows Performance Counters")
+                with dpg.drawlist(width=52, height=15):
+                    dpg.draw_line((0, 13), (52, 13), color=(180,180,180), thickness=1)
+            dpg.add_spacer(height=5)
             with dpg.table(header_row=False, resizable=False, policy=dpg.mvTable_SizingFixedFit):
                 dpg.add_table_column(width_fixed=True)  # Label
                 with dpg.table_row():
                     with dpg.group(horizontal=True):
-                        dpg.add_button(label="GPU 3D:", tag="button_gpu3d_legacy", width=85)
+                        dpg.add_button(label="GPU 3D usage:", tag="button_gpu3d_legacy", width=155)
                         dpg.bind_item_theme("button_gpu3d_legacy", themes_manager.themes["button_left_theme"])
                         dpg.add_input_text(tag="input_gpucutoffforincrease", default_value=str(cm.settings["gpucutoffforincrease"]), width=40)
                         dpg.add_text("-", wrap=300)
@@ -1045,7 +1046,7 @@ with dpg.window(label=app_title, tag="Primary Window"):
                         dpg.add_text("%", wrap=300)
                 with dpg.table_row():
                     with dpg.group(horizontal=True):
-                        dpg.add_button(label="CPU Core:", tag="button_cpucore_legacy", width=85)
+                        dpg.add_button(label="CPU Core Max:", tag="button_cpucore_legacy", width=155)
                         dpg.bind_item_theme("button_cpucore_legacy", themes_manager.themes["button_left_theme"])
                         dpg.add_input_text(tag="input_cpucutoffforincrease", default_value=str(cm.settings["cpucutoffforincrease"]), width=40)
                         dpg.add_text("-", wrap=300)
