@@ -129,6 +129,64 @@ def show_rtss_error_and_exit(rtss_path):
     dpg.start_dearpygui()
     sys.exit(1)
 
+def show_loading_popup(message="Loading...", width=320, height=100, title="Dynamic FPS Limiter - Loading"):
+    """
+    Creates a minimal DearPyGui context + viewport and shows a simple loading window.
+    This is self-contained so it can be shown early and later completely destroyed
+    with hide_loading_popup() before the main GUI context is created.
+    """ 
+    # If a context already exists, don't try to recreate it here.
+    try:
+        dpg.create_context()
+    except Exception:
+        # context may already exist; ignore
+        pass
+
+    # Basic window content
+    with dpg.window(label="", tag="LoadingWindow", no_title_bar=True, no_resize=True,
+                    no_move=False, no_collapse=True, width=width, height=height):
+        dpg.add_spacer(height=30)
+        dpg.add_text(message, tag="loading_text", wrap=width - 20)
+        dpg.add_spacer(height=30)
+
+    # Center viewport on screen
+    x_pos, y_pos = TrayManager.get_centered_viewport_position(width, height)
+    try:
+        dpg.create_viewport(title=title, width=width, height=height,
+                            resizable=False, decorated=False, x_pos=x_pos, y_pos=y_pos)
+    except Exception:
+        # viewport may already exist
+        pass
+
+    dpg.setup_dearpygui()
+    dpg.show_viewport()
+    dpg.set_primary_window("LoadingWindow", True)
+
+    # Render a single frame so the window appears immediately
+    try:
+        dpg.render_dearpygui_frame()
+    except Exception:
+        pass
+
+def hide_loading_popup():
+    """
+    Destroys the temporary loading viewport/context created by show_loading_popup.
+    Call this before creating the main application context/viewport.
+    """
+    try:
+        # destroy viewport if present
+        try:
+            dpg.destroy_viewport()
+        except Exception:
+            pass
+        # destroy context
+        try:
+            dpg.destroy_context()
+        except Exception:
+            pass
+    except Exception:
+        pass
+
 if __name__ == "__main__":
     # Test the popup by running this file directly using: python src\core\launch_popup.py
     print("Testing RTSS error popup...")

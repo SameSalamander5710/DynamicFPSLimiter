@@ -16,7 +16,7 @@ def _is_first_launch(base):
         return True
     try:
         config.read(settings_path)
-        print(config.get("Preferences", "first_launch_done", fallback=False))
+        #print(config.get("Preferences", "first_launch_done", fallback=False))
         return not config.getboolean("Preferences", "first_launch_done", fallback=False)
     except Exception:
         return True
@@ -38,7 +38,7 @@ def _unblock_alternate_data_streams(root_dirs):
                         os.remove(ads)
                     except Exception:
                         pass
-    print("unblocked dlls")
+    #print("unblocked dlls")
     return True
 
 def mark_first_launch_done(base, cm):
@@ -47,7 +47,7 @@ def mark_first_launch_done(base, cm):
     config = configparser.ConfigParser()
     try:
         cm.update_preference_setting('first_launch_done', None, True, None)
-        print(f"Marked first_launch_done=True at {settings_path}")
+        #print(f"Marked first_launch_done=True at {settings_path}")
 
         return True
     except Exception as exc:

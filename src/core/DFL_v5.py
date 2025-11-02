@@ -1,6 +1,8 @@
 # DFL_v5.py
 # Dynamic FPS Limiter v5.0.0
 
+version = "v5.0.0"
+
 import ctypes
 ctypes.windll.shcore.SetProcessDpiAwareness(2)
 
@@ -40,6 +42,9 @@ from core.rtss_functions import RTSSController
 from core.fps_utils import FPSUtils
 from core.tray_functions import TrayManager
 from core.autopilot import autopilot_on_check, get_foreground_process_name
+from core.launch_popup import show_loading_popup, hide_loading_popup
+
+show_loading_popup(f"Loading Dynamic FPS Limiter {version}...")
 
 # Default viewport size
 Viewport_width = 610
@@ -668,6 +673,8 @@ def build_settings_window():
             dpg.add_button(label="Hide Settings", width=100, callback=lambda: dpg.configure_item("settings_window", show=False))
             dpg.bind_item_theme("settings_window", themes_manager.themes["nested_window_theme"])
 
+hide_loading_popup()
+
 # GUI setup: Main Window
 dpg.create_context()
 themes_manager.create_themes()
@@ -718,7 +725,7 @@ with dpg.window(label=app_title, tag="Primary Window"):
         dpg.add_image(textures["DynamicFPSLimiter_icon"], tag="icon", width=20, height=20)
         dpg.add_text(app_title, tag="app_title")
         #dpg.bind_item_font("app_title", bold_font)
-        dpg.add_text("v5.0.0")
+        dpg.add_text(f"{version}")
         dpg.add_spacer(width=310)
 
         dpg.add_image_button(texture_tag=textures["minimize_button"], tag="minimize", callback=tray.minimize_to_tray, width=20, height=20)
