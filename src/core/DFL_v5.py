@@ -485,7 +485,7 @@ def gui_update_loop():
 
                     # Update collapsing header labels for each hw_id
                     for hw_id, hw_name in hw_names.items():
-                        header_tag = f"collapsing_{hw_id}"
+                        header_tag = f"input_collapsing_{hw_id}"
                         enabled_count = hw_counts.get(hw_id, 0)
                         label = f"{hw_name} : +{enabled_count}" if enabled_count > 0 else hw_name
                         if dpg.does_item_exist(header_tag):
@@ -973,7 +973,7 @@ with dpg.window(label=app_title, tag="Primary Window"):
                 for hw_id, info in reversed(list(sensors_by_hw.items())):
                     hw_name = info["hw_name"]
                     sensors = info["sensors"]
-                    header_tag = f"collapsing_{hw_id}"
+                    header_tag = f"input_collapsing_{hw_id}"
                     print(header_tag) #TODO: remove debug print later
                     with dpg.collapsing_header(label=hw_name, default_open=True, tag=header_tag):
                         # Group sensors by sensor type

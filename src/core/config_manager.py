@@ -175,6 +175,7 @@ class ConfigManager:
 
         # Dynamic keys from sensors (parameter_id for each sensor)
         dynamic_keys = []
+        collapsing_keys = []
         if hasattr(self, "sensor_infos"):
             for sensor in self.sensor_infos:
                 param_id = sensor.get("parameter_id")
@@ -184,9 +185,13 @@ class ConfigManager:
                         f"{param_id}_lower",
                         f"{param_id}_upper"
                     ])
+                # Add hw_id-based collapsing key
+                hw_id = sensor.get("hw_id")
+                if hw_id:
+                    collapsing_keys.append(f"collapsing_{hw_id}")
 
         # Combine and deduplicate
-        all_keys = static_keys + dynamic_keys
+        all_keys = static_keys + dynamic_keys + list(dict.fromkeys(collapsing_keys))
         new_keys = [key for key in all_keys if key not in self.input_field_keys]
         if new_keys:
             self.input_field_keys.extend(new_keys)
@@ -205,6 +210,7 @@ class ConfigManager:
             return
 
         added_keys = []
+        seen_hw = set()
         for sensor in self.sensor_infos:
             param_id = sensor.get("parameter_id")
             if param_id:
@@ -213,6 +219,14 @@ class ConfigManager:
                     if key not in self.Default_settings_original:
                         self.Default_settings_original[key] = default_value
                         added_keys.append(key)
+            hw_id = sensor.get("hw_id")
+            if hw_id and hw_id not in seen_hw:
+                seen_hw.add(hw_id)
+                collapse_key = f"collapsing_{hw_id}"
+                # default True => expanded/open
+                if collapse_key not in self.Default_settings_original:
+                    self.Default_settings_original[collapse_key] = True
+                    added_keys.append(collapse_key)
         if added_keys:
             self.logger.add_log(f"Added dynamic default settings: {added_keys}")
 
@@ -229,6 +243,7 @@ class ConfigManager:
             return
 
         added_keys = []
+        seen_hw = set()
         for sensor in self.sensor_infos:
             param_id = sensor.get("parameter_id")
             if param_id:
@@ -237,6 +252,14 @@ class ConfigManager:
                     if key not in self.key_type_map:
                         self.key_type_map[key] = typ
                         added_keys.append(key)
+            hw_id = sensor.get("hw_id")
+            if hw_id and hw_id not in seen_hw:
+                seen_hw.add(hw_id)
+                collapse_key = f"collapsing_{hw_id}"
+                if collapse_key not in self.key_type_map:
+                    self.key_type_map[collapse_key] = bool
+                    added_keys.append(collapse_key)
+                    
         if added_keys:
             self.logger.add_log(f"Added dynamic key_type_map entries: {added_keys}")
 
