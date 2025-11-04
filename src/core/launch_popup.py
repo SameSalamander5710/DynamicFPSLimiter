@@ -129,7 +129,7 @@ def show_rtss_error_and_exit(rtss_path):
     dpg.start_dearpygui()
     sys.exit(1)
 
-def show_loading_popup(message="Loading...", width=320, height=100, title="Dynamic FPS Limiter - Loading"):
+def show_loading_popup(message="Loading...", width=300, height=50, title="Dynamic FPS Limiter - Loading", themes_manager=None):
     """
     Creates a minimal DearPyGui context + viewport and shows a simple loading window.
     This is self-contained so it can be shown early and later completely destroyed
@@ -142,12 +142,31 @@ def show_loading_popup(message="Loading...", width=320, height=100, title="Dynam
         # context may already exist; ignore
         pass
 
+    Base_dir = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
+
+    # Create themes and fonts for the popup
+    themes_manager = ThemesManager(Base_dir)
+    themes_manager.create_themes()
+    fonts = themes_manager.create_fonts()
+
     # Basic window content
     with dpg.window(label="", tag="LoadingWindow", no_title_bar=True, no_resize=True,
                     no_move=False, no_collapse=True, width=width, height=height):
-        dpg.add_spacer(height=30)
+        dpg.add_spacer(height=1)
         dpg.add_text(message, tag="loading_text", wrap=width - 20)
-        dpg.add_spacer(height=30)
+        dpg.add_spacer(height=1)
+
+
+    # If a themes manager is provided, bind the app font/theme to the loading text
+    if themes_manager:
+        try:
+            # If themes/fonts were already created, bind the regular font (fallback if missing)
+            themes_manager.bind_font_to_item("loading_text", "regular_font")
+            # Bind the main theme so styles match other popups
+            dpg.bind_theme(themes_manager.themes["main_theme"])
+        except Exception:
+            # Don't fail popup creation just because theming couldn't be applied
+            pass
 
     # Center viewport on screen
     x_pos, y_pos = TrayManager.get_centered_viewport_position(width, height)
