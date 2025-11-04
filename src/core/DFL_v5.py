@@ -692,6 +692,8 @@ def build_settings_window():
                                             width=100, step=1, step_fast=10)
                         dpg.add_checkbox(label="Show Tooltips", tag="tooltip_checkbox",
                                          default_value=cm.showtooltip, callback=tooltip_checkbox_callback)
+                        dpg.add_checkbox(label="Hide 'loading...' popup", tag="hide_loading_popup_checkbox",
+                                         default_value=cm.hide_loading_popup, callback=cm.make_update_preference_callback('hide_loading_popup'))
 
                 with dpg.tab(label=" Log", tag="tab3"):
                     with dpg.child_window(tag="LogWindow", autosize_x=True, height=tab_height, border=True):
