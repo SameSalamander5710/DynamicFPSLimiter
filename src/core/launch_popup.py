@@ -2,6 +2,7 @@ import dearpygui.dearpygui as dpg
 import sys
 import os
 import ctypes
+import configparser
 
 ctypes.windll.shcore.SetProcessDpiAwareness(2)
 
@@ -129,20 +130,32 @@ def show_rtss_error_and_exit(rtss_path):
     dpg.start_dearpygui()
     sys.exit(1)
 
-def show_loading_popup(message="Loading...", width=300, height=50, title="Dynamic FPS Limiter - Loading", themes_manager=None):
+def show_loading_popup(message="Loading...", width=300, height=50, title="Dynamic FPS Limiter - Loading", Base_dir=None):
     """
     Creates a minimal DearPyGui context + viewport and shows a simple loading window.
     This is self-contained so it can be shown early and later completely destroyed
     with hide_loading_popup() before the main GUI context is created.
     """ 
+
+    try:
+        parent_dir = os.path.dirname(Base_dir)
+        settings_path = os.path.join(parent_dir, "config", "settings.ini")
+        cfg = configparser.ConfigParser()
+        if os.path.exists(settings_path):
+            cfg.read(settings_path)
+            hide_popup = cfg.getboolean("Preferences", "hide_loading_popup", fallback=False)
+            if hide_popup:
+                return  # user preference requests no loading popup
+    except Exception:
+        # If anything goes wrong reading prefs, continue and show the popup
+        pass
+
     # If a context already exists, don't try to recreate it here.
     try:
         dpg.create_context()
     except Exception:
         # context may already exist; ignore
         pass
-
-    Base_dir = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
 
     # Create themes and fonts for the popup
     themes_manager = ThemesManager(Base_dir)

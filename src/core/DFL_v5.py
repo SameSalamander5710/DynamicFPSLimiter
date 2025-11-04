@@ -44,7 +44,7 @@ from core.tray_functions import TrayManager
 from core.autopilot import autopilot_on_check, get_foreground_process_name
 from core.launch_popup import show_loading_popup, hide_loading_popup
 
-show_loading_popup(f"Loading Dynamic FPS Limiter {version}...") #TODO: add preference settings to skip this
+show_loading_popup(f"Loading Dynamic FPS Limiter {version}...", Base_dir=Base_dir) #TODO: add preference settings to skip this
 
 # Default viewport size
 Viewport_width = 610
