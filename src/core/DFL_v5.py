@@ -178,10 +178,10 @@ def start_stop_callback(sender, app_data, user_data):
 
 def reset_stats():
     
-    dpg.configure_item("gpu_usage_series", label="GPU 3D: --")
-    dpg.configure_item("cpu_usage_series", label="CPU Core Max: --")
+    dpg.configure_item("gpu_usage_series", label="GPU: --")
+    dpg.configure_item("cpu_usage_series", label="CPU: --")
     dpg.configure_item("fps_series", label="FPS: --")
-    dpg.configure_item("cap_series", label="FPS Cap: --")
+    dpg.configure_item("cap_series", label="Cap: --")
     time_series.clear()
     fps_time_series.clear()
     gpu_usage_series.clear()
@@ -410,11 +410,11 @@ def monitoring_loop():
 
         if running:
             # Update legend labels with current values
-            dpg.configure_item("gpu_usage_series", label=f"GPU 3D: {gpuUsage}%")
+            dpg.configure_item("gpu_usage_series", label=f"GPU: {gpuUsage}%")
             if running and fps is not None:
                 dpg.configure_item("fps_series", label=f"FPS: {fps:.1f}")
-            dpg.configure_item("cap_series", label=f"FPS Cap: {current_maxcap + CurrentFPSOffset}")
-            dpg.configure_item("cpu_usage_series", label=f"CPU Core Max: {cpuUsage}%")
+            dpg.configure_item("cap_series", label=f"Cap: {current_maxcap + CurrentFPSOffset}")
+            dpg.configure_item("cpu_usage_series", label=f"CPU: {cpuUsage}%")
 
             # Update plot if fps is valid
             if fps and process_name not in {"DynamicFPSLimiter.exe"}:
@@ -614,14 +614,14 @@ def build_plot_window():
             dpg.add_plot_axis(dpg.mvXAxis, label="Time (s)", tag="x_axis")
             dpg.add_plot_legend(location=dpg.mvPlot_Location_North, horizontal=True, 
                                 no_highlight_item=True, no_highlight_axis=True, outside=True)
-            with dpg.plot_axis(dpg.mvYAxis, label="GPU/CPU Usage (%)", tag="y_axis_left", no_gridlines=True) as y_axis_left:
-                dpg.add_line_series([], [], label="GPU 3D: --", parent=y_axis_left, tag="gpu_usage_series")
-                dpg.add_line_series([], [], label="CPU Core Max: --", parent=y_axis_left, tag="cpu_usage_series")
+            with dpg.plot_axis(dpg.mvYAxis, label="Usage (%)", tag="y_axis_left", no_gridlines=True) as y_axis_left:
+                dpg.add_line_series([], [], label="GPU: --", parent=y_axis_left, tag="gpu_usage_series")
+                dpg.add_line_series([], [], label="CPU: --", parent=y_axis_left, tag="cpu_usage_series")
                 dpg.add_line_series([], [cm.gpucutofffordecrease, cm.gpucutofffordecrease], parent=y_axis_left, tag="line1")
                 dpg.add_line_series([], [cm.gpucutoffforincrease, cm.gpucutoffforincrease], parent=y_axis_left, tag="line2")
             with dpg.plot_axis(dpg.mvYAxis, label="FPS", tag="y_axis_right", no_gridlines=True) as y_axis_right:
                 dpg.add_line_series([], [], label="FPS: --", parent=y_axis_right, tag="fps_series")
-                dpg.add_line_series([], [], label="FPS Cap: --", parent=y_axis_right, tag="cap_series", segments=False)
+                dpg.add_line_series([], [], label="Cap: --", parent=y_axis_right, tag="cap_series", segments=False)
             dpg.set_axis_limits("y_axis_left", 0, 100)
             min_ft = cm.mincap - cm.capstep
             max_ft = cm.maxcap + cm.capstep
@@ -1033,7 +1033,7 @@ with dpg.window(label=app_title, tag="Primary Window"):
                 dpg.add_table_column(width_fixed=True)  # Label
                 with dpg.table_row():
                     with dpg.group(horizontal=True):
-                        dpg.add_button(label="GPU 3D usage:", tag="button_gpu3d_legacy", width=155)
+                        dpg.add_button(label="GPU 3D usage:", tag="button_gpu3d_legacy", width=130)
                         dpg.bind_item_theme("button_gpu3d_legacy", themes_manager.themes["button_left_theme"])
                         dpg.add_input_text(tag="input_gpucutoffforincrease", default_value=str(cm.settings["gpucutoffforincrease"]), width=40)
                         dpg.add_text("-", wrap=300)
@@ -1041,7 +1041,7 @@ with dpg.window(label=app_title, tag="Primary Window"):
                         dpg.add_text("%", wrap=300)
                 with dpg.table_row():
                     with dpg.group(horizontal=True):
-                        dpg.add_button(label="CPU Core Max:", tag="button_cpucore_legacy", width=155)
+                        dpg.add_button(label="CPU Core Max:", tag="button_cpucore_legacy", width=130)
                         dpg.bind_item_theme("button_cpucore_legacy", themes_manager.themes["button_left_theme"])
                         dpg.add_input_text(tag="input_cpucutoffforincrease", default_value=str(cm.settings["cpucutoffforincrease"]), width=40)
                         dpg.add_text("-", wrap=300)
@@ -1049,8 +1049,9 @@ with dpg.window(label=app_title, tag="Primary Window"):
                         dpg.add_text("%", wrap=300)
             dpg.add_spacer(height=5)
             dpg.add_input_text(tag="luid_status_text", default_value="Tracking all GPU 3D usages.", readonly=True, width=260)
+            dpg.add_spacer(height=1)
+            dpg.add_button(label="Detect Render GPU", callback=toggle_luid_selection, tag="luid_button", width=260)
             dpg.add_spacer(height=5)
-            dpg.add_button(label="Detect Render GPU", callback=toggle_luid_selection, tag="luid_button", width=150)
             build_plot_window()
 
 build_readings_window()
