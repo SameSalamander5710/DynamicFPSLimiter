@@ -18,21 +18,21 @@ def get_idle_duration():
         ticks = ctypes.windll.kernel32.GetTickCount64()
         # dwTime is 32-bit, keep arithmetic safe
         delta_ms = (int(ticks) - int(lii.dwTime)) & ((1 << 64) - 1)
-        print(f"[debug] Using GetTickCount64 for idle time calculation.", flush=True)
+
     except AttributeError:
         # fallback to 32-bit GetTickCount
         ticks = ctypes.windll.kernel32.GetTickCount()
         delta_ms = (int(ticks) - int(lii.dwTime)) & 0xFFFFFFFF
     return delta_ms / 1000.0
 
-def monitor_idle(threshold=5, interval=1):
+def monitor_idle(threshold=5, interval=0.5):
     """Monitor idle time."""
     while True:
         try:
             idle = get_idle_duration()
         except Exception as exc:
             print(f"[error] get_idle_duration() raised: {exc!r}", flush=True)
-            time.sleep(max(1.0, interval))
+            time.sleep(max(0.5, interval))
             continue
 
         # always-print for debugging; keep verbose behavior for less output later

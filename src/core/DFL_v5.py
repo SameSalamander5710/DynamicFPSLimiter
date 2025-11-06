@@ -43,6 +43,7 @@ from core.fps_utils import FPSUtils
 from core.tray_functions import TrayManager
 from core.autopilot import autopilot_on_check, get_foreground_process_name
 from core.launch_popup import show_loading_popup, hide_loading_popup
+from core.idle_timer import get_idle_duration
 
 show_loading_popup(f"Loading Dynamic FPS Limiter {version}...", Base_dir=Base_dir)
 
@@ -266,9 +267,10 @@ gpu_values = []
 cpu_values = []
 CurrentFPSOffset = 0
 fps_mean = 0
+idle_state = False
 
 def monitoring_loop():
-    global running, fps_values, CurrentFPSOffset, fps_mean, gpu_values, cpu_values
+    global running, fps_values, CurrentFPSOffset, fps_mean, gpu_values, cpu_values, idle_state
     global max_points
 
     last_process_name = None
@@ -336,77 +338,91 @@ def monitoring_loop():
             cpu_values.pop(0)
         cpu_values.append(cpuUsage)
 
+        idle_secs = get_idle_duration()
+
         # To prevent loading screens from affecting the fps cap
         if gpuUsage and process_name not in {"DynamicFPSLimiter.exe"}:
-            if gpuUsage > cm.minvalidgpu and fps_mean > cm.minvalidfps: 
+            if idle_secs < 5: # cm.idle_threshold:
+                if idle_state:
+                    rtss.set_fractional_framerate(current_profile, last_active_fps_cap)
+                    idle_state = False
+                else:
+                    if gpuUsage > cm.minvalidgpu and fps_mean > cm.minvalidfps: 
 
-                should_decrease = fps_utils.should_decrease_fps_cap(gpu_values, cpu_values)
-                if CurrentFPSOffset > (current_mincap - current_maxcap) and should_decrease:
-                    current_fps_cap = current_maxcap + CurrentFPSOffset
-                    try:
-                        # Find values lower than current fps_mean
-                        lower_values = [x for x in fps_limit_list if x < fps_mean]
-                        
-                        if lower_values:
-                            # If current cap is already lower than fps_mean
-                            if current_fps_cap <= fps_mean:
-                                # Get current index and move to next lower value
-                                current_index = fps_limit_list.index(current_fps_cap)
-                                if current_index < 0:
-                                    next_fps = fps_limit_list[current_index - 1]
+                        should_decrease = fps_utils.should_decrease_fps_cap(gpu_values, cpu_values)
+                        if CurrentFPSOffset > (current_mincap - current_maxcap) and should_decrease:
+                            current_fps_cap = current_maxcap + CurrentFPSOffset
+                            try:
+                                # Find values lower than current fps_mean
+                                lower_values = [x for x in fps_limit_list if x < fps_mean]
+                                
+                                if lower_values:
+                                    # If current cap is already lower than fps_mean
+                                    if current_fps_cap <= fps_mean:
+                                        # Get current index and move to next lower value
+                                        current_index = fps_limit_list.index(current_fps_cap)
+                                        if current_index < 0:
+                                            next_fps = fps_limit_list[current_index - 1]
+                                            CurrentFPSOffset = next_fps - current_maxcap
+                                            rtss.set_fractional_framerate(current_profile, next_fps)
+                                    else:
+                                        # Jump to highest value below fps_mean
+                                        next_fps = max(lower_values)
+                                        CurrentFPSOffset = next_fps - current_maxcap
+                                        rtss.set_fractional_framerate(current_profile, next_fps)
+                            except ValueError:
+                                # If current FPS not in list, find nearest lower value
+                                lower_values = [x for x in fps_limit_list if x < current_fps_cap]
+                                if lower_values:
+                                    next_fps = max(lower_values)
                                     CurrentFPSOffset = next_fps - current_maxcap
                                     rtss.set_fractional_framerate(current_profile, next_fps)
-                            else:
-                                # Jump to highest value below fps_mean
-                                next_fps = max(lower_values)
-                                CurrentFPSOffset = next_fps - current_maxcap
-                                rtss.set_fractional_framerate(current_profile, next_fps)
-                    except ValueError:
-                        # If current FPS not in list, find nearest lower value
-                        lower_values = [x for x in fps_limit_list if x < current_fps_cap]
-                        if lower_values:
-                            next_fps = max(lower_values)
-                            CurrentFPSOffset = next_fps - current_maxcap
-                            rtss.set_fractional_framerate(current_profile, next_fps)
 
-                should_increase = fps_utils.should_increase_fps_cap(gpu_values, cpu_values)
+                        should_increase = fps_utils.should_increase_fps_cap(gpu_values, cpu_values)
 
-                # --- COOLDOWN LOGIC ---
-                if increase_cooldown > 0:
-                    increase_cooldown -= 1
+                        # --- COOLDOWN LOGIC ---
+                        if increase_cooldown > 0:
+                            increase_cooldown -= 1
 
-                if CurrentFPSOffset < 0 and should_increase and increase_cooldown == 0:
-                    current_fps = current_maxcap + CurrentFPSOffset
-                    gpu_range = cm.gpucutofffordecrease - cm.gpucutoffforincrease
-                    last_gpu = gpu_values[-1] if gpu_values else 0
+                        if CurrentFPSOffset < 0 and should_increase and increase_cooldown == 0:
+                            current_fps = current_maxcap + CurrentFPSOffset
+                            gpu_range = cm.gpucutofffordecrease - cm.gpucutoffforincrease
+                            last_gpu = gpu_values[-1] if gpu_values else 0
 
-                    # Determine how many steps to increase
-                    steps = 1 # removed step logic to prevent unintended consequences with newer methods
-                    #threshold = cm.gpucutoffforincrease - gpu_range
-                    #while last_gpu < threshold and (threshold > cm.minvalidgpu):
-                    #    steps += 1
-                    #    threshold = cm.gpucutoffforincrease - gpu_range * steps
+                            # Determine how many steps to increase
+                            steps = 1 # removed step logic to prevent unintended consequences with newer methods
+                            #threshold = cm.gpucutoffforincrease - gpu_range
+                            #while last_gpu < threshold and (threshold > cm.minvalidgpu):
+                            #    steps += 1
+                            #    threshold = cm.gpucutoffforincrease - gpu_range * steps
 
-                    try:
-                        current_index = fps_limit_list.index(current_fps)
-                        next_index = min(current_index + steps, len(fps_limit_list) - 1)
-                        if next_index > current_index:
-                            next_fps = fps_limit_list[next_index]
-                            CurrentFPSOffset = next_fps - current_maxcap
-                            rtss.set_fractional_framerate(current_profile, next_fps)
-                            increase_cooldown = cm.delaybeforeincrease  # Start cooldown
-                    except ValueError:
-                        # If current FPS not in list, find nearest higher value
-                        higher_values = [x for x in fps_limit_list if x > current_fps]
-                        if higher_values:
-                            # Find the index of the smallest higher value
-                            min_higher = min(higher_values)
-                            min_higher_index = fps_limit_list.index(min_higher)
-                            next_index = min(min_higher_index + steps - 1, len(fps_limit_list) - 1)
-                            next_fps = fps_limit_list[next_index]
-                            CurrentFPSOffset = next_fps - current_maxcap
-                            rtss.set_fractional_framerate(current_profile, next_fps)
-                            increase_cooldown = cm.delaybeforeincrease  # Start cooldown
+                            try:
+                                current_index = fps_limit_list.index(current_fps)
+                                next_index = min(current_index + steps, len(fps_limit_list) - 1)
+                                if next_index > current_index:
+                                    next_fps = fps_limit_list[next_index]
+                                    CurrentFPSOffset = next_fps - current_maxcap
+                                    rtss.set_fractional_framerate(current_profile, next_fps)
+                                    increase_cooldown = cm.delaybeforeincrease  # Start cooldown
+                            except ValueError:
+                                # If current FPS not in list, find nearest higher value
+                                higher_values = [x for x in fps_limit_list if x > current_fps]
+                                if higher_values:
+                                    # Find the index of the smallest higher value
+                                    min_higher = min(higher_values)
+                                    min_higher_index = fps_limit_list.index(min_higher)
+                                    next_index = min(min_higher_index + steps - 1, len(fps_limit_list) - 1)
+                                    next_fps = fps_limit_list[next_index]
+                                    CurrentFPSOffset = next_fps - current_maxcap
+                                    rtss.set_fractional_framerate(current_profile, next_fps)
+                                    increase_cooldown = cm.delaybeforeincrease  # Start cooldown
+            else:
+                if idle_state:
+                    pass
+                else:
+                    last_active_fps_cap = current_maxcap + CurrentFPSOffset
+                    rtss.set_fractional_framerate(current_profile, 30) #cm.idle_fps_cap)
+                    idle_state = True
 
         if running:
             # Update legend labels with current values
