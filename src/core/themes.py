@@ -266,7 +266,7 @@ class ThemesManager:
         with dpg.theme() as nested_window_theme:
             with dpg.theme_component(dpg.mvWindowAppItem):
                 dpg.add_theme_color(dpg.mvThemeCol_Border, (180,180,180, 255))  # Border color (dark gray)
-                dpg.add_theme_style(dpg.mvStyleVar_WindowBorderSize, 4.0)      # Border thickness
+                dpg.add_theme_style(dpg.mvStyleVar_WindowBorderSize, 1.0)      # Border thickness
                 #dpg.add_theme_style(dpg.mvStyleVar_ChildBorderSize, 0.0)
             with dpg.theme_component(dpg.mvChildWindow):
                 dpg.add_theme_color(dpg.mvThemeCol_Border, (255, 0, 0, 0))  
