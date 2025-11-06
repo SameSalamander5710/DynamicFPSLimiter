@@ -640,16 +640,16 @@ def build_readings_window():
     monospaced input text and a Refresh / Hide set of controls.
     """
     if not dpg.does_item_exist("readings_popup_window"):
-        with dpg.window(label="Readings", tag="readings_popup_window", width=570, height=420,
+        with dpg.window(label="Readings", tag="readings_popup_window", width=570, height=425,
                         modal=False, show=False, no_title_bar=True, pos=(20, 200)):
-            with dpg.child_window(tag="readings_childwindow", width=-1, height=370, border=False):
-                dpg.add_text("Sensor Readings from LibreHardwareMonitor:")
-                dpg.add_input_text(tag="ReadingsText", multiline=True, readonly=True, width=-1, height=330)
+            dpg.add_text("Sensor Readings from LibreHardwareMonitor:")
+            dpg.add_spacer(height=1)
+            with dpg.child_window(tag="readings_childwindow", width=-1, height=340, border=True):
+                dpg.add_input_text(tag="ReadingsText", multiline=True, readonly=True, width=-1, height=320)
                 dpg.bind_item_theme("ReadingsText", themes_manager.themes["transparent_input_theme"])
                 themes_manager.bind_font_to_item("ReadingsText", "monospaced_font")
-            with dpg.group(horizontal=True):
-                dpg.add_spacer(width=1)
-                dpg.add_button(label="Hide Readings", width=100, callback=lambda: dpg.configure_item("readings_popup_window", show=False))
+            dpg.add_spacer(height=1)
+            dpg.add_button(label="Hide Readings", width=100, callback=lambda: dpg.configure_item("readings_popup_window", show=False))
             dpg.bind_item_theme("readings_popup_window", themes_manager.themes["nested_window_theme"])
 
 

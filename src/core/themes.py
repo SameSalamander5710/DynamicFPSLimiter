@@ -271,6 +271,10 @@ class ThemesManager:
             with dpg.theme_component(dpg.mvChildWindow):
                 dpg.add_theme_color(dpg.mvThemeCol_Border, (255, 0, 0, 0))  
                 dpg.add_theme_style(dpg.mvStyleVar_ChildBorderSize, 1.0)
+            with dpg.theme_component(dpg.mvButton):
+                dpg.add_theme_color(dpg.mvThemeCol_Border, (255, 0, 0, 0))
+                dpg.add_theme_style(dpg.mvStyleVar_FrameBorderSize, 1.0)
+                dpg.add_theme_style(dpg.mvStyleVar_FrameRounding, 3.0)
 
         self.themes["nested_window_theme"] = nested_window_theme
 
