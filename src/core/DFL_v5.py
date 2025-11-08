@@ -677,16 +677,20 @@ def build_settings_window():
             with dpg.tab_bar():
                 with dpg.tab(label="  Preferences", tag="tab2"): 
                     with dpg.child_window(height=tab_height):
+                        with dpg.group(horizontal=True):
+                            with dpg.drawlist(width=15, height=15):
+                                dpg.draw_line((0, 13), (15, 13), color=(180,180,180), thickness=1)
+                            dpg.add_text("Launch Options")
+                            with dpg.drawlist(width=100, height=15):
+                                dpg.draw_line((0, 13), (100, 13), color=(180,180,180), thickness=1)
                         dpg.add_checkbox(label="Launch the app on Windows startup", tag="autostart_checkbox",
                                          default_value=cm.launchonstartup, callback=autostart_checkbox_callback)
                         dpg.add_checkbox(label="Minimze on Launch", tag="minimizeonstartup_checkbox",
                                          default_value=cm.minimizeonstartup, 
                                          callback=cm.make_update_preference_callback('minimizeonstartup')
                         )
-                        dpg.add_checkbox(label="Autopilot mod: Only run when a specific profile is detected", tag="autopilot_only_profiles_checkbox",
-                                         default_value=cm.autopilot_only_profiles, 
-                                         callback=cm.make_update_preference_callback('autopilot_only_profiles')
-                        )
+                        dpg.add_checkbox(label="Hide 'loading...' popup", tag="hide_loading_popup_checkbox",
+                                         default_value=cm.hide_loading_popup, callback=cm.make_update_preference_callback('hide_loading_popup'))
                         with dpg.group(horizontal=True):
                             dpg.add_checkbox(label="Set", tag="profile_on_startup_checkbox",
                                             default_value=cm.profileonstartup, 
@@ -698,32 +702,50 @@ def build_settings_window():
                             dpg.add_input_text(tag="profileonstartup_name", multiline=False, readonly=True, width=150,
                                                default_value=cm.profileonstartup_name)
                             dpg.bind_item_theme("profileonstartup_name", themes_manager.themes["transparent_input_theme_2"])
+
+                        dpg.add_spacer(height=5)
+
                         with dpg.group(horizontal=True):
-                            dpg.add_checkbox(label="Reset RTSS Global Limit on Exit: ", tag="limit_on_exit_checkbox",
+                            with dpg.drawlist(width=15, height=15):
+                                dpg.draw_line((0, 13), (15, 13), color=(180,180,180), thickness=1)
+                            dpg.add_text("Runtime Options")
+                            with dpg.drawlist(width=100, height=15):
+                                dpg.draw_line((0, 13), (100, 13), color=(180,180,180), thickness=1)
+                        dpg.add_checkbox(label="Autopilot mod: Only run when a specific profile is detected", tag="autopilot_only_profiles_checkbox",
+                                         default_value=cm.autopilot_only_profiles, 
+                                         callback=cm.make_update_preference_callback('autopilot_only_profiles')
+                        )
+
+                        with dpg.group(horizontal=True):
+                            dpg.add_checkbox(label="Reset RTSS Global Limit to ", tag="limit_on_exit_checkbox",
                                             default_value=cm.globallimitonexit, 
                                             callback=cm.make_update_preference_callback('globallimitonexit')
                                             ) # instead of: lambda sender, app_data, user_data: cm.update_preference_setting('globallimitonexit', sender, app_data, user_data)
                             dpg.add_input_int(tag="exit_fps_input",
                                             default_value=cm.globallimitonexit_fps, callback=cm.update_exit_fps_value,
                                             width=100, step=1, step_fast=10, min_value=1)
+                            dpg.add_text(" FPS on exit.")
+                        dpg.add_checkbox(label="Show Tooltips", tag="tooltip_checkbox",
+                                         default_value=cm.showtooltip, callback=tooltip_checkbox_callback)
                         with dpg.group(horizontal=True):
                             dpg.add_checkbox(label="Idle mode:", tag="idle_mode_checkbox",
                                             default_value=cm.idle_mode, 
                                             callback=cm.make_update_preference_callback('idle_mode')
                                             ) 
-                            dpg.add_text("Set FPS cap to ")
-                            dpg.add_input_int(tag="idle_fps_input",
-                                            default_value=cm.idle_fps_cap, callback=cm.update_GlobalSettings_settings_callback('idle_fps_cap'),
-                                            width=100, step=1, step_fast=10, min_value=1)
-                            dpg.add_text(" when system is idle for ")
-                            dpg.add_input_int(tag="idle_fps_delay_input",
-                                            default_value=cm.idle_fps_delay, callback=cm.update_GlobalSettings_settings_callback('idle_fps_delay'),
-                                            width=100, step=1, step_fast=10, min_value=1)
-                            dpg.add_text(" seconds.")
-                        dpg.add_checkbox(label="Show Tooltips", tag="tooltip_checkbox",
-                                         default_value=cm.showtooltip, callback=tooltip_checkbox_callback)
-                        dpg.add_checkbox(label="Hide 'loading...' popup", tag="hide_loading_popup_checkbox",
-                                         default_value=cm.hide_loading_popup, callback=cm.make_update_preference_callback('hide_loading_popup'))
+                            with dpg.group(horizontal=False):
+                                with dpg.group(horizontal=True):
+                                    dpg.add_text("Set FPS cap to ")
+                                    dpg.add_input_int(tag="idle_fps_input",
+                                                    default_value=cm.idle_fps_cap, callback=cm.update_GlobalSettings_settings_callback('idle_fps_cap'),
+                                                    width=100, step=1, step_fast=10, min_value=1)
+                                    dpg.add_text(" FPS,")
+                                with dpg.group(horizontal=True):
+                                    dpg.add_text("  when idle for ")
+                                    dpg.add_input_int(tag="idle_fps_delay_input",
+                                                    default_value=cm.idle_fps_delay, callback=cm.update_GlobalSettings_settings_callback('idle_fps_delay'),
+                                                    width=100, step=1, step_fast=10, min_value=1)
+                                    dpg.add_text(" seconds.")
+
 
                 with dpg.tab(label=" Log", tag="tab3"):
                     with dpg.child_window(tag="LogWindow", autosize_x=True, height=tab_height, border=True):
