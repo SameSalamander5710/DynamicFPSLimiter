@@ -711,9 +711,15 @@ def build_settings_window():
                                             default_value=cm.idle_mode, 
                                             callback=cm.make_update_preference_callback('idle_mode')
                                             ) 
+                            dpg.add_text("Set FPS cap to ")
                             dpg.add_input_int(tag="idle_fps_input",
                                             default_value=cm.idle_fps_cap, callback=cm.update_GlobalSettings_settings_callback('idle_fps_cap'),
                                             width=100, step=1, step_fast=10, min_value=1)
+                            dpg.add_text(" when system is idle for ")
+                            dpg.add_input_int(tag="idle_fps_delay_input",
+                                            default_value=cm.idle_fps_delay, callback=cm.update_GlobalSettings_settings_callback('idle_fps_delay'),
+                                            width=100, step=1, step_fast=10, min_value=1)
+                            dpg.add_text(" seconds.")
                         dpg.add_checkbox(label="Show Tooltips", tag="tooltip_checkbox",
                                          default_value=cm.showtooltip, callback=tooltip_checkbox_callback)
                         dpg.add_checkbox(label="Hide 'loading...' popup", tag="hide_loading_popup_checkbox",
