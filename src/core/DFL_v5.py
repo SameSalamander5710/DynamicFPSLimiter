@@ -342,7 +342,7 @@ def monitoring_loop():
 
         # To prevent loading screens from affecting the fps cap
         if gpuUsage and process_name not in {"DynamicFPSLimiter.exe"}:
-            if idle_secs < 5: # cm.idle_threshold:
+            if idle_secs < cm.idle_fps_delay:
                 if idle_state:
                     rtss.set_fractional_framerate(current_profile, last_active_fps_cap)
                     idle_state = False
@@ -421,7 +421,7 @@ def monitoring_loop():
                     pass
                 else:
                     last_active_fps_cap = current_maxcap + CurrentFPSOffset
-                    rtss.set_fractional_framerate(current_profile, 30) #cm.idle_fps_cap)
+                    rtss.set_fractional_framerate(current_profile, cm.idle_fps_cap)
                     idle_state = True
 
         if running:
@@ -705,7 +705,15 @@ def build_settings_window():
                                             ) # instead of: lambda sender, app_data, user_data: cm.update_preference_setting('globallimitonexit', sender, app_data, user_data)
                             dpg.add_input_int(tag="exit_fps_input",
                                             default_value=cm.globallimitonexit_fps, callback=cm.update_exit_fps_value,
-                                            width=100, step=1, step_fast=10)
+                                            width=100, step=1, step_fast=10, min_value=1)
+                        with dpg.group(horizontal=True):
+                            dpg.add_checkbox(label="Idle mode:", tag="idle_mode_checkbox",
+                                            default_value=cm.idle_mode, 
+                                            callback=cm.make_update_preference_callback('idle_mode')
+                                            ) 
+                            dpg.add_input_int(tag="idle_fps_input",
+                                            default_value=cm.idle_fps_cap, callback=cm.update_GlobalSettings_settings_callback('idle_fps_cap'),
+                                            width=100, step=1, step_fast=10, min_value=1)
                         dpg.add_checkbox(label="Show Tooltips", tag="tooltip_checkbox",
                                          default_value=cm.showtooltip, callback=tooltip_checkbox_callback)
                         dpg.add_checkbox(label="Hide 'loading...' popup", tag="hide_loading_popup_checkbox",

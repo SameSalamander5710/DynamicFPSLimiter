@@ -32,6 +32,8 @@ class ConfigManager:
             "minvalidgpu": 14,
             "minvalidfps": 14,
             "globallimitonexit_fps": 98,
+            "idle_fps_cap": 30,
+            "idle_fps_delay": 15,
             'cpupercentile': 70,
             'cpupollinginterval': 100,
             'cpupollingsamples': 20,
@@ -60,6 +62,7 @@ class ConfigManager:
             self.settings_config["Preferences"] = {
                 'showtooltip': 'True',
                 'globallimitonexit': 'False',
+                'idle_mode': 'False',
                 'profileonstartup': 'True',
                 'launchonstartup': 'False',
                 'minimizeonstartup': 'False',
@@ -73,6 +76,8 @@ class ConfigManager:
                 'minvalidgpu': '14',
                 'minvalidfps': '14',
                 'globallimitonexit_fps': '98',
+                'idle_fps_cap': '30',
+                'idle_fps_delay': '15',
                 'cpupercentile': '70',
                 'cpupollinginterval': '100',
                 'cpupollingsamples': '20',
@@ -133,6 +138,8 @@ class ConfigManager:
             "minvalidgpu": int,
             "minvalidfps": int,
             "globallimitonexit_fps": int,
+            "idle_fps_cap": int,
+            "idle_fps_delay": int,
             "cpupercentile": int,
             "cpupollinginterval": int,
             "cpupollingsamples": int,
@@ -144,6 +151,7 @@ class ConfigManager:
             "lhwmonitoringsamples": int,
             'showtooltip': bool,
             'globallimitonexit': bool,
+            'idle_mode': bool,
             'profileonstartup': bool,
             'profileonstartup_name': str,
             'launchonstartup': bool,
@@ -726,6 +734,25 @@ class ConfigManager:
     def make_update_preference_callback(self, key):
         def callback(sender, app_data, user_data):
             self.update_preference_setting(key, sender, app_data, user_data)
+        return callback
+
+    def update_GlobalSettings_settings(self, key, sender, app_data, user_data):
+        
+        new_value = int(app_data)
+
+        if isinstance(new_value, int) and new_value > 0:
+            self.settings[key] = new_value
+            self.settings_config["GlobalSettings"][key] = str(new_value)
+            with open(self.settings_path, 'w') as f:
+                self.settings_config.write(f)
+            self.logger.add_log(f"{key} set to: {getattr(self, key)}")
+        else:
+            self.logger.add_log(f"Invalid value entered for {key}: {app_data}. Reverting.")
+            dpg.set_value(sender, getattr(self, key))
+
+    def update_GlobalSettings_settings_callback(self, key):
+        def callback(sender, app_data, user_data):
+            self.update_GlobalSettings_settings(key, sender, app_data, user_data)
         return callback
 
     def update_exit_fps_value(self, sender, app_data, user_data):
