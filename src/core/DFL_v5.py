@@ -656,12 +656,12 @@ def build_readings_window():
     monospaced input text and a Refresh / Hide set of controls.
     """
     if not dpg.does_item_exist("readings_popup_window"):
-        with dpg.window(label="Readings", tag="readings_popup_window", width=570, height=425,
-                        modal=False, show=False, no_title_bar=True, pos=(20, 200)):
+        with dpg.window(label="Readings", tag="readings_popup_window", width=590, height=450,
+                        modal=False, show=False, no_title_bar=True, pos=(10, 195)):
             dpg.add_text("Sensor Readings from LibreHardwareMonitor:")
             dpg.add_spacer(height=1)
-            with dpg.child_window(tag="readings_childwindow", width=-1, height=340, border=True):
-                dpg.add_input_text(tag="ReadingsText", multiline=True, readonly=True, width=-1, height=320)
+            with dpg.child_window(tag="readings_childwindow", width=-1, height=365, border=True):
+                dpg.add_input_text(tag="ReadingsText", multiline=True, readonly=True, width=-1, height=345)
                 dpg.bind_item_theme("ReadingsText", themes_manager.themes["transparent_input_theme"])
                 themes_manager.bind_font_to_item("ReadingsText", "monospaced_font")
             dpg.add_spacer(height=1)
@@ -671,9 +671,9 @@ def build_readings_window():
 
 def build_settings_window():
     if not dpg.does_item_exist("settings_window"):
-        with dpg.window(label="Settings", tag="settings_window", width=570, height=420, 
-                        modal=False, show=False, no_resize=False, no_collapse=True, no_title_bar=True, pos=(20, 230)):
-            tab_height = 340
+        with dpg.window(label="Settings", tag="settings_window", width=590, height=450, 
+                        modal=False, show=False, no_resize=False, no_collapse=True, no_title_bar=True, pos=(10, 195)):
+            tab_height = 370
             with dpg.tab_bar():
                 with dpg.tab(label="  Preferences", tag="tab2"): 
                     with dpg.child_window(height=tab_height):
