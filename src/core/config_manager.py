@@ -755,20 +755,6 @@ class ConfigManager:
             self.update_GlobalSettings_settings(key, sender, app_data, user_data)
         return callback
 
-    def update_exit_fps_value(self, sender, app_data, user_data):
-
-        new_value = app_data
-
-        if isinstance(new_value, int) and new_value > 0:
-            self.globallimitonexit_fps = new_value
-            self.settings_config["GlobalSettings"]["globallimitonexit_fps"] = str(new_value)
-            with open(self.settings_path, 'w') as f:
-                self.settings_config.write(f)
-            self.logger.add_log(f"Global Limit on Exit FPS value set to: {self.globallimitonexit_fps}")
-        else:
-            self.logger.add_log(f"Invalid value entered for Global Limit on Exit FPS: {app_data}. Reverting.")
-            dpg.set_value(sender, self.globallimitonexit_fps)
-
     def select_default_profile_callback(self, sender, app_data, user_data):
 
         current_profile = dpg.get_value("profile_dropdown")

@@ -722,7 +722,7 @@ def build_settings_window():
                                             callback=cm.make_update_preference_callback('globallimitonexit')
                                             ) # instead of: lambda sender, app_data, user_data: cm.update_preference_setting('globallimitonexit', sender, app_data, user_data)
                             dpg.add_input_int(tag="exit_fps_input",
-                                            default_value=cm.globallimitonexit_fps, callback=cm.update_exit_fps_value,
+                                            default_value=cm.globallimitonexit_fps, callback=cm.update_GlobalSettings_settings_callback('globallimitonexit_fps'),
                                             width=100, step=1, step_fast=10, min_value=1)
                             dpg.add_text(" FPS on exit.")
                         dpg.add_checkbox(label="Show Tooltips", tag="tooltip_checkbox",
