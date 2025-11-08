@@ -123,12 +123,13 @@ def start_stop_callback(sender, app_data, user_data):
     cm.apply_current_input_values()
     
     # Reset variables to zero or their default state
-    global fps_values, CurrentFPSOffset, fps_mean, gpu_values, cpu_values
+    global fps_values, CurrentFPSOffset, fps_mean, gpu_values, cpu_values, idle_state
     fps_values = []
     CurrentFPSOffset = 0
     fps_mean = 0
     gpu_values = []
     cpu_values = []
+    idle_state = False
 
     # Freeze input fields
     for key in cm.input_field_keys:
@@ -169,7 +170,6 @@ def start_stop_callback(sender, app_data, user_data):
         logger.add_log("Plotting started")
     else:
         reset_stats()
-        CurrentFPSOffset = 0
         
         logger.add_log("Monitoring stopped")
     logger.add_log(f"Custom FPS limits: {cm.parse_decimal_set_to_string(fps_utils.current_stepped_limits())}")
@@ -292,7 +292,8 @@ def monitoring_loop():
         #logger.add_log(f"Current highed CPU core load: {cpu_monitor.cpu_percentile}%")
 
         #logger.add_log(f"get_foreground_process_name {get_foreground_process_name()}")
-
+        
+        #TODO: Fix autopilot logic to handle changes to active window
         if cm.autopilot:
             selected_game = dpg.get_value("profile_dropdown")
             fg_process = get_foreground_process_name()
@@ -342,7 +343,7 @@ def monitoring_loop():
 
         # To prevent loading screens from affecting the fps cap
         if gpuUsage and process_name not in {"DynamicFPSLimiter.exe"}:
-            if idle_secs < cm.idle_fps_delay:
+            if idle_secs < cm.idle_fps_delay or not cm.idle_mode:
                 if idle_state:
                     rtss.set_fractional_framerate(current_profile, last_active_fps_cap)
                     idle_state = False
