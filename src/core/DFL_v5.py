@@ -274,7 +274,8 @@ def monitoring_loop():
     global max_points
 
     last_process_name = None
-    
+    profiles = cm.profiles_config.sections() if hasattr(cm, "profiles_config") else []
+
     gpu_monitor.reinitialize()
 
     fps_limit_list = fps_utils.current_stepped_limits()
@@ -295,17 +296,16 @@ def monitoring_loop():
         
         #TODO: Fix autopilot logic to handle changes to active window
         if cm.autopilot:
-            selected_game = dpg.get_value("profile_dropdown")
             fg_process = get_foreground_process_name()
             if cm.autopilot_only_profiles:
                 # Legacy behavior: stop monitoring when the selected specific profile is no longer active
-                if selected_game != "Global" and fg_process != selected_game and running:
-                    logger.add_log(f"AutoPilot: Active process changed to '{fg_process}' != selected profile '{selected_game}'; stopping (autopilot_only_profiles).")
+                if current_profile != "Global" and fg_process != current_profile and running:
+                    logger.add_log(f"AutoPilot: Active process changed to '{fg_process}' != selected profile '{current_profile}'; stopping (autopilot_only_profiles).")
                     start_stop_callback(None, None, cm)
             else:
                 # New default: if a specific profile was selected but the foreground process no longer matches,
                 # switch to Global profile and keep monitoring running.
-                if selected_game != "Global" and fg_process != selected_game:
+                if current_profile != "Global" and fg_process != current_profile:
                     logger.add_log(f"AutoPilot: Active process changed to '{fg_process}'; switching to 'Global' profile and keeping monitoring.")
                     dpg.set_value("profile_dropdown", "Global")
                     cm.load_profile_callback(None, "Global", None)
@@ -322,6 +322,12 @@ def monitoring_loop():
             if process_name != "DynamicFPSLimiter.exe":
                 dpg.set_value("LastProcess", last_process_name)
             gpu_monitor.reinitialize()
+
+        if current_profile == "Global" and cm.autopilot and process_name and process_name in profiles:
+            logger.add_log(f"AutoPilot: Switching from 'Global' to profile '{process_name}' (detected running process).")
+            dpg.set_value("profile_dropdown", process_name)
+            cm.load_profile_callback(None, process_name, None)
+            cm.apply_current_input_values()
 
         if fps:
             if len(fps_values) > 2:
