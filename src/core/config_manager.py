@@ -28,7 +28,7 @@ class ConfigManager:
             "delaybeforeincrease": 10,
             "capmethod": "ratio",
             "customfpslimits": '30.01, 45.00, 59.99',
-            "monitoring_method": "librehm",
+            "monitoring_method": "LibreHM",
             "minvalidgpu": 14,
             "minvalidfps": 14,
             "globallimitonexit_fps": 98,
@@ -108,7 +108,7 @@ class ConfigManager:
                 'delaybeforeincrease': '10',
                 'capmethod': 'ratio',
                 'customfpslimits': '30.01, 45.00, 59.99',
-                'monitoring_method': 'librehm'
+                'monitoring_method': 'LibreHM'
             }
             with open(self.profiles_path, 'w') as f:
                 self.profiles_config.write(f)

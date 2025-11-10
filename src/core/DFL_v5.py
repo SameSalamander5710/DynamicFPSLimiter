@@ -1140,6 +1140,9 @@ cm.update_dynamic_input_field_keys()
 cm.update_dynamic_default_settings()
 cm.update_dynamic_key_type_map()
 
+if not cm.first_launch_done:
+    cm.save_to_profile()
+
 cm.update_profile_dropdown(select_first=True)
 cm.startup_profile_selection()
 
