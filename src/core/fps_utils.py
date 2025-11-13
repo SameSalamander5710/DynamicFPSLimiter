@@ -2,6 +2,7 @@ from core.lhm_loader import ensure_loaded, get_types
 import os
 from pathlib import Path
 import dearpygui.dearpygui as dpg
+import statistics
 
 class FPSUtils:
     def __init__(self, cm, lhm_sensor, logger=None, dpg=None, viewport_width=610, base_dir=None):
@@ -291,8 +292,38 @@ class FPSUtils:
         # Update duration
         dpg.set_value("summary_duration", f"{self.elapsed_time:.2f}")
 
+        def compute_stats(values):
+            if not values:
+                return ("--", "--", "--", "--")
 
+            avg = statistics.mean(values)
+            std_dev = statistics.stdev(values) if len(values) > 1 else 0
+            median = statistics.median(values)
+            try:
+                mode = statistics.mode(values)
+            except statistics.StatisticsError:
+                mode = "--"
+            return (f"{avg:.2f}", f"{std_dev:.2f}", f"{median:.2f}", f"{mode:.2f}")
 
+        # Compute for FPS and cap summaries
+        fps_avg, fps_std, fps_med, fps_mode = compute_stats(self.summary_fps)
+        cap_avg, cap_std, cap_med, cap_mode = compute_stats(self.summary_cap)
+
+        # Write to DPG fields (tags defined in DFL_v5.py)
+        try:
+            dpg.set_value("summary_fps_avg", fps_avg)
+            dpg.set_value("summary_fps_std", fps_std)
+            dpg.set_value("summary_fps_median", fps_med)
+            dpg.set_value("summary_fps_mode", fps_mode)
+
+            dpg.set_value("summary_cap_avg", cap_avg)
+            dpg.set_value("summary_cap_std", cap_std)
+            dpg.set_value("summary_cap_median", cap_med)
+            dpg.set_value("summary_cap_mode", cap_mode)
+        except Exception:
+            # silently ignore any GUI update errors
+            pass
+        
     def reset_summary_statistics(self):
         self.elapsed_time = 0.0
         self.summary_fps = []

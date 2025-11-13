@@ -130,8 +130,7 @@ def start_stop_callback(sender, app_data, user_data):
     gpu_values = []
     cpu_values = []
     idle_state = False
-    fps_utils.reset_summary_statistics()
-
+    
     # Freeze input fields
     for key in cm.input_field_keys:
         tag = f"input_{key}"
@@ -171,6 +170,7 @@ def start_stop_callback(sender, app_data, user_data):
         logger.add_log("Plotting started")
     else:
         reset_stats()
+        fps_utils.reset_summary_statistics()
         
         logger.add_log("Monitoring stopped")
     logger.add_log(f"Custom FPS limits: {cm.parse_decimal_set_to_string(fps_utils.current_stepped_limits())}")
@@ -348,6 +348,7 @@ def monitoring_loop():
 
         idle_secs = get_idle_duration()
 
+        #TODO: if no LHM sensor selected, pass through without limiting
         # To prevent loading screens from affecting the fps cap
         if gpuUsage and process_name not in {"DynamicFPSLimiter.exe"}:
             if idle_secs < cm.idle_fps_delay or not cm.idle_mode:
