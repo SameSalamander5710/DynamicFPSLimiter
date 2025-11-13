@@ -665,12 +665,29 @@ def build_readings_window():
     if not dpg.does_item_exist("readings_popup_window"):
         with dpg.window(label="Readings", tag="readings_popup_window", width=590, height=450,
                         modal=False, show=False, no_title_bar=True, pos=(10, 195)):
-            dpg.add_text("Sensor Readings from LibreHardwareMonitor:")
-            dpg.add_spacer(height=1)
-            with dpg.child_window(tag="readings_childwindow", width=-1, height=365, border=True):
-                dpg.add_input_text(tag="ReadingsText", multiline=True, readonly=True, width=-1, height=345)
-                dpg.bind_item_theme("ReadingsText", themes_manager.themes["transparent_input_theme"])
-                themes_manager.bind_font_to_item("ReadingsText", "monospaced_font")
+            
+            # Tab bar containing the original readings and a new summary statistics tab
+            with dpg.tab_bar(tag="readings_tabbar"):
+                # Original Readings tab
+                with dpg.tab(label="Sensor Readings from LibreHM", tag="tab_readings"):
+                    with dpg.child_window(tag="readings_childwindow", width=-1, height=370, border=True):
+                        dpg.add_input_text(tag="ReadingsText", multiline=True, readonly=True, width=-1, height=350)
+                        dpg.bind_item_theme("ReadingsText", themes_manager.themes["transparent_input_theme"])
+                        themes_manager.bind_font_to_item("ReadingsText", "monospaced_font")
+
+                # Summary Statistics tab (empty read-only area for now; populate as needed)
+                with dpg.tab(label="Summary Statistics", tag="tab_summary"):
+                    dpg.add_text("Summary statistics for the current monitoring session:")
+                    with dpg.group(horizontal=True):
+                        dpg.add_text("Duration (secs): ")
+                        dpg.add_input_text(tag="summary_duration", multiline=False, readonly=True, width=100)
+                    with dpg.group(horizontal=True):
+                        dpg.add_text("Average FPS: ")
+                        dpg.add_input_text(tag="summary_avg_fps", multiline=False, readonly=True, width=100)
+                    with dpg.child_window(tag="summary_childwindow", width=-1, height=170, border=True):
+                        dpg.add_input_text(tag="SummaryText", multiline=True, readonly=True, width=-1, height=150)
+                        dpg.bind_item_theme("SummaryText", themes_manager.themes["transparent_input_theme"])
+                        themes_manager.bind_font_to_item("SummaryText", "monospaced_font")
             dpg.add_spacer(height=1)
             dpg.add_button(label="Hide Readings", width=100, callback=lambda: dpg.configure_item("readings_popup_window", show=False))
             dpg.bind_item_theme("readings_popup_window", themes_manager.themes["nested_window_theme"])
