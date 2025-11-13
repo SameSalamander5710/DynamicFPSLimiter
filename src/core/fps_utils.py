@@ -11,6 +11,9 @@ class FPSUtils:
         self.dpg = dpg or dpg  # fallback to global if not passed
         self.viewport_width = viewport_width
         self.last_fps_limits = []
+        self.elapsed_time = 0.0
+        self.summary_fps = []
+        self.summary_cap = []
 
         # Ensure LHM assembly loaded and get types (pass Base_dir from caller)
         SensorType, HardwareType = None, None
@@ -280,3 +283,11 @@ class FPSUtils:
                     results.append(bool(value is not None and value <= lower))
 
                 return all(results) if results else False
+    
+    def update_summary_statistics(self):
+        dpg = self.dpg
+        lhm_sensor = self.lhm_sensor
+
+        # Update duration
+        dpg.set_value("summary_duration", f"{self.elapsed_time:.2f}")
+

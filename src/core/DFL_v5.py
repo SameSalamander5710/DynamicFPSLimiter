@@ -462,6 +462,8 @@ def plotting_loop():
         # Calculate elapsed time SINCE start_time
         elapsed_time = time.time() - start_time
 
+        fps_utils.elapsed_time = elapsed_time 
+
         gpuUsage = gpu_monitor.gpu_percentile
         cpuUsage = cpu_monitor.cpu_percentile
 
@@ -470,6 +472,9 @@ def plotting_loop():
 
         time.sleep(math.lcm(cm.gpupollinginterval, cm.cpupollinginterval) / 1000.0)  # Convert to seconds
 
+        #Update summary statistics
+        fps_utils.update_summary_statistics()
+        
 gui_running = True
 
 def gui_update_loop():
