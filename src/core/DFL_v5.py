@@ -130,6 +130,7 @@ def start_stop_callback(sender, app_data, user_data):
     gpu_values = []
     cpu_values = []
     idle_state = False
+    fps_utils.reset_summary_statistics()
 
     # Freeze input fields
     for key in cm.input_field_keys:
@@ -448,6 +449,14 @@ def monitoring_loop():
                 # Pass actual values, update_plot_FPS handles timing and lists
                 update_plot_FPS(scaled_fps, scaled_cap)
 
+                # Update summary statistics data
+                if len(fps_utils.summary_fps) >= 600:
+                    fps_utils.summary_fps.pop(0)
+                fps_utils.summary_fps.append(fps)
+                if len(fps_utils.summary_cap) >= 600:
+                    fps_utils.summary_cap.pop(0)
+                fps_utils.summary_cap.append(actual_cap)
+
         # Update last_process_name
         if process_name:
             last_process_name = process_name
@@ -474,7 +483,7 @@ def plotting_loop():
 
         #Update summary statistics
         fps_utils.update_summary_statistics()
-        
+
 gui_running = True
 
 def gui_update_loop():

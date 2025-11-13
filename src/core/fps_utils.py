@@ -291,3 +291,9 @@ class FPSUtils:
         # Update duration
         dpg.set_value("summary_duration", f"{self.elapsed_time:.2f}")
 
+
+
+    def reset_summary_statistics(self):
+        self.elapsed_time = 0.0
+        self.summary_fps = []
+        self.summary_cap = []
