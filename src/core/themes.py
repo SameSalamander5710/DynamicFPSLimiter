@@ -67,6 +67,7 @@ class ThemesManager:
                 dpg.add_theme_color(dpg.mvThemeCol_ScrollbarGrabHovered, bg_colour_4_buttonhover)
                 dpg.add_theme_color(dpg.mvThemeCol_ScrollbarGrabActive, bg_colour_5_buttonactive)
 
+                dpg.add_theme_color(dpg.mvThemeCol_TableHeaderBg, bg_colour_3_button)
 
                 # Plot-specific styles
                 dpg.add_theme_style(dpg.mvPlotStyleVar_PlotBorderSize, 0, category=dpg.mvThemeCat_Plots)

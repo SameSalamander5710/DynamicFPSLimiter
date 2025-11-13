@@ -681,9 +681,32 @@ def build_readings_window():
                     with dpg.group(horizontal=True):
                         dpg.add_text("Duration (secs): ")
                         dpg.add_input_text(tag="summary_duration", multiline=False, readonly=True, width=100)
-                    with dpg.group(horizontal=True):
-                        dpg.add_text("Average FPS: ")
-                        dpg.add_input_text(tag="summary_avg_fps", multiline=False, readonly=True, width=100)
+                    dpg.add_spacer(height=1)
+                    # Summary table: first column = Parameter names; subsequent columns = Average, Std Dev, Median, Mode
+                    with dpg.table(header_row=True, row_background=False):
+                        dpg.add_table_column(label="Parameter", init_width_or_weight=150)
+                        dpg.add_table_column(label="Average", init_width_or_weight=100)
+                        dpg.add_table_column(label="Std Dev", init_width_or_weight=100)
+                        dpg.add_table_column(label="Median", init_width_or_weight=100)
+                        dpg.add_table_column(label="Mode", init_width_or_weight=100)
+
+                        column_width = 80
+                        # Row: Framerate
+                        with dpg.table_row():
+                            dpg.add_text("Framerate")
+                            dpg.add_input_text(tag="summary_fps_avg", multiline=False, readonly=True, width=column_width)
+                            dpg.add_input_text(tag="summary_fps_std", multiline=False, readonly=True, width=column_width)
+                            dpg.add_input_text(tag="summary_fps_median", multiline=False, readonly=True, width=column_width)
+                            dpg.add_input_text(tag="summary_fps_mode", multiline=False, readonly=True, width=column_width)
+
+                        # Row: Framerate limit
+                        with dpg.table_row():
+                            dpg.add_text("Framerate limit")
+                            dpg.add_input_text(tag="summary_cap_avg", multiline=False, readonly=True, width=column_width)
+                            dpg.add_input_text(tag="summary_cap_std", multiline=False, readonly=True, width=column_width)
+                            dpg.add_input_text(tag="summary_cap_median", multiline=False, readonly=True, width=column_width)
+                            dpg.add_input_text(tag="summary_cap_mode", multiline=False, readonly=True, width=column_width)
+
                     with dpg.child_window(tag="summary_childwindow", width=-1, height=170, border=True):
                         dpg.add_input_text(tag="SummaryText", multiline=True, readonly=True, width=-1, height=150)
                         dpg.bind_item_theme("SummaryText", themes_manager.themes["transparent_input_theme"])
