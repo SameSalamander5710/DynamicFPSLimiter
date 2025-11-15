@@ -170,6 +170,7 @@ class FPSUtils:
         elif monitoring_method == "LibreHM":
             decrease_checks = []
             increase_checks = []
+            lines = []
             sensor_infos = getattr(cm, "sensor_infos", []) or []
 
             if not sensor_infos:
@@ -212,23 +213,43 @@ class FPSUtils:
                 if hw_type == self.HardwareType.Cpu:
                     key = (sensor_type, sensor_name)
                     value = lhm_sensor.cpu_percentiles.get(key)
+                    values_long = lhm_sensor.cpu_history_long.get(key, [])
                 else:
                     sensor_name_indexed = sensor.get("sensor_name_indexed") or sensor_name
                     key = (sensor_type, sensor_name_indexed)
                     value = lhm_sensor.gpu_percentiles.get(key)
+                    values_long = lhm_sensor.gpu_history_long.get(key, [])
                     if value is None:
                         if hasattr(lhm_sensor, "gpu_hw_names"):
                             try:
                                 idx = lhm_sensor.gpu_hw_names.index(hw_name) + 1
                                 key2 = (sensor_type, f"{idx} {sensor_name}")
                                 value = lhm_sensor.gpu_percentiles.get(key2)
+                                values_long = lhm_sensor.gpu_history_long.get(key2, [])
                             except ValueError:
                                 value = None
+                                values_long = []
                         if value is None:
                             for k, v in lhm_sensor.gpu_percentiles.items():
                                 if k[0] == sensor_type and k[1].endswith(sensor_name):
                                     value = v
                                     break
+                        
+                        if not values_long:
+                            for k, v in lhm_sensor.gpu_history_long.items():
+                                if k[0] == sensor_type and k[1].endswith(sensor_name):
+                                    values_long = v
+                                    break
+
+                # compute avg/std/median for this sensor
+                try:
+                    avg = statistics.mean(values_long)
+                    std = statistics.stdev(values_long) if len(values_long) > 1 else 0.0
+                    med = statistics.median(values_long)
+                    lines.append(f"{hw_name}/{sensor_name}: avg={avg:.2f} std={std:.2f} med={med:.2f}")
+                except Exception:
+                    # skip sensors that fail stats computation
+                    continue
 
                 # Log once per sensor
                 self.logger.add_log(f"LibreHM check {hw_name}/{sensor_name}: value={value} lower={lower} upper={upper}")
@@ -241,6 +262,12 @@ class FPSUtils:
 
             should_decrease = any(decrease_checks) if decrease_checks else False
             should_increase = all(increase_checks) if increase_checks else False
+
+            summary_text = "\n".join(lines) if lines else "No enabled LibreHM sensors with data."
+            try:
+                dpg.set_value("SummaryText", summary_text)
+            except Exception:
+                pass
 
             return (should_decrease, should_increase)
 
