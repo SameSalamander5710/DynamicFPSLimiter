@@ -170,7 +170,7 @@ class FPSUtils:
         elif monitoring_method == "LibreHM":
             decrease_checks = []
             increase_checks = []
-            lines = []
+            groups = {}
             sensor_infos = getattr(cm, "sensor_infos", []) or []
 
             if not sensor_infos:
@@ -246,7 +246,12 @@ class FPSUtils:
                     avg = statistics.mean(values_long)
                     std = statistics.stdev(values_long) if len(values_long) > 1 else 0.0
                     med = statistics.median(values_long)
-                    lines.append(f"{hw_name}/{sensor_type}/{sensor_name}: avg={avg:.2f} std={std:.2f} med={med:.2f}")
+                    display_name = sensor_name
+                    sensor_type_str = getattr(sensor_type, "name", str(sensor_type))
+                    hw_display = hw_name or "Unknown"
+                    groups.setdefault(hw_display, {}).setdefault(sensor_type_str, []).append(
+                        (display_name, avg, std, med)
+                    )
                 except Exception:
                     # skip sensors that fail stats computation
                     continue
@@ -263,7 +268,23 @@ class FPSUtils:
             should_decrease = any(decrease_checks) if decrease_checks else False
             should_increase = all(increase_checks) if increase_checks else False
 
-            summary_text = "\n".join(lines) if lines else "No enabled LibreHM sensors with data."
+            # Sort sensor summary lines alphabetically (case-insensitive) before showing
+            if groups:
+                out_lines = []
+                name_w = 26
+                for hw in sorted(groups.keys(), key=lambda s: s.casefold()):
+                    out_lines.append(f"{hw}")
+                    for st in sorted(groups[hw].keys(), key=lambda s: s.casefold()):
+                        out_lines.append(f"{st}:")
+                        for sn, avg, std, med in sorted(groups[hw][st], key=lambda x: x[0].casefold()):
+                            sn_col = f"{sn}:"
+                            if len(sn_col) > name_w:
+                                sn_col = sn_col[: max(0, name_w - 3)] + "..."
+                            out_lines.append(f"  {sn_col:<{name_w}} avg={avg:6.2f} | std={std:6.2f} | med={med:6.2f}")
+                    out_lines.append("")  # blank line between hardware blocks
+                summary_text = "\n".join(out_lines).rstrip()
+            else:
+                summary_text = "No enabled LibreHM sensors with data."
             try:
                 dpg.set_value("SummaryText", summary_text)
             except Exception:

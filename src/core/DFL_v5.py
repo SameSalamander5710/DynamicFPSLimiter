@@ -685,17 +685,19 @@ def build_readings_window():
             with dpg.tab_bar(tag="readings_tabbar"):
                 # Original Readings tab
                 with dpg.tab(label="Sensor Readings from LibreHM", tag="tab_readings"):
-                    with dpg.child_window(tag="readings_childwindow", width=-1, height=370, border=True):
-                        dpg.add_input_text(tag="ReadingsText", multiline=True, readonly=True, width=-1, height=350)
+                    dpg.add_spacer(height=1)
+                    with dpg.child_window(tag="readings_childwindow", width=-1, height=363, border=True):
+                        dpg.add_input_text(tag="ReadingsText", multiline=True, readonly=True, width=-1, height=345)
                         dpg.bind_item_theme("ReadingsText", themes_manager.themes["transparent_input_theme"])
                         themes_manager.bind_font_to_item("ReadingsText", "monospaced_font")
 
                 # Summary Statistics tab (empty read-only area for now; populate as needed)
                 with dpg.tab(label="Summary Statistics", tag="tab_summary"):
-                    dpg.add_text("Summary statistics for the current monitoring session (max. 10 minutes):")
                     with dpg.group(horizontal=True):
-                        dpg.add_text("Duration (HH:MM:SS): ")
+                        dpg.add_text("Session duration (HH:MM:SS):")
                         dpg.add_input_text(tag="summary_duration", multiline=False, readonly=True, width=100)
+                        dpg.add_spacer(width=15)
+                        dpg.add_text("[Summary covers last 10 minutes.]")
                     dpg.add_spacer(height=1)
                     # Summary table: first column = Parameter names; subsequent columns = Average, Std Dev, Median, Mode
                     with dpg.table(header_row=True, row_background=False):
@@ -721,12 +723,13 @@ def build_readings_window():
                             dpg.add_input_text(tag="summary_cap_std", multiline=False, readonly=True, width=column_width)
                             dpg.add_input_text(tag="summary_cap_median", multiline=False, readonly=True, width=column_width)
                             dpg.add_input_text(tag="summary_cap_mode", multiline=False, readonly=True, width=column_width)
-
-                    with dpg.child_window(tag="summary_childwindow", width=-1, height=170, border=True):
-                        dpg.add_input_text(tag="SummaryText", multiline=True, readonly=True, width=-1, height=150)
+                    dpg.add_spacer(height=1)
+                    dpg.add_text("LHM sensor summary:")
+                    with dpg.child_window(tag="summary_childwindow", width=-1, height=220, border=True):
+                        dpg.add_input_text(tag="SummaryText", multiline=True, readonly=True, width=-1, height=200)
                         dpg.bind_item_theme("SummaryText", themes_manager.themes["transparent_input_theme"])
                         themes_manager.bind_font_to_item("SummaryText", "monospaced_font")
-            dpg.add_spacer(height=1)
+            dpg.add_spacer(height=5)
             dpg.add_button(label="Hide Readings", width=100, callback=lambda: dpg.configure_item("readings_popup_window", show=False))
             dpg.bind_item_theme("readings_popup_window", themes_manager.themes["nested_window_theme"])
 
