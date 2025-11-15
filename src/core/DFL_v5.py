@@ -168,9 +168,10 @@ def start_stop_callback(sender, app_data, user_data):
         plotting_thread = threading.Thread(target=plotting_loop, daemon=True)
         plotting_thread.start()
         logger.add_log("Plotting started")
+        fps_utils.reset_summary_statistics()
     else:
         reset_stats()
-        fps_utils.reset_summary_statistics()
+        
         
         logger.add_log("Monitoring stopped")
     logger.add_log(f"Custom FPS limits: {cm.parse_decimal_set_to_string(fps_utils.current_stepped_limits())}")

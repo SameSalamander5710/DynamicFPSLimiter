@@ -207,6 +207,7 @@ class FPSUtils:
                     triggered.append(bool(value is not None and value >= upper))
 
                 return any(triggered) if triggered else False
+            return False
 
     def should_increase_fps_cap(self, gpu_values, cpu_values):
         monitoring_method = self.dpg.get_value("input_monitoring_method")
@@ -284,6 +285,7 @@ class FPSUtils:
                     results.append(bool(value is not None and value <= lower))
 
                 return all(results) if results else False
+            return False
     
     def update_summary_statistics(self):
         dpg = self.dpg
