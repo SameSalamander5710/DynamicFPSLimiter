@@ -56,10 +56,21 @@ def get_all_sensor_infos(base_dir):
         if hw.HardwareType == HardwareType.Cpu:
             cpu_count += 1
             param_indices = {"Load": 0, "Power": 0, "Temperature": 0}
+            name_counts = {}  # track duplicate sensor names per hardware
             for sensor in hw.Sensors:
                 if sensor.SensorType in [SensorType.Load, SensorType.Power, SensorType.Temperature]:
                     sensor_type_str = sensor.SensorType.ToString() if hasattr(sensor.SensorType, "ToString") else str(sensor.SensorType)
                     param_indices[sensor_type_str] += 1
+
+                    # Handle duplicate sensor names like LHMSensor.get_selected_sensor_values does
+                    base_name = sensor.Name
+                    count = name_counts.get(base_name, 0)
+                    if count == 0:
+                        indexed_name = base_name
+                    else:
+                        indexed_name = f"{base_name} ({count})"
+                    name_counts[base_name] = count + 1
+
                     parameter_id = f"cpu{cpu_count}_{sensor_type_str.lower()}_{param_indices[sensor_type_str]:02d}"
                     hw_id = f"cpu{cpu_count}"
                     sensors.append({
@@ -67,21 +78,32 @@ def get_all_sensor_infos(base_dir):
                         "hw_name": hw.Name,
                         "sensor_type": sensor.SensorType,
                         "sensor_name": sensor.Name,
-                        "sensor_name_indexed": sensor.Name,   # CPU not indexed
+                        "sensor_name_indexed": indexed_name,   # match LHMSensor naming for duplicates
                         "parameter_id": parameter_id,
                         "hw_id": hw_id
                     })
         elif hw.HardwareType in (HardwareType.GpuAmd, HardwareType.GpuNvidia):
             gpu_count += 1
             param_indices = {"Load": 0, "Power": 0, "Temperature": 0}
+            name_counts = {}  # track duplicate sensor names per GPU
             for sensor in hw.Sensors:
                 if sensor.SensorType in [SensorType.Load, SensorType.Power, SensorType.Temperature]:
                     sensor_type_str = sensor.SensorType.ToString() if hasattr(sensor.SensorType, "ToString") else str(sensor.SensorType)
                     param_indices[sensor_type_str] += 1
+
+                    # Handle duplicate sensor names the same way LHMSensor does
+                    base_name = sensor.Name
+                    count = name_counts.get(base_name, 0)
+                    if count == 0:
+                        indexed_name_only = base_name
+                    else:
+                        indexed_name_only = f"{base_name} ({count})"
+                    name_counts[base_name] = count + 1
+
                     parameter_id = f"gpu{gpu_count}_{sensor_type_str.lower()}_{param_indices[sensor_type_str]:02d}"
                     hw_id = f"gpu{gpu_count}"
                     # Build the indexed sensor name exactly as LHMSensor._poll_loop uses for gpu_percentiles keys
-                    sensor_name_indexed = f"{gpu_count} {sensor.Name}"
+                    sensor_name_indexed = f"{gpu_count} {indexed_name_only}"
                     sensors.append({
                         "hw_type": hw.HardwareType,
                         "hw_name": hw.Name,

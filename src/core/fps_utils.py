@@ -246,13 +246,13 @@ class FPSUtils:
                     avg = statistics.mean(values_long)
                     std = statistics.stdev(values_long) if len(values_long) > 1 else 0.0
                     med = statistics.median(values_long)
-                    lines.append(f"{hw_name}/{sensor_name}: avg={avg:.2f} std={std:.2f} med={med:.2f}")
+                    lines.append(f"{hw_name}/{sensor_type}/{sensor_name}: avg={avg:.2f} std={std:.2f} med={med:.2f}")
                 except Exception:
                     # skip sensors that fail stats computation
                     continue
 
                 # Log once per sensor
-                self.logger.add_log(f"LibreHM check {hw_name}/{sensor_name}: value={value} lower={lower} upper={upper}")
+                self.logger.add_log(f"LibreHM check {hw_name}/{sensor_type}/{sensor_name}: value={value} lower={lower} upper={upper}")
 
                 if value is not None:
                     if upper is not None:
