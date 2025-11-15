@@ -247,7 +247,12 @@ class FPSUtils:
         lhm_sensor = self.lhm_sensor
 
         # Update duration
-        dpg.set_value("summary_duration", f"{self.elapsed_time:.2f}")
+        # Format elapsed_time (seconds) as HH:MM:SS
+        total_seconds = int(self.elapsed_time)
+        hours = total_seconds // 3600
+        minutes = (total_seconds % 3600) // 60
+        seconds = total_seconds % 60
+        dpg.set_value("summary_duration", f"{hours:02d}:{minutes:02d}:{seconds:02d}")
 
         def compute_stats(values):
             if not values:

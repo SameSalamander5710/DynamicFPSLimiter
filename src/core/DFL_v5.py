@@ -692,9 +692,9 @@ def build_readings_window():
 
                 # Summary Statistics tab (empty read-only area for now; populate as needed)
                 with dpg.tab(label="Summary Statistics", tag="tab_summary"):
-                    dpg.add_text("Summary statistics for the current monitoring session:")
+                    dpg.add_text("Summary statistics for the current monitoring session (max. 10 minutes):")
                     with dpg.group(horizontal=True):
-                        dpg.add_text("Duration (secs): ")
+                        dpg.add_text("Duration (HH:MM:SS): ")
                         dpg.add_input_text(tag="summary_duration", multiline=False, readonly=True, width=100)
                     dpg.add_spacer(height=1)
                     # Summary table: first column = Parameter names; subsequent columns = Average, Std Dev, Median, Mode
