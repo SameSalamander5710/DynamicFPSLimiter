@@ -359,7 +359,8 @@ def monitoring_loop():
                 else:
                     if gpuUsage > cm.minvalidgpu and fps_mean > cm.minvalidfps: 
 
-                        should_decrease = fps_utils.should_decrease_fps_cap(gpu_values, cpu_values)
+                        should_decrease, should_increase = fps_utils.evaluate_cap_change(gpu_values, cpu_values)
+
                         if CurrentFPSOffset > (current_mincap - current_maxcap) and should_decrease:
                             current_fps_cap = current_maxcap + CurrentFPSOffset
                             try:
@@ -387,8 +388,6 @@ def monitoring_loop():
                                     next_fps = max(lower_values)
                                     CurrentFPSOffset = next_fps - current_maxcap
                                     rtss.set_fractional_framerate(current_profile, next_fps)
-
-                        should_increase = fps_utils.should_increase_fps_cap(gpu_values, cpu_values)
 
                         # --- COOLDOWN LOGIC ---
                         if increase_cooldown > 0:
