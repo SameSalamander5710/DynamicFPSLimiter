@@ -104,6 +104,8 @@ class LHMSensor:
         self.percentile = percentile
         self.cpu_history = defaultdict(lambda: deque(maxlen=max_samples))
         self.gpu_history = defaultdict(lambda: deque(maxlen=max_samples))
+        self.cpu_history_long = defaultdict(lambda: deque(maxlen=600))
+        self.gpu_history_long = defaultdict(lambda: deque(maxlen=600))
         self.cpu_percentiles = defaultdict(float)
         self.gpu_percentiles = defaultdict(float)
         self._thread = None
@@ -165,6 +167,8 @@ class LHMSensor:
         with self._lock:
             self.cpu_history.clear()
             self.gpu_history.clear()
+            self.cpu_history_long.clear()
+            self.gpu_history_long.clear()
             self.cpu_percentiles.clear()
             self.gpu_percentiles.clear()
         if self._thread and self._thread.is_alive():
@@ -201,6 +205,7 @@ class LHMSensor:
                             for name, value in sensors.items():
                                 key = (sensor_type, name)
                                 self.cpu_history[key].append(round(value, 2))
+                                self.cpu_history_long[key].append(round(value, 2))
                                 self.cpu_percentiles[key] = round(
                                     calculate_percentile(self.cpu_history[key], self.percentile), 2
                                 )
@@ -214,6 +219,7 @@ class LHMSensor:
                             for name, value in sensors.items():
                                 key = (sensor_type, f"{gpu_index} {name}")
                                 self.gpu_history[key].append(round(value, 2))
+                                self.gpu_history_long[key].append(round(value, 2))
                                 self.gpu_percentiles[key] = round(
                                     calculate_percentile(self.gpu_history[key], self.percentile), 2
                                 )

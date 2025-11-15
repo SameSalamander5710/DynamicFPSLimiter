@@ -14,11 +14,6 @@ class FPSUtils:
         self.viewport_width = viewport_width
         self.last_fps_limits = []
 
-        # per-sensor rolling history: key = "hw_name|sensor_name", value = deque of floats
-        self.sensor_histories = {}
-        # formatted summary text (one line per enabled sensor)
-        self.summary_text = ""
-
         self.reset_summary_statistics()
 
         # Ensure LHM assembly loaded and get types (pass Base_dir from caller)
@@ -239,53 +234,10 @@ class FPSUtils:
                 self.logger.add_log(f"LibreHM check {hw_name}/{sensor_name}: value={value} lower={lower} upper={upper}")
 
                 if value is not None:
-                    # maintain per-sensor rolling history (float values), keep max 600
-                    try:
-                        valf = float(value)
-                    except Exception:
-                        valf = None
-
-                    if valf is not None:
-                        key_str = f"{hw_name}|{sensor_name}"
-                        hist = self.sensor_histories.get(key_str)
-                        if hist is None:
-                            hist = deque(maxlen=600)
-                            self.sensor_histories[key_str] = hist
-                        hist.append(valf)
-
-                    # compute decrease/increase checks using current value (existing logic)
-                    if upper is not None and valf is not None:
-                        decrease_checks.append(valf >= upper)
-                    if lower is not None and valf is not None:
-                        increase_checks.append(valf <= lower)
-
-            should_decrease = any(decrease_checks) if decrease_checks else False
-            should_increase = all(increase_checks) if increase_checks else False
-
-            # Build summary_text from histories for update_summary_statistics to show
-            try:
-                lines = []
-                for key, hist in self.sensor_histories.items():
-                    # Only show sensors that are currently enabled in UI (if not enabled, skip)
-                    hw_name_part, sensor_name_part = key.split("|", 1)
-                    # find param_id enable checkbox existence - skip check if dpg not available
-                    # We rely on sensor_infos to filter enabled sensors earlier, so showing any history is acceptable.
-                    if not hist:
-                        continue
-                    try:
-                        avg = statistics.mean(hist)
-                        std = statistics.stdev(hist) if len(hist) > 1 else 0.0
-                        med = statistics.median(hist)
-                        lines.append(f"{hw_name_part}/{sensor_name_part}: avg={avg:.2f} std={std:.2f} med={med:.2f}")
-                    except Exception:
-                        # fallback formatting if statistics fail
-                        lines.append(f"{hw_name_part}/{sensor_name_part}: avg=-- std=-- med=--")
-                # Keep deterministic order
-                lines.sort()
-                self.summary_text = "\n".join(lines)
-            except Exception:
-                # never let summary generation break the monitoring logic
-                pass
+                    if upper is not None:
+                        decrease_checks.append(value >= upper)
+                    if lower is not None:
+                        increase_checks.append(value <= lower)
 
             should_decrease = any(decrease_checks) if decrease_checks else False
             should_increase = all(increase_checks) if increase_checks else False
@@ -332,13 +284,6 @@ class FPSUtils:
             dpg.set_value("summary_cap_median", cap_med)
             dpg.set_value("summary_cap_mode", cap_mode)
 
-            # Update the multi-line SummaryText with current sensor summaries
-            try:
-                if hasattr(self, "summary_text"):
-                    dpg.set_value("SummaryText", self.summary_text)
-            except Exception:
-                pass
-
         except Exception:
             # silently ignore any GUI update errors
             pass
@@ -348,5 +293,5 @@ class FPSUtils:
         self.summary_fps = []
         self.summary_cap = []
 
-        self.sensor_histories.clear()
-        self.summary_text = ""
+        self.lhm_sensor.cpu_history_long.clear()
+        self.lhm_sensor.gpu_history_long.clear()
