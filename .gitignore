@@ -21,3 +21,5 @@ dist/
 src/config/
 
 src/error_log.txt
+
+src/core/video2gif.py
