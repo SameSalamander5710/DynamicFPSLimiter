@@ -44,7 +44,7 @@ Typically, you have two ways to set an FPS cap:
 - Set a cap just below the average FPS – This works most of the time but can lead to input lag when FPS drops due to GPU saturation.
 - Set a cap well below the lowest observed FPS – This ensures stability but sacrifices frame rate in less demanding scenes.
 
-This app solves the issue by dynamically adjusting the base FPS limit in demanding areas, reducing input lag while still allowing higher frame rates in less intensive regions. Now, you can also use the app to keep other parameters in check, like power draw and temperature, if you wish to do so.
+This app solves the issue by dynamically adjusting the base FPS limit in demanding areas, reducing input lag while still allowing higher frame rates in less intensive regions. In addition, the app can now monitor and respond to other parameters—such as power draw and temperature—if you choose to configure those constraints.
 
 ## Disclaimer
 

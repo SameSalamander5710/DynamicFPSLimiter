@@ -1,9 +1,19 @@
 # CHANGELOG
 
-## [v5.0.0] - 2025-10-XX
+## [v5.0.0-beta.1] - 2025-11-15
 
+### Added
+- Integrated LibreHardwareMonitorLib (v0.9.4) for accurate monitoring of GPU usage, power draw, and temperature.
+    - Supports Nvidia and AMD GPUs. Intel GPUs may use the previous Windows Performance Counter method as a fallback ("Legacy") option.
+    - LibreHardwareMonitor (LHM) method now allows setting constraints individually per GPU, useful for multi-GPU systems.
+- Added an Idle Mode that lowers the framerate limit of the active game window after a user-defined period of inactivity.
+- Added session summary statistics for the LHM monitoring module.
 
+### Changed
+- Autopilot now defaults to also modifying the Global RTSS profile and automatically switches between the Global profile and game-specific profiles depending on the active window.
 
+### Removed
+- Removed an old mechanic that raised the framerate limit in multiple steps when GPU usage was far below the lower threshold due to compatibility issues.
 
 ## [v4.4.2-patch1] - 2025-08-11
 
