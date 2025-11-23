@@ -29,10 +29,6 @@ If you'd like to inspect or customize the source code, follow the instructions i
 
 Demo video to be featured soon! (Based on v5.0.0-beta.1)
 
-<a href="https://www.youtube.com/watch?v=2lf5Ax4Gwtk" target="_blank" rel="noopener noreferrer">
-  <img src="https://img.youtube.com/vi/2lf5Ax4Gwtk/hqdefault.jpg" width="45%" alt="Watch the demo here! (Based on v4.4.2)">
-</a>
-
 > [!NOTE]
 > - This app requires Rivatuner Statistics Server (RTSS) running in the background to function. Ensure RTSS is installed before running the app!
 > - Since RTSS runs with elevated privileges, DynamicFPSLimiter must also be run as Administrator to function fully.
