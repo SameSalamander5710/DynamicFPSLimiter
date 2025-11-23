@@ -27,8 +27,8 @@ def get_tooltips():
     "autofill_fps_caps": "Click with the method set to 'ratio' or 'step' to copy the calculated limits.",
     "process_to_profile": "Add the current settings to a new profile based on the last used process.",
     "button_cpulimit": "(Optional) Set values below 100 to enable CPU-based FPS limiting.",
-    "rest_fps_cap_button": "Clears the input fields and resets to Min/Max values",
-    "autopilot_checkbox": "Relinquishes control of Start/Stop button to the autopilot, which will automatically shift to the corresponding profile based on the active process. It also Starts/Stops on its own. Only works for non-Global profiles.",
+    "rest_fps_cap_button": "Clears the custom limit input field and resets to Min/Max values",
+    "autopilot_checkbox": "Relinquishes control of Start/Stop button to the autopilot, which will automatically shift to the corresponding profile based on the active process. If no profiles are detected, it uses the Global profile. Note: Can be modified to only run when a specific profile is detected in settings.",
 }
 
 def add_tooltip(dpg, key, tooltips, ShowTooltip, cm, logger):

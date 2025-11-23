@@ -250,15 +250,18 @@ class GPUUsageMonitor:
                 self.dpg.bind_item_theme("luid_button", self.themes_manager.themes["revert_gpu_theme"])  # Apply blue theme
                 self.luid = luid
                 self.luid_selected = True
+                self.dpg.set_value("luid_status_text", f"Tracking LUID: {luid} ({usage}% 3D)")
             else:
                 self.logger.add_log("Failed to detect active LUID.")
+                self.dpg.set_value("luid_status_text", "Failed to detect active LUID.")
         else:
             # Second click: deselect
             self.luid = "All"
-            self.logger.add_log("Tracking all GPU engines.")
+            self.logger.add_log("Tracking all GPU 3D usages.")
             self.dpg.configure_item("luid_button", label="Detect Render GPU")
             self.dpg.bind_item_theme("luid_button", self.themes_manager.themes["detect_gpu_theme"])  # Apply default grey theme
             self.luid_selected = False
+            self.dpg.set_value("luid_status_text", "Tracking all GPU 3D usages.")
         return self.luid, self.luid_selected
 
     def reinitialize(self, engine_type: str = "engtype_3D"):

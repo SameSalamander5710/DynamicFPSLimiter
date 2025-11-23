@@ -19,8 +19,8 @@ def check_min_greater_than_minvalidfps(dpg, cm, mincap):
 
 def check_non_global_profile_for_autopilot(cm):
     profiles = cm.profiles_config.sections() if hasattr(cm, "profiles_config") else []
-    if getattr(cm, "autopilot", False) and (len(profiles) <= 1 or profiles == ["Global"]):
-        return "[WARNING]: Autopilot requires at least one non-Global profile to function properly."
+    if getattr(cm, "autopilot", False) and (getattr(cm, "autopilot_only_profiles", False)) and (len(profiles) <= 1 or profiles == ["Global"]):
+        return "[WARNING]: Moded autopilot requires at least one non-Global profile to function properly."
     return None
 def get_active_warnings(dpg, cm, rtss_manager, mincap):
     warnings = []

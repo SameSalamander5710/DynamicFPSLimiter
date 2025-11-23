@@ -2,3 +2,5 @@ dearpygui==2.0.0
 psutil==7.0.0
 pyinstaller==6.13.0
 pystray==0.19.5
+pythonnet==3.0.5
+numpy==2.1.3

@@ -2,6 +2,7 @@ import os
 import configparser
 import dearpygui.dearpygui as dpg
 from decimal import Decimal, InvalidOperation
+from core.librehardwaremonitor import get_all_sensor_infos
 
 class ConfigManager:
     def __init__(self, logger_instance, dpg_instance, rtss_instance, tray_instance, themes_manager, base_dir):
@@ -27,21 +28,31 @@ class ConfigManager:
             "delaybeforeincrease": 10,
             "capmethod": "ratio",
             "customfpslimits": '30.01, 45.00, 59.99',
+            "monitoring_method": "LibreHM",
             "minvalidgpu": 14,
             "minvalidfps": 14,
             "globallimitonexit_fps": 98,
+            "idle_fps_cap": 30,
+            "idle_fps_delay": 15,
             'cpupercentile': 70,
             'cpupollinginterval': 100,
             'cpupollingsamples': 20,
             'gpupercentile': 70,
             'gpupollinginterval': 100,
             'gpupollingsamples': 20,
+            'lhwmonitorpollinginterval': 100,
+            'lhwmonitorpercentile': 70,
+            'lhwmonitoringsamples': 20,
             'profileonstartup_name': 'Global',
         }
         self.settings_config = configparser.ConfigParser()
         self.profiles_config = configparser.ConfigParser()
         self.load_or_init_configs()
         self.load_preferences()
+        self.sensor_infos = get_all_sensor_infos(base_dir)
+
+        # flag set externally (first-frame) to indicate tables/layouts are ready, to overcome Dear ImGui table bug
+        self.ui_initialized = False
 
     def load_or_init_configs(self):
         # Settings
@@ -51,21 +62,31 @@ class ConfigManager:
             self.settings_config["Preferences"] = {
                 'showtooltip': 'True',
                 'globallimitonexit': 'False',
+                'idle_mode': 'False',
                 'profileonstartup': 'True',
                 'launchonstartup': 'False',
                 'minimizeonstartup': 'False',
                 'autopilot': 'False',
+                'hide_unselected': 'False',
+                'autopilot_only_profiles': 'False',
+                'first_launch_done': 'False',
+                'hide_loading_popup': 'False'
             }
             self.settings_config["GlobalSettings"] = {
                 'minvalidgpu': '14',
                 'minvalidfps': '14',
                 'globallimitonexit_fps': '98',
+                'idle_fps_cap': '30',
+                'idle_fps_delay': '15',
                 'cpupercentile': '70',
                 'cpupollinginterval': '100',
                 'cpupollingsamples': '20',
                 'gpupercentile': '70',
                 'gpupollinginterval': '100',
                 'gpupollingsamples': '20',
+                'lhwmonitorpercentile': '70',
+                'lhwmonitorpollinginterval': '100',
+                'lhwmonitoringsamples': '20',
                 'profileonstartup_name': 'Global',
             }
             with open(self.settings_path, 'w') as f:
@@ -87,13 +108,16 @@ class ConfigManager:
                 'delaybeforeincrease': '10',
                 'capmethod': 'ratio',
                 'customfpslimits': '30.01, 45.00, 59.99',
+                'monitoring_method': 'LibreHM'
             }
             with open(self.profiles_path, 'w') as f:
                 self.profiles_config.write(f)
         
         self.input_field_keys = ["maxcap", "mincap", "capstep", "capratio",
                 "gpucutofffordecrease", "gpucutoffforincrease", "cpucutofffordecrease", "cpucutoffforincrease",
-                "capmethod", "customfpslimits", "delaybeforedecrease", "delaybeforeincrease"]
+                "capmethod", "customfpslimits", "delaybeforedecrease", "delaybeforeincrease",
+                "monitoring_method"
+            ]
 
         self.input_button_tags = ["rest_fps_cap_button", "autofill_fps_caps", "quick_save", "quick_load", "Reset_Default", "SaveToProfile"]
 
@@ -108,24 +132,35 @@ class ConfigManager:
             "cpucutoffforincrease": int,
             "capmethod": str,
             "customfpslimits": str,
+            "monitoring_method": str,
             "delaybeforedecrease": int,
             "delaybeforeincrease": int,
             "minvalidgpu": int,
             "minvalidfps": int,
             "globallimitonexit_fps": int,
+            "idle_fps_cap": int,
+            "idle_fps_delay": int,
             "cpupercentile": int,
             "cpupollinginterval": int,
             "cpupollingsamples": int,
             "gpupercentile": int,
             "gpupollinginterval": int,
             "gpupollingsamples": int,
+            "lhwmonitorpollinginterval": int,
+            "lhwmonitorpercentile": int,
+            "lhwmonitoringsamples": int,
             'showtooltip': bool,
             'globallimitonexit': bool,
+            'idle_mode': bool,
             'profileonstartup': bool,
             'profileonstartup_name': str,
             'launchonstartup': bool,
             'minimizeonstartup': bool,
             'autopilot': bool,
+            'hide_unselected': bool,
+            'autopilot_only_profiles': bool,
+            'first_launch_done': bool,
+            'hide_loading_popup': bool
         }
 
         self.current_profile = "Global"
@@ -134,6 +169,173 @@ class ConfigManager:
             for key in self.Default_settings_original
         }
         self.settings = self.Default_settings.copy()
+
+    def update_dynamic_input_field_keys(self):
+        """
+        Adds all dynamic input field keys (from sensors and legacy/static UI) to self.input_field_keys.
+        Uses parameter IDs from self.sensor_infos and known static keys, instead of scanning all DPG items.
+        """
+        # Static keys from legacy/static UI
+        static_keys = [
+            "maxcap", "mincap", "capstep", "capratio",
+            "gpucutofffordecrease", "gpucutoffforincrease", "cpucutofffordecrease", "cpucutoffforincrease",
+            "capmethod", "customfpslimits", "delaybeforedecrease", "delaybeforeincrease",
+            "monitoring_method"
+        ]
+
+        # Dynamic keys from sensors (parameter_id for each sensor)
+        dynamic_keys = []
+        collapsing_keys = []
+        if hasattr(self, "sensor_infos"):
+            for sensor in self.sensor_infos:
+                param_id = sensor.get("parameter_id")
+                if param_id:
+                    dynamic_keys.extend([
+                        f"{param_id}_enable",
+                        f"{param_id}_lower",
+                        f"{param_id}_upper"
+                    ])
+                # Add hw_id-based collapsing key
+                hw_id = sensor.get("hw_id")
+                if hw_id:
+                    collapsing_keys.append(f"collapsing_{hw_id}")
+
+        # Combine and deduplicate
+        all_keys = static_keys + dynamic_keys + list(dict.fromkeys(collapsing_keys))
+        new_keys = [key for key in all_keys if key not in self.input_field_keys]
+        if new_keys:
+            self.input_field_keys.extend(new_keys)
+            self.logger.add_log(f"Added dynamic input_field_keys: {new_keys}")
+
+    def update_dynamic_default_settings(self):
+        """
+        Adds default values for all dynamic input field keys (from sensors) to self.Default_settings_original.
+        For each parameter_id, sets:
+            - enable: False
+            - lower: 0
+            - upper: 100
+        Does not overwrite existing keys.
+        """
+        if not hasattr(self, "sensor_infos"):
+            return
+
+        added_keys = []
+        seen_hw = set()
+        for sensor in self.sensor_infos:
+            param_id = sensor.get("parameter_id")
+            if param_id:
+                for suffix, default_value in [("_enable", False), ("_lower", 0), ("_upper", 100)]:
+                    key = f"{param_id}{suffix}"
+                    if key not in self.Default_settings_original:
+                        self.Default_settings_original[key] = default_value
+                        added_keys.append(key)
+            hw_id = sensor.get("hw_id")
+            if hw_id and hw_id not in seen_hw:
+                seen_hw.add(hw_id)
+                collapse_key = f"collapsing_{hw_id}"
+                # default True => expanded/open
+                if collapse_key not in self.Default_settings_original:
+                    self.Default_settings_original[collapse_key] = True
+                    added_keys.append(collapse_key)
+        if added_keys:
+            self.logger.add_log(f"Added dynamic default settings: {added_keys}")
+
+    def update_dynamic_key_type_map(self):
+        """
+        Adds type mappings for all dynamic input field keys (from sensors) to self.key_type_map.
+        For each parameter_id, sets:
+            - enable: bool
+            - lower: int
+            - upper: int
+        Does not overwrite existing keys.
+        """
+        if not hasattr(self, "sensor_infos"):
+            return
+
+        added_keys = []
+        seen_hw = set()
+        for sensor in self.sensor_infos:
+            param_id = sensor.get("parameter_id")
+            if param_id:
+                for suffix, typ in [("_enable", bool), ("_lower", int), ("_upper", int)]:
+                    key = f"{param_id}{suffix}"
+                    if key not in self.key_type_map:
+                        self.key_type_map[key] = typ
+                        added_keys.append(key)
+            hw_id = sensor.get("hw_id")
+            if hw_id and hw_id not in seen_hw:
+                seen_hw.add(hw_id)
+                collapse_key = f"collapsing_{hw_id}"
+                if collapse_key not in self.key_type_map:
+                    self.key_type_map[collapse_key] = bool
+                    added_keys.append(collapse_key)
+
+        if added_keys:
+            self.logger.add_log(f"Added dynamic key_type_map entries: {added_keys}")
+
+    def build_sensor_enable_map(self, dpg_instance):
+        """
+        Build and return a dict summarizing which parameters are enabled.
+
+        Structure:
+        {
+          hw_id: {
+            "hw_name": str,
+            "header_tag": "input_collapsing_{hw_id}",
+            "sections": {
+               sensor_type_str: {
+                  "section_tag": "title_section_{hw_id}_{sensor_type_str}",
+                  "params": [param_id, ...],
+                  "enabled_params": [param_id, ...],
+                  "enabled_count": int
+               }, ...
+            },
+            "enabled_count": int   # total enabled under hw_id
+          }, ...
+        }
+
+        dpg_instance is used to query checkbox values; exceptions are caught and treated as disabled.
+        """
+        result = {}
+        if not hasattr(self, "sensor_infos"):
+            return result
+
+        for sensor in self.sensor_infos:
+            hw_id = sensor.get("hw_id")
+            hw_name = sensor.get("hw_name", hw_id)
+            sensor_type = sensor.get("sensor_type")
+            sensor_type_str = sensor_type.ToString() if hasattr(sensor_type, "ToString") else str(sensor_type)
+            param_id = sensor.get("parameter_id")
+
+            hw_entry = result.setdefault(hw_id, {
+                "hw_name": hw_name,
+                "header_tag": f"input_collapsing_{hw_id}",
+                "sections": {},
+                "enabled_count": 0
+            })
+
+            sec = hw_entry["sections"].setdefault(sensor_type_str, {
+                "section_tag": f"title_section_{hw_id}_{sensor_type_str}",
+                "params": [],
+                "enabled_params": [],
+                "enabled_count": 0
+            })
+
+            if param_id:
+                sec["params"].append(param_id)
+                cb_tag = f"input_{param_id}_enable"
+                enabled = False
+                try:
+                    if dpg_instance.does_item_exist(cb_tag):
+                        enabled = bool(dpg_instance.get_value(cb_tag))
+                except Exception:
+                    enabled = False
+                if enabled:
+                    sec["enabled_params"].append(param_id)
+                    sec["enabled_count"] += 1
+                    hw_entry["enabled_count"] += 1
+
+        return result
 
     def load_preferences(self):
         for key in self.settings_config["Preferences"]:
@@ -148,6 +350,13 @@ class ConfigManager:
     def parse_input_value(self, key, value):
         value_type = self.key_type_map.get(key, int)
         try:
+            if value_type is bool:
+                # Accept bool, "True"/"False", 1/0, etc.
+                if isinstance(value, bool):
+                    return value
+                if isinstance(value, str):
+                    return value.strip().lower() == "true"
+                return bool(value)
             return value_type(value)
         except Exception:
             return value
@@ -222,7 +431,17 @@ class ConfigManager:
                     if x.isdigit():
                         values.append(int(x))
                 return set(values)
-        
+
+        # Robust boolean parsing
+        if value_type is bool:
+            if isinstance(raw_value, bool):
+                return raw_value
+            if isinstance(raw_value, str):
+                return raw_value.strip().lower() == "true"
+            if isinstance(raw_value, int):
+                return raw_value != 0
+            return bool(raw_value)
+
         try:
             return value_type(raw_value)
         except Exception:
@@ -230,6 +449,7 @@ class ConfigManager:
                 return value_type(self.Default_settings_original[key])
             except Exception:
                 return self.Default_settings_original[key]
+            
     def save_to_profile(self):
         selected_profile = dpg.get_value("profile_dropdown")
 
@@ -270,8 +490,9 @@ class ConfigManager:
         self.update_global_variables()
         dpg.set_value("new_profile_input", "")
         dpg.set_value("game_name", profile_name)
+
         #dpg.configure_item("game_name", label=profile_name)
-        self.current_method_callback()  # Update method-specific UI elements
+        self.refresh_ui_callbacks()
 
     def save_profile(self, profile_name):
         self.profiles_config[profile_name] = {}
@@ -331,7 +552,7 @@ class ConfigManager:
 
             self.logger.add_log(f"Deleted profile: {profile_to_delete}")
             self.current_profile = "Global"
-        self.current_method_callback()  # Update method-specific UI elements
+        self.refresh_ui_callbacks()
 
     # Function to sync settings with variables
     def update_global_variables(self):
@@ -360,16 +581,19 @@ class ConfigManager:
 
     def quick_load_settings(self):
         for key in self.input_field_keys:
-            dpg.set_value(f"input_{key}", self.settings[key])
+            value = self.settings[key]
+            parsed_value = self.parse_input_value(key, value)
+            dpg.set_value(f"input_{key}", parsed_value)
         self.update_global_variables()
         self.logger.add_log("Settings quick loaded")
-        self.current_method_callback()  # Update method-specific UI elements
+        self.refresh_ui_callbacks()
 
     def reset_to_program_default(self):
-        
         for key in self.input_field_keys:
-            dpg.set_value(f"input_{key}", self.Default_settings_original[key])
-        self.current_method_callback()  # Update method-specific UI elements
+            value = self.Default_settings_original[key]
+            parsed_value = self.parse_input_value(key, value)
+            dpg.set_value(f"input_{key}", parsed_value)
+        self.refresh_ui_callbacks()
         self.logger.add_log("Settings reset to program default")
 
     def startup_profile_selection(self):
@@ -386,7 +610,7 @@ class ConfigManager:
 
     def current_method_callback(self, sender=None, app_data=None, user_data=None):
 
-        method = app_data if app_data else dpg.get_value("input_capmethod")
+        method = app_data.lower() if app_data else dpg.get_value("input_capmethod").lower()
 
         dpg.bind_item_theme("input_capratio", self.themes["enabled_text_theme"] if method == "ratio" else self.themes["disabled_text_theme"])
         dpg.bind_item_theme("label_capratio", self.themes["enabled_text_theme"] if method == "ratio" else self.themes["disabled_text_theme"])
@@ -405,6 +629,97 @@ class ConfigManager:
 
         self.logger.add_log(f"Method selection changed: {method}")
 
+    def monitoring_method_callback(self, sender=None, app_data=None, user_data=None):
+        # app_data is the selected value
+
+        app_data = app_data.lower() if app_data else dpg.get_value("input_monitoring_method").lower()
+
+        if app_data == "librehm":
+            self.dpg.configure_item("LHwM_childwindow", show=True)
+            self.dpg.configure_item("legacy_childwindow", show=False)
+        else:
+            self.dpg.configure_item("LHwM_childwindow", show=False)
+            self.dpg.configure_item("legacy_childwindow", show=True)
+
+        self.logger.add_log(f"Method selection changed: {app_data}")
+
+    def hide_unselected_callback(self, sender=None, app_data=None, user_data=None):
+        """
+        When 'Hide unselected' is toggled, save preference and hide/show LibreHM parameter rows
+        unless the parameter's enable checkbox is True.
+        """
+
+        # If UI is not fully initialized (ImGui table layout may be uninitialized),
+        # schedule a retry next frame and exit early.
+        if not getattr(self, "ui_initialized", False):
+            try:
+                # schedule to re-run once UI has had a frame to initialize
+                self.dpg.add_frame_callback(lambda: self.hide_unselected_callback(None, None, None))
+            except Exception:
+                pass
+            return
+
+        # Resolve boolean value (fallback to the checkbox value if app_data is None)
+        try:
+            hide = bool(app_data) if app_data is not None else bool(self.dpg.get_value("hide_unselected_checkbox"))
+        except Exception:
+            hide = False
+
+        self.update_preference_setting('hide_unselected', sender, hide, user_data)
+
+        # Iterate sensor infos created for the LibreHM UI and hide/show rows
+        for sensor in self.sensor_infos:
+            param_id = sensor.get('parameter_id')
+            if not param_id:
+                continue
+            enable_tag = f"input_{param_id}_enable"
+            try:
+                enabled = bool(self.dpg.get_value(enable_tag))
+            except Exception:
+                enabled = True
+            row_tag = f"param_row_{param_id}"
+
+            if self.dpg.does_item_exist(row_tag):
+                # show full row only if we're not hiding, or the parameter is enabled
+                self.dpg.configure_item(row_tag, show=(not hide) or enabled)
+
+        try:
+            enable_map = self.build_sensor_enable_map(self.dpg)
+            for hw_id, info in enable_map.items():
+                sections = info.get("sections", {})
+                for sensor_type_str, sec in sections.items():
+                    section_tag = sec.get("section_tag")
+                    enabled_count = sec.get("enabled_count", 0)
+                    # when not hiding, always show; when hiding, show only if there are enabled params
+                    show_section = (not hide) or (enabled_count > 0)
+                    if section_tag and self.dpg.does_item_exist(section_tag):
+                        try:
+                            self.dpg.configure_item(section_tag, show=show_section)
+                        except Exception:
+                            pass
+        except Exception:
+            # best-effort, ignore UI timing issues
+            pass
+        
+    def refresh_ui_callbacks(self, sender=None, app_data=None, user_data=None):
+        """
+        Centralized place to run common UI update callbacks.
+        Call this whenever you need to run all UI-refresh callbacks (method, monitoring, hide_unselected).
+        """
+        # call each callback but protect against exceptions so one failing callback doesn't stop others
+        try:
+            self.current_method_callback(sender, app_data, user_data)
+        except Exception as e:
+            self.logger.add_log(f"Error in current_method_callback: {e}")
+        try:
+            self.monitoring_method_callback(sender, app_data, user_data)
+        except Exception as e:
+            self.logger.add_log(f"Error in monitoring_method_callback: {e}")
+        try:
+            self.hide_unselected_callback(sender, app_data, user_data)
+        except Exception as e:
+            self.logger.add_log(f"Error in hide_unselected_callback: {e}")
+
     def update_preference_setting(self, key, sender, app_data, user_data):
         """
         Generic method to update a boolean preference setting.
@@ -421,19 +736,24 @@ class ConfigManager:
             self.update_preference_setting(key, sender, app_data, user_data)
         return callback
 
-    def update_exit_fps_value(self, sender, app_data, user_data):
-
-        new_value = app_data
+    def update_GlobalSettings_settings(self, key, sender, app_data, user_data):
+        
+        new_value = int(app_data)
 
         if isinstance(new_value, int) and new_value > 0:
-            self.globallimitonexit_fps = new_value
-            self.settings_config["GlobalSettings"]["globallimitonexit_fps"] = str(new_value)
+            setattr(self, key, new_value)
+            self.settings_config["GlobalSettings"][key] = str(new_value)
             with open(self.settings_path, 'w') as f:
                 self.settings_config.write(f)
-            self.logger.add_log(f"Global Limit on Exit FPS value set to: {self.globallimitonexit_fps}")
+            self.logger.add_log(f"{key} set to: {getattr(self, key)}")
         else:
-            self.logger.add_log(f"Invalid value entered for Global Limit on Exit FPS: {app_data}. Reverting.")
-            dpg.set_value(sender, self.globallimitonexit_fps)
+            self.logger.add_log(f"Invalid value entered for {key}: {app_data}. Reverting.")
+            dpg.set_value(sender, getattr(self, key))
+
+    def update_GlobalSettings_settings_callback(self, key):
+        def callback(sender, app_data, user_data):
+            self.update_GlobalSettings_settings(key, sender, app_data, user_data)
+        return callback
 
     def select_default_profile_callback(self, sender, app_data, user_data):
 

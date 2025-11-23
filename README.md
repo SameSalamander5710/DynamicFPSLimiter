@@ -1,17 +1,20 @@
-# Dynamic FPS Limiter v4.4
+# Dynamic FPS Limiter v5 (beta!)
 
-A lightweight companion app for RTSS that uses it's profile modification API to dynamically adjust framerate limits based on real-time GPU and CPU usage. 
-- Instead of relying on a fixed FPS cap below average framerates for smooth gameplay, it intelligently raises the cap when performance headroom is available, allowing consistently smooth frametimes, with the caveat of a momentary stutter during FPS limit transition.
-- Especially useful for reducing input latency when using frame generation tools like Lossless Scaling, by ensuring there's always enough GPU headroom.
-- When paired with adaptive frame generation in Lossless Scaling, it enables a constant high refresh rate experience with lower power draw and reduced GPU temperatures, without noticeable visual compromises or input lag.
+A lightweight companion app for RTSS that leverages its profile-modification API to dynamically adjust framerate limits based on real-time GPU and CPU conditions. It uses LibreHardwareMonitor to read GPU/CPU usage, power draw, and temperatures, with Windows Performance Counters available as a fallback.
+
+- Instead of relying on a fixed FPS cap set below average framerates, it intelligently raises the limit when performance headroom is available. This maintains consistently smooth frametimes, with the only trade-off being a brief stutter when the framerate limit transitions.
+- With LibreHardwareMonitor support, you can now define power and temperature constraints as well, across all detected GPUs (Nvidia and AMD), making it particularly useful for multi-GPU setups.
+- Especially effective for reducing input latency when using frame-generation tools like Lossless Scaling, by ensuring sufficient GPU headroom is always preserved.
+- When paired with adaptive frame generation in Lossless Scaling, it provides a consistently high-refresh visual experience with reduced power draw and lower GPU temperatures.
+
 
 <p align="center">
-  <img src="docs/Images/v4.1.0_2025-05-31-09-50-18.gif" width="45%" />
-  &nbsp;
-  <img src="docs/Images/v4.1.0_2025-05-31-09-43-54.gif" width="45%" />
+  <img src="docs/Images/v5.0.0-beta.1.1.gif" width="45%" />
 </p>
 
 ## Installation
+
+For the last stable build, check [DFL_v4](https://github.com/SameSalamander5710/DynamicFPSLimiter/tree/DFL_v4).
 
 ### To Build It Yourself,
 If you'd like to inspect or customize the source code, follow the instructions in [BUILD.md](/src/BUILD.md)
@@ -24,11 +27,7 @@ If you'd like to inspect or customize the source code, follow the instructions i
     - This can be done by holding the **Shift** key and clicking **Add** in RTSS, while the app is running.
     - **Note**: While not strictly necessary, this step is strongly recommended if you have disabled 'passive waiting' for the Global profile in RTSS
 
-Watch the demo here! (Based on v4.2.0)
-
-<a href="https://www.youtube.com/watch?v=6r3l5ebymew" target="_blank" rel="noopener noreferrer">
-  <img src="https://img.youtube.com/vi/6r3l5ebymew/hqdefault.jpg" width="45%" alt="Watch the demo here! (Based on v4.2.0)">
-</a>
+Demo video to be featured soon! (Based on v5.0.0-beta.1)
 
 <a href="https://www.youtube.com/watch?v=2lf5Ax4Gwtk" target="_blank" rel="noopener noreferrer">
   <img src="https://img.youtube.com/vi/2lf5Ax4Gwtk/hqdefault.jpg" width="45%" alt="Watch the demo here! (Based on v4.4.2)">
@@ -39,31 +38,30 @@ Watch the demo here! (Based on v4.2.0)
 > - Since RTSS runs with elevated privileges, DynamicFPSLimiter must also be run as Administrator to function fully.
 
 > [!CAUTION]
-> - The executable in the release was packaged using PyInstaller and may be flagged by some antivirus software as a Trojan. Updating to the [latest version](https://www.microsoft.com/en-us/wdsi/defenderupdates) of Windows Defender should prevent false detections. 
+> - The executable in the release was packaged using PyInstaller and may be flagged by some antivirus software as a Trojan.
 > - You can confirm whether the app is signed by me using the public certificate [here](/src/Public_SameSalamander5710.cer).
-> - You can find the VirusTotal report for the latest release (v4.4.2):
->   - [DynamicFPSLimiter_v4.4.2.zip](https://www.virustotal.com/gui/file/548be25493169765ab3a777ea878abc1934d46527fce629ec015a7a819e6c91b)
 
 ## The Concept
-This app was developed to enhance gaming experience in situations where the GPU load/demand varies greatly during a session. This is especially useful when using Lossless Scaling Frame Generation (LSFG). LSFG works best when the game runs with an FPS cap that leaves enough GPU headroom for frame generation. However, if GPU usage hits 100%—which may also cause the game’s base FPS to drop—you may experience input lag, which is undesirable.
+This app was initially developed to enhance gaming experience in situations where the GPU load/demand varies greatly during a session. This was especially useful when using Lossless Scaling Frame Generation (LSFG). In a single-GPU system, LSFG works best when the game runs with an FPS cap that leaves enough GPU headroom for frame generation. However, if GPU usage hits 100%—which may also cause the game’s base FPS to drop—you may experience input lag, which is undesirable.
 
 Typically, you have two ways to set an FPS cap:
 - Set a cap just below the average FPS – This works most of the time but can lead to input lag when FPS drops due to GPU saturation.
 - Set a cap well below the lowest observed FPS – This ensures stability but sacrifices frame rate in less demanding scenes.
 
-This app solves the issue by dynamically adjusting the base FPS limit in demanding areas, reducing input lag while still allowing higher frame rates in less intensive regions. As a result, you get a smoother and more responsive gaming experience without compromising too much performance.
+This app solves the issue by dynamically adjusting the base FPS limit in demanding areas, reducing input lag while still allowing higher frame rates in less intensive regions. In addition, the app can now monitor and respond to other parameters—such as power draw and temperature—if you choose to configure those constraints.
 
 ## Disclaimer
 
-- This app is a personal project created for fun and is **not officially affiliated** with RTSS or Lossless Scaling.
+- This app is a personal project created for fun and is **not officially affiliated** with RTSS, Lossless Scaling, or LibreHardwareMonitor.
 - As a hobby project, **updates and bug fixes may be delayed** or may not be provided regularly.
 
 ## Older versions 
 
-For the older interactions or versions of the same idea, see:
+For the older interactions or versions of the same idea/tool, see:
 1. [DynamicFPSLimiter v1.0](https://github.com/SameSalamander5710/DynamicFPSLimiter/tree/DFL_v1)
 2. [DynamicFPSLimiter v2.0](https://github.com/SameSalamander5710/DynamicFPSLimiter/tree/DFL_v2)
 3. [DynamicFPSLimiter v3.0](https://github.com/SameSalamander5710/DynamicFPSLimiter/tree/DFL_v3)
+4. [DynamicFPSLimiter v4.0](https://github.com/SameSalamander5710/DynamicFPSLimiter/tree/DFL_v4)
 
 ## License
 

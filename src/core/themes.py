@@ -24,6 +24,7 @@ class ThemesManager:
         # Font paths
         self.font_path = os.path.join(os.environ["WINDIR"], "Fonts", "segoeui.ttf")
         self.bold_font_path = os.path.join(os.environ["WINDIR"], "Fonts", "segoeuib.ttf")
+        self.monospaced_font_path = os.path.join(os.environ["WINDIR"], "Fonts", "consola.ttf")
 
     def create_themes(self):
         with dpg.theme() as main_theme:
@@ -57,8 +58,16 @@ class ThemesManager:
                 dpg.add_theme_color(dpg.mvThemeCol_PopupBg, bg_colour)
                 dpg.add_theme_color(dpg.mvThemeCol_HeaderHovered, bg_colour_4_buttonhover)
                 dpg.add_theme_color(dpg.mvThemeCol_HeaderActive, bg_colour_5_buttonactive)
+                dpg.add_theme_color(dpg.mvThemeCol_Header, bg_colour_3_button)
                 dpg.add_theme_color(dpg.mvThemeCol_BorderShadow, (255, 255, 255, 11)) # Example: light shadow for 3D effect
                 #dpg.add_theme_color(dpg.mvThemeCol_PopupActive, (30, 144, 255, 255))
+
+                dpg.add_theme_color(dpg.mvThemeCol_ScrollbarBg, bg_colour_2_child)
+                dpg.add_theme_color(dpg.mvThemeCol_ScrollbarGrab, bg_colour_3_button)
+                dpg.add_theme_color(dpg.mvThemeCol_ScrollbarGrabHovered, bg_colour_4_buttonhover)
+                dpg.add_theme_color(dpg.mvThemeCol_ScrollbarGrabActive, bg_colour_5_buttonactive)
+
+                dpg.add_theme_color(dpg.mvThemeCol_TableHeaderBg, bg_colour_3_button)
 
                 # Plot-specific styles
                 dpg.add_theme_style(dpg.mvPlotStyleVar_PlotBorderSize, 0, category=dpg.mvThemeCat_Plots)
@@ -152,6 +161,10 @@ class ThemesManager:
                 dpg.add_theme_color(dpg.mvThemeCol_Button, bg_colour_5_buttonactive)
                 dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, bg_colour_4_buttonhover_blue)
                 dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, bg_colour_5_buttonactive)
+            with dpg.theme_component(dpg.mvImageButton):
+                dpg.add_theme_color(dpg.mvThemeCol_Button, bg_colour_5_buttonactive)
+                dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, bg_colour_4_buttonhover_blue)
+                dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, bg_colour_5_buttonactive)
             #with dpg.theme_component(dpg.mvAll):
                 #dpg.add_theme_color(dpg.mvThemeCol_Text, bg_colour_8_text_stateactive)
         self.themes["revert_gpu_theme"] = revert_gpu_theme
@@ -165,6 +178,16 @@ class ThemesManager:
                 dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, bg_colour_1_transparent, category=dpg.mvThemeCat_Core)
                 dpg.add_theme_style(dpg.mvStyleVar_FrameBorderSize, 0)
         self.themes["button_right_theme"] = button_right_theme
+
+        # Button left theme
+        with dpg.theme() as button_left_theme:
+            with dpg.theme_component(dpg.mvButton):
+                dpg.add_theme_style(dpg.mvStyleVar_ButtonTextAlign, 0.00, category=dpg.mvThemeCat_Core)
+                dpg.add_theme_color(dpg.mvThemeCol_Button, bg_colour_1_transparent, category=dpg.mvThemeCat_Core)
+                dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, bg_colour_1_transparent, category=dpg.mvThemeCat_Core)
+                dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, bg_colour_1_transparent, category=dpg.mvThemeCat_Core)
+                dpg.add_theme_style(dpg.mvStyleVar_FrameBorderSize, 0)
+        self.themes["button_left_theme"] = button_left_theme
 
         # Button right theme
         with dpg.theme() as titlebar_button_theme:
@@ -213,14 +236,16 @@ class ThemesManager:
 
         with dpg.theme() as plot_bg_theme:
             with dpg.theme_component(dpg.mvAll):
-                dpg.add_theme_color(dpg.mvPlotCol_PlotBg, (0, 200, 255, 255))  # Example: cyan
+                # Make plot background match the main window background
+                dpg.add_theme_color(dpg.mvPlotCol_PlotBg, bg_colour, category=dpg.mvThemeCat_Plots)
                 dpg.add_theme_style(dpg.mvStyleVar_FrameBorderSize, 0)
-                dpg.add_theme_color(dpg.mvThemeCol_ChildBg, (0, 200, 255, 0))
-                dpg.add_theme_color(dpg.mvThemeCol_PopupBg, (0, 200, 255, 0))
-                dpg.add_theme_color(dpg.mvThemeCol_FrameBg, (0, 200, 255, 0))
-                dpg.add_theme_color(dpg.mvThemeCol_Button, (0, 200, 255, 0))
-                dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, (0, 200, 255, 0))
-                dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, (0, 200, 255, 0))
+                # Use child bg for plot child areas and keep frame/popup colors consistent
+                dpg.add_theme_color(dpg.mvThemeCol_ChildBg, bg_colour_2_child, category=dpg.mvThemeCat_Core)
+                dpg.add_theme_color(dpg.mvThemeCol_PopupBg, bg_colour, category=dpg.mvThemeCat_Core)
+                dpg.add_theme_color(dpg.mvThemeCol_FrameBg, bg_colour, category=dpg.mvThemeCat_Core)
+                dpg.add_theme_color(dpg.mvThemeCol_Button, bg_colour, category=dpg.mvThemeCat_Core)
+                dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, bg_colour_5_buttonactive, category=dpg.mvThemeCat_Core)
+                dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, bg_colour_4_buttonhover, category=dpg.mvThemeCat_Core)
                 dpg.add_theme_color(dpg.mvThemeCol_Text, bg_colour_7_text_faded)
         self.themes["plot_bg_theme"] = plot_bg_theme
 
@@ -239,6 +264,21 @@ class ThemesManager:
                 dpg.add_theme_color(dpg.mvThemeCol_Text, (190, 90, 90))
         self.themes["warning_text_theme"] = warning_text_theme
 
+        with dpg.theme() as nested_window_theme:
+            with dpg.theme_component(dpg.mvWindowAppItem):
+                dpg.add_theme_color(dpg.mvThemeCol_Border, (180,180,180, 255))  # Border color (dark gray)
+                dpg.add_theme_style(dpg.mvStyleVar_WindowBorderSize, 1.0)      # Border thickness
+                #dpg.add_theme_style(dpg.mvStyleVar_ChildBorderSize, 0.0)
+            with dpg.theme_component(dpg.mvChildWindow):
+                dpg.add_theme_color(dpg.mvThemeCol_Border, (255, 0, 0, 0))  
+                dpg.add_theme_style(dpg.mvStyleVar_ChildBorderSize, 1.0)
+            with dpg.theme_component(dpg.mvButton):
+                dpg.add_theme_color(dpg.mvThemeCol_Border, (255, 0, 0, 0))
+                dpg.add_theme_style(dpg.mvStyleVar_FrameBorderSize, 1.0)
+                dpg.add_theme_style(dpg.mvStyleVar_FrameRounding, 3.0)
+
+        self.themes["nested_window_theme"] = nested_window_theme
+
     def create_fonts(self, logger=None):
         """
         Create and register fonts for the application.
@@ -248,14 +288,16 @@ class ThemesManager:
             with dpg.font_registry():
                 self.fonts["default_font"] = dpg.add_font(self.font_path, 18)
                 self.fonts["bold_font"] = dpg.add_font(self.bold_font_path, 18)
+                self.fonts["monospaced_font"] = dpg.add_font(self.monospaced_font_path, 14)
                 self.fonts["bold_font_large"] = dpg.add_font(self.bold_font_path, 24)
-                
+            
                 # Bind the default font globally
                 if self.fonts["default_font"]:
                     dpg.bind_font(self.fonts["default_font"])
                     
             if logger:
-                logger.add_log("Fonts loaded successfully")
+                logger.add_log(f"Fonts loaded successfully")
+                logger.add_log(f"Font {self.fonts['default_font']} set globally")
             return self.fonts
             
         except Exception as e:

@@ -2,6 +2,7 @@ import dearpygui.dearpygui as dpg
 import sys
 import os
 import ctypes
+import configparser
 
 ctypes.windll.shcore.SetProcessDpiAwareness(2)
 
@@ -128,6 +129,95 @@ def show_rtss_error_and_exit(rtss_path):
     dpg.set_primary_window("Primary Window", True)
     dpg.start_dearpygui()
     sys.exit(1)
+
+def show_loading_popup(message="Loading...", width=300, height=50, title="Dynamic FPS Limiter - Loading", Base_dir=None):
+    """
+    Creates a minimal DearPyGui context + viewport and shows a simple loading window.
+    This is self-contained so it can be shown early and later completely destroyed
+    with hide_loading_popup() before the main GUI context is created.
+    """ 
+
+    try:
+        parent_dir = os.path.dirname(Base_dir)
+        settings_path = os.path.join(parent_dir, "config", "settings.ini")
+        cfg = configparser.ConfigParser()
+        if os.path.exists(settings_path):
+            cfg.read(settings_path)
+            hide_popup = cfg.getboolean("Preferences", "hide_loading_popup", fallback=False)
+            if hide_popup:
+                return  # user preference requests no loading popup
+    except Exception:
+        # If anything goes wrong reading prefs, continue and show the popup
+        pass
+
+    # If a context already exists, don't try to recreate it here.
+    try:
+        dpg.create_context()
+    except Exception:
+        # context may already exist; ignore
+        pass
+
+    # Create themes and fonts for the popup
+    themes_manager = ThemesManager(Base_dir)
+    themes_manager.create_themes()
+    fonts = themes_manager.create_fonts()
+
+    # Basic window content
+    with dpg.window(label="", tag="LoadingWindow", no_title_bar=True, no_resize=True,
+                    no_move=False, no_collapse=True, width=width, height=height):
+        dpg.add_spacer(height=1)
+        dpg.add_text(message, tag="loading_text", wrap=width - 20)
+        dpg.add_spacer(height=1)
+
+
+    # If a themes manager is provided, bind the app font/theme to the loading text
+    if themes_manager:
+        try:
+            # If themes/fonts were already created, bind the regular font (fallback if missing)
+            themes_manager.bind_font_to_item("loading_text", "regular_font")
+            # Bind the main theme so styles match other popups
+            dpg.bind_theme(themes_manager.themes["main_theme"])
+        except Exception:
+            # Don't fail popup creation just because theming couldn't be applied
+            pass
+
+    # Center viewport on screen
+    x_pos, y_pos = TrayManager.get_centered_viewport_position(width, height)
+    try:
+        dpg.create_viewport(title=title, width=width, height=height,
+                            resizable=False, decorated=False, x_pos=x_pos, y_pos=y_pos)
+    except Exception:
+        # viewport may already exist
+        pass
+
+    dpg.setup_dearpygui()
+    dpg.show_viewport()
+    dpg.set_primary_window("LoadingWindow", True)
+
+    # Render a single frame so the window appears immediately
+    try:
+        dpg.render_dearpygui_frame()
+    except Exception:
+        pass
+
+def hide_loading_popup():
+    """
+    Destroys the temporary loading viewport/context created by show_loading_popup.
+    Call this before creating the main application context/viewport.
+    """
+    try:
+        # destroy viewport if present
+        try:
+            dpg.destroy_viewport()
+        except Exception:
+            pass
+        # destroy context
+        try:
+            dpg.destroy_context()
+        except Exception:
+            pass
+    except Exception:
+        pass
 
 if __name__ == "__main__":
     # Test the popup by running this file directly using: python src\core\launch_popup.py
