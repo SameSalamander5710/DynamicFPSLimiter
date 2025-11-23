@@ -27,7 +27,11 @@ If you'd like to inspect or customize the source code, follow the instructions i
     - This can be done by holding the **Shift** key and clicking **Add** in RTSS, while the app is running.
     - **Note**: While not strictly necessary, this step is strongly recommended if you have disabled 'passive waiting' for the Global profile in RTSS
 
-Demo video to be featured soon! (Based on v5.0.0-beta.1)
+Watch the demo here! (Based on v5.0.0-beta.1)
+
+<a href="https://youtu.be/62VOtJndsgk" target="_blank" rel="noopener noreferrer">
+  <img src="https://img.youtube.com/vi/62VOtJndsgk/hqdefault.jpg" width="45%" alt="Watch the demo here! (Based on v5.0.0-beta.1)">
+</a>
 
 > [!NOTE]
 > - This app requires Rivatuner Statistics Server (RTSS) running in the background to function. Ensure RTSS is installed before running the app!
