@@ -158,7 +158,7 @@ checks that `step`/`ratio` still return their previous values).
 
 ---
 
-## F6 — Two competing, non-atomic RTSS profile write paths (corruption)
+## F6 — Two competing, non-atomic RTSS profile write paths (corruption) — **FIXED**
 **Severity:** Med
 **Where:** `src/core/rtss_functions.py` — `set_limit_denominator` / `set_fractional_fps_direct`
 (direct `.cfg` text edits) vs `set_fractional_framerate` (`LoadProfile`/`SetProfileProperty`/
@@ -171,6 +171,27 @@ writes are atomic.
 half-written `.cfg`, corrupting the user's RTSS profile.
 **Fix:** Pick a single write path (prefer the RTSS API), serialize writes behind a lock, and
 write files atomically (temp file + rename).
+
+**Resolution (2026-08-19):** All profile mutations are now serialized behind a re-entrant lock
+and the file writes are atomic. `RTSSController.__init__` creates `self._profile_lock =
+threading.RLock()`; `set_limit_denominator`, `set_fractional_fps_direct`, `set_fractional_framerate`,
+and `set_profile_property` (whose `SaveProfile` also writes the `.cfg`) each run their body under
+`with self._profile_lock:`. `RLock` (not `Lock`) is required because `set_fractional_framerate`
+calls `set_limit_denominator` + `set_profile_property` while already holding the lock. A new
+`_atomic_write_lines(profile_file, lines)` helper writes to `<file>.tmp`, `f.flush()`s,
+`os.fsync`s the fd, then `os.replace`s it over the target (atomic on the same NTFS volume);
+`set_limit_denominator` and `set_fractional_fps_direct` route their final write through it instead
+of a bare `open(..., "w")`, so a crash or a concurrent RTSS read can never observe a half-written
+profile. The two public writers were **kept separate** (not merged): `set_fractional_fps_direct`
+is a pure file edit of `Limit=`/`LimitDenominator=`, whereas `set_fractional_framerate` pushes
+`FramerateLimit` through the **DLL API** and also writes the denominator to file — distinct
+file-vs-DLL semantics, so merging would change behavior; the idempotent denominator double-write
+is harmless under the lock. This protects the real concurrent callers: the start/stop callback
+(`DFL_v5.py:181-182`, main thread) and the monitoring loop (`DFL_v5.py:359/371/395/407/414`,
+background thread) plus the exit path (`DFL_v5.py:550`). Covered by `tests/test_rtss_atomic.py`
+(5 writers/flags: correct content + no `.tmp`, `set_fractional_framerate` return value + nested
+denominator write, two concurrent threads always leave a consistent `(limit, denominator)` pair,
+`UpdateProfiles` per `update` flag); the `rtss_stub` fixture now sets `ctrl._profile_lock`.
 
 ---
 

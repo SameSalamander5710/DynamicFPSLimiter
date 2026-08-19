@@ -160,6 +160,7 @@ def rtss_stub(tmp_path):
     ctrl.rtss_path = str(rtss_dir / "RTSSHooks64.dll")
     ctrl.logger = StubLogger()
     ctrl.update_profiles_calls = 0
+    ctrl._profile_lock = threading.RLock()
 
     def _update_profiles():
         ctrl.update_profiles_calls += 1

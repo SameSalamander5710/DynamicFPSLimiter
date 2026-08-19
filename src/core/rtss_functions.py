@@ -1,5 +1,6 @@
 import ctypes
 import os
+import threading
 import winreg
 from decimal import Decimal, InvalidOperation
 from core.launch_popup import show_rtss_error_and_exit
@@ -11,6 +12,11 @@ class RTSSController:
         self.rtss_install_path = self.get_rtss_install_path()
         self.rtss_path = os.path.join(self.rtss_install_path, "RTSSHooks64.dll")
         self.logger = logger_instance
+        # Serializes profile file + DLL-API mutations so concurrent callers (e.g. the
+        # monitoring thread and the main start/stop path) can't interleave read-modify-write
+        # cycles on the same .cfg file. Re-entrant so set_fractional_framerate can call the
+        # other writers while holding it.
+        self._profile_lock = threading.RLock()
         try:
             self.dll = ctypes.WinDLL(self.rtss_path)
         except OSError as e:
@@ -85,20 +91,23 @@ class RTSSController:
         return bytes(buf)
 
     def set_profile_property(self, profile_name, property_name, value, size=4, update=True):
-        self.LoadProfile(profile_name.encode('ascii'))
-        if isinstance(value, int):
-            buf = ctypes.c_int(value)
-            ptr = ctypes.byref(buf)
-        elif isinstance(value, bytes):
-            buf = (ctypes.c_byte * size).from_buffer_copy(value)
-            ptr = ctypes.byref(buf)
-        else:
-            raise ValueError("Unsupported value type")
-        success = self.SetProfileProperty(property_name.encode('ascii'), ptr, size)
-        self.SaveProfile(profile_name.encode('ascii'))
-        if update:
-            self.UpdateProfiles()
-        return success
+        # SaveProfile writes the profile .cfg, so serialize it with the file writers
+        # (re-entrant: safe when called from set_fractional_framerate holding the lock).
+        with self._profile_lock:
+            self.LoadProfile(profile_name.encode('ascii'))
+            if isinstance(value, int):
+                buf = ctypes.c_int(value)
+                ptr = ctypes.byref(buf)
+            elif isinstance(value, bytes):
+                buf = (ctypes.c_byte * size).from_buffer_copy(value)
+                ptr = ctypes.byref(buf)
+            else:
+                raise ValueError("Unsupported value type")
+            success = self.SetProfileProperty(property_name.encode('ascii'), ptr, size)
+            self.SaveProfile(profile_name.encode('ascii'))
+            if update:
+                self.UpdateProfiles()
+            return success
 
     def create_profile(self, profile_name, properties):
         # Load global profile as a base
@@ -135,113 +144,130 @@ class RTSSController:
         self.SetFlags(~self.RTSSHOOKSFLAG_LIMITER_DISABLED & 0xFFFFFFFF, 0)
         self.UpdateProfiles()
 
-    # Derived functions    
-    def set_limit_denominator(self, profile_name, new_denominator, update=True):
-        profiles_dir = os.path.join(self.rtss_install_path, "Profiles")
-        if not profile_name or profile_name.lower() == "global":
-            profile_file = os.path.join(profiles_dir, "Global")
-            profile_name_for_api = ""
-        else:
-            profile_file = os.path.join(profiles_dir, f"{profile_name}.cfg")
-            profile_name_for_api = profile_name
+    # Derived functions
+    def _atomic_write_lines(self, profile_file, lines):
+        """Atomically replace ``profile_file`` with ``lines``.
 
-        if not os.path.isfile(profile_file):
-            self.logger.add_log(f"Profile file not found: {profile_file}")
-            return False
-
-        with open(profile_file, "r", encoding="utf-8") as f:
-            lines = f.readlines()
-
-        found = False
-        for i, line in enumerate(lines):
-            if line.strip().startswith("LimitDenominator="):
-                lines[i] = f"LimitDenominator={new_denominator}\n"
-                found = True
-                break
-
-        if not found:
-            lines.append(f"LimitDenominator={new_denominator}\n")
-
-        with open(profile_file, "w", encoding="utf-8") as f:
+        Writes to a sibling ``.tmp`` file, flushes + fsyncs it, then ``os.replace`` moves it
+        over the target. A crash or a concurrent RTSS read therefore never observes a
+        half-written profile (``os.replace`` is atomic on the same volume/NTFS).
+        """
+        tmp_file = profile_file + ".tmp"
+        with open(tmp_file, "w", encoding="utf-8") as f:
             f.writelines(lines)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp_file, profile_file)
 
-        #self.logger.add_log(f"Updated LimitDenominator to {new_denominator} in {profile_file}")
-        if update:
-            self.UpdateProfiles()
-        return True
+    def set_limit_denominator(self, profile_name, new_denominator, update=True):
+        with self._profile_lock:
+            profiles_dir = os.path.join(self.rtss_install_path, "Profiles")
+            if not profile_name or profile_name.lower() == "global":
+                profile_file = os.path.join(profiles_dir, "Global")
+                profile_name_for_api = ""
+            else:
+                profile_file = os.path.join(profiles_dir, f"{profile_name}.cfg")
+                profile_name_for_api = profile_name
+
+            if not os.path.isfile(profile_file):
+                self.logger.add_log(f"Profile file not found: {profile_file}")
+                return False
+
+            with open(profile_file, "r", encoding="utf-8") as f:
+                lines = f.readlines()
+
+            found = False
+            for i, line in enumerate(lines):
+                if line.strip().startswith("LimitDenominator="):
+                    lines[i] = f"LimitDenominator={new_denominator}\n"
+                    found = True
+                    break
+
+            if not found:
+                lines.append(f"LimitDenominator={new_denominator}\n")
+
+            self._atomic_write_lines(profile_file, lines)
+
+            #self.logger.add_log(f"Updated LimitDenominator to {new_denominator} in {profile_file}")
+            if update:
+                self.UpdateProfiles()
+            return True
 
     def set_fractional_framerate(self, profile_name, framerate, update=False, denominator=False):
-        profile_name_for_api = "" if not profile_name or profile_name.lower() == "global" else profile_name
-        fr_str = str(framerate)
-        if '.' in fr_str:
-            decimals = len(fr_str.split('.')[1])
-            denominator = 10 ** decimals
-            limit = int(round(float(framerate) * denominator))
-        else:
-            denominator = 1
-            limit = int(framerate)
-        
-        if denominator:
-            self.set_limit_denominator(profile_name, denominator, update=update)
-            
-        self.set_profile_property(profile_name_for_api, "FramerateLimit", limit, update=update)
-        if not update:
-            self.UpdateProfiles()
+        # Hold the lock for the whole file+API sequence so it is atomic with respect to
+        # other writers (re-entrant: the nested set_limit_denominator/set_profile_property
+        # calls re-acquire the same lock).
+        with self._profile_lock:
+            profile_name_for_api = "" if not profile_name or profile_name.lower() == "global" else profile_name
+            fr_str = str(framerate)
+            if '.' in fr_str:
+                decimals = len(fr_str.split('.')[1])
+                denominator = 10 ** decimals
+                limit = int(round(float(framerate) * denominator))
+            else:
+                denominator = 1
+                limit = int(framerate)
 
-        self.logger.add_log(f"Set {profile_name}: FramerateLimit={limit}, LimitDenominator={denominator} (actual limit: {limit/denominator})")
-        return limit, denominator
+            if denominator:
+                self.set_limit_denominator(profile_name, denominator, update=update)
+
+            self.set_profile_property(profile_name_for_api, "FramerateLimit", limit, update=update)
+            if not update:
+                self.UpdateProfiles()
+
+            self.logger.add_log(f"Set {profile_name}: FramerateLimit={limit}, LimitDenominator={denominator} (actual limit: {limit/denominator})")
+            return limit, denominator
 
     def set_fractional_fps_direct(self, profile_name, framerate, update=True):
+        with self._profile_lock:
+            profiles_dir = os.path.join(self.rtss_install_path, "Profiles")
+            if not profile_name or profile_name.lower() == "global":
+                profile_file = os.path.join(profiles_dir, "Global")
+                profile_name_for_api = ""
+            else:
+                profile_file = os.path.join(profiles_dir, f"{profile_name}.cfg")
+                profile_name_for_api = profile_name
 
-        profiles_dir = os.path.join(self.rtss_install_path, "Profiles")
-        if not profile_name or profile_name.lower() == "global":
-            profile_file = os.path.join(profiles_dir, "Global")
-            profile_name_for_api = ""
-        else:
-            profile_file = os.path.join(profiles_dir, f"{profile_name}.cfg")
-            profile_name_for_api = profile_name
+            if not os.path.isfile(profile_file):
+                self.logger.add_log(f"Profile file not found: {profile_file}")
+                return False
 
-        if not os.path.isfile(profile_file):
-            self.logger.add_log(f"Profile file not found: {profile_file}")
-            return False
+            fr_str = str(framerate)
 
-        fr_str = str(framerate)
+            if '.' in fr_str:
+                decimals = len(fr_str.split('.')[1])
+                denominator = 10 ** decimals
+                limit = int(round(float(framerate) * denominator))
+            else:
+                denominator = 1
+                limit = int(framerate)
 
-        if '.' in fr_str:
-            decimals = len(fr_str.split('.')[1])
-            denominator = 10 ** decimals
-            limit = int(round(float(framerate) * denominator))
-        else:
-            denominator = 1
-            limit = int(framerate)
+            with open(profile_file, "r", encoding="utf-8") as f:
+                lines = f.readlines()
 
-        with open(profile_file, "r", encoding="utf-8") as f:
-            lines = f.readlines()
+            found_limit = False
+            found_denominator = False
+            for i, line in enumerate(lines):
+                stripped = line.strip()
+                if stripped.startswith("Limit="):
+                    lines[i] = f"Limit={limit}\n"
+                    found_limit = True
+                elif stripped.startswith("LimitDenominator="):
+                    lines[i] = f"LimitDenominator={denominator}\n"
+                    found_denominator = True
 
-        found_limit = False
-        found_denominator = False
-        for i, line in enumerate(lines):
-            stripped = line.strip()
-            if stripped.startswith("Limit="):
-                lines[i] = f"Limit={limit}\n"
-                found_limit = True
-            elif stripped.startswith("LimitDenominator="):
-                lines[i] = f"LimitDenominator={denominator}\n"
-                found_denominator = True
+            # Append if not found
+            if not found_limit:
+                lines.append(f"Limit={limit}\n")
+            if not found_denominator:
+                lines.append(f"LimitDenominator={denominator}\n")
 
-        # Append if not found
-        if not found_limit:
-            lines.append(f"Limit={limit}\n")
-        if not found_denominator:
-            lines.append(f"LimitDenominator={denominator}\n")
+            self._atomic_write_lines(profile_file, lines)
 
-        with open(profile_file, "w", encoding="utf-8") as f:
-            f.writelines(lines)
-
-        #self.logger.add_log(f"Updated Limit={limit}, LimitDenominator={denominator} in {profile_file}")
-        if update:
-            self.UpdateProfiles()
-        return True
+            #self.logger.add_log(f"Updated Limit={limit}, LimitDenominator={denominator} in {profile_file}")
+            if update:
+                self.UpdateProfiles()
+            return True
     
     def get_framerate_limit(self, profile_name, get_denominator=False):
         profile_name_for_api = "" if not profile_name or profile_name.lower() == "global" else profile_name

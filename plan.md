@@ -1,6 +1,6 @@
 # DynamicFPSLimiter — Fix & Refactor Plan
 
-Status: **Phase 1 complete; Phase 2 in progress** (F1 ✅, F2 ✅, F5 ✅, F4 ✅, F7 ✅, F8 ✅, F9 ✅, F3 ✅, F6 pending)
+Status: **Phase 1 complete; Phase 2 complete** (F1 ✅, F2 ✅, F5 ✅, F4 ✅, F7 ✅, F8 ✅, F9 ✅, F3 ✅, F6 ✅)
 Branch: `repo_audit` (clean tree)
 Scope: all 4 phases — test harness → glaring flaws (F1–F9) → architecture → code quality
 Test framework: **pytest** (+ `pytest-cov`)
@@ -129,10 +129,14 @@ Each item: fix + regression test. Order within phase: F1, F2, F5 (pure logic, hi
 
 - **Where**: `src/core/rtss_functions.py` — `set_fractional_framerate` (DLL API path + `set_limit_denominator` file edit), `set_limit_denominator` (direct `open(..., "w")`), and `set_fractional_fps_direct` (direct `open(..., "w")`) all mutate the **same** `.cfg` file non-atomically; `DFL_v5.py:179-180` calls two of them back-to-back in the start/stop callback. A crash or RTSS read mid-write corrupts the profile.
 - **Fix**:
-  1. Atomic file writes: write to `<file>.tmp`, flush + `os.replace(tmp, file)` (all three writers).
-  2. Add a `threading.Lock` in `RTSSController` serializing profile file + API mutations.
+  1. Atomic file writes: write to `<file>.tmp`, flush + `os.fsync` + `os.replace(tmp, file)` (all three file writers).
+  2. Add a `threading.RLock` in `RTSSController` serializing profile file + API mutations.
   3. Consolidate the denominator write: `set_fractional_framerate` already writes `LimitDenominator` via file — avoid double-writing the same keys in one callback (single shared writer for `Limit`/`LimitDenominator`/`FramerateLimit`).
-- **Tests**: temp `.cfg` — writer produces correct content and leaves no `.tmp` behind; two threads writing concurrently always leave a valid file (no truncation/partial lines); `UpdateProfiles` invoked per `update` flag.
+- **Progress**: **DONE (2026-08-19)**.
+  - **Atomic writes**: new `RTSSController._atomic_write_lines(profile_file, lines)` writes to `<file>.tmp`, `f.flush()` + `os.fsync(f.fileno())`, then `os.replace(tmp, file)` (atomic on the same NTFS volume). `set_limit_denominator` and `set_fractional_fps_direct` now route their final file write through it instead of a bare `open(..., "w")`.
+  - **Serialization**: `self._profile_lock = threading.RLock()` in `__init__`; `set_limit_denominator`, `set_fractional_fps_direct`, `set_fractional_framerate`, and `set_profile_property` (whose `SaveProfile` also writes the `.cfg`) each run their body under `with self._profile_lock:`. **`RLock` (not `Lock`)** because `set_fractional_framerate` calls `set_limit_denominator` + `set_profile_property` while holding it — re-entrancy is required. `DFL_v5.py:181-182` (start/stop, main thread) and the monitoring loop (`DFL_v5.py:359/371/395/407/414`, background thread) plus the exit path (`DFL_v5.py:550`) are the concurrent callers this protects.
+  - **Method consolidation (deliberately NOT done)**: the two public writers were **kept separate** rather than merged into one shared writer. `set_fractional_fps_direct` is a pure file edit (`Limit=` + `LimitDenominator=`), while `set_fractional_framerate` pushes `FramerateLimit` through the **DLL API** (`SetProfileProperty` + `SaveProfile`) *and* writes the denominator to file. They have distinct file-vs-DLL semantics, so merging them would change behavior; the idempotent denominator double-write is harmless under the lock. (The `update`-flag refresh counts are left as-is — pre-existing, out of F6 scope.)
+  - **Tests**: `tests/test_rtss_atomic.py` (5) — each writer leaves correct content and **no `.tmp`** behind, `set_fractional_framerate` returns the right `(limit, denominator)` and writes the denominator via its nested writer, two threads writing concurrently leave a **valid, consistent** `(limit, denominator)` pair (never a mixed/truncated file), and `UpdateProfiles` fires per the `update` flag. The `rtss_stub` fixture (which bypasses `__init__`) now sets `ctrl._profile_lock = threading.RLock()`. Suite **97 passed**.
 
 ### Phase 2 exit criteria
 
