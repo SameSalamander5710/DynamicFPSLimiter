@@ -5,6 +5,15 @@ import clr
 import subprocess
 import re
 
+
+class LHMLoadError(RuntimeError):
+    """Raised when the LibreHardwareMonitor .NET assembly cannot be loaded."""
+
+    def __init__(self, message, dll_path=None):
+        super().__init__(message)
+        self.dll_path = dll_path
+
+
 _LOADED = False
 _Computer = None
 _SensorType = None
@@ -161,11 +170,20 @@ def ensure_loaded(base_dir=None, logger=None):
 
     try:
         clr.AddReference(str(dll_path))
-    except Exception:
-        # best-effort; other modules may still import
-        pass
+    except Exception as exc:
+        raise LHMLoadError(
+            f"clr.AddReference failed for {dll_path}: {exc}",
+            dll_path=str(dll_path),
+        ) from exc
 
-    from LibreHardwareMonitor.Hardware import Computer, SensorType, HardwareType
+    try:
+        from LibreHardwareMonitor.Hardware import Computer, SensorType, HardwareType
+    except Exception as exc:
+        raise LHMLoadError(
+            f"import LibreHardwareMonitor.Hardware failed after loading {dll_path}: {exc}",
+            dll_path=str(dll_path),
+        ) from exc
+
     _Computer, _SensorType, _HardwareType = Computer, SensorType, HardwareType
     _LOADED = True
     return _Computer, _SensorType, _HardwareType

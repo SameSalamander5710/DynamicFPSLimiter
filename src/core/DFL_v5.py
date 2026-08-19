@@ -32,6 +32,7 @@ from core import logger
 from core.rtss_interface import RTSSInterface
 from core.cpu_monitor import CPUUsageMonitor
 from core.gpu_monitor import GPUUsageMonitor
+from core.gui_queue import GuiQueue
 from core.librehardwaremonitor import LHMSensor
 from core.themes import ThemesManager
 from core.config_manager import ConfigManager
@@ -40,6 +41,7 @@ from core.warning import get_active_warnings
 from core.autostart import AutoStartManager
 from core.rtss_functions import RTSSController
 from core.fps_utils import FPSUtils
+from core.cap_policy import next_cap_on_decrease
 from core.tray_functions import TrayManager
 from core.autopilot import autopilot_on_check, get_foreground_process_name
 from core.launch_popup import show_loading_popup, hide_loading_popup
@@ -363,31 +365,10 @@ def monitoring_loop():
 
                         if CurrentFPSOffset > (current_mincap - current_maxcap) and should_decrease:
                             current_fps_cap = current_maxcap + CurrentFPSOffset
-                            try:
-                                # Find values lower than current fps_mean
-                                lower_values = [x for x in fps_limit_list if x < fps_mean]
-                                
-                                if lower_values:
-                                    # If current cap is already lower than fps_mean
-                                    if current_fps_cap <= fps_mean:
-                                        # Get current index and move to next lower value
-                                        current_index = fps_limit_list.index(current_fps_cap)
-                                        if current_index < 0:
-                                            next_fps = fps_limit_list[current_index - 1]
-                                            CurrentFPSOffset = next_fps - current_maxcap
-                                            rtss.set_fractional_framerate(current_profile, next_fps)
-                                    else:
-                                        # Jump to highest value below fps_mean
-                                        next_fps = max(lower_values)
-                                        CurrentFPSOffset = next_fps - current_maxcap
-                                        rtss.set_fractional_framerate(current_profile, next_fps)
-                            except ValueError:
-                                # If current FPS not in list, find nearest lower value
-                                lower_values = [x for x in fps_limit_list if x < current_fps_cap]
-                                if lower_values:
-                                    next_fps = max(lower_values)
-                                    CurrentFPSOffset = next_fps - current_maxcap
-                                    rtss.set_fractional_framerate(current_profile, next_fps)
+                            next_fps = next_cap_on_decrease(fps_limit_list, current_fps_cap, fps_mean)
+                            if next_fps is not None:
+                                CurrentFPSOffset = next_fps - current_maxcap
+                                rtss.set_fractional_framerate(current_profile, next_fps)
 
                         # --- COOLDOWN LOGIC ---
                         if increase_cooldown > 0:
@@ -1210,8 +1191,17 @@ if initial_method == "LibreHM":
 else:
     dpg.configure_item("legacy_childwindow", show=True)
 
+# Thread-safe queue for deferring dpg.* calls to the main render thread (F3/F9).
+# Background threads submit callables; the per-frame hook (_frame_hook, defined below)
+# drains the queue once per frame on the main thread, where DearPyGui is safe to call.
+gui_queue = GuiQueue()
+# Route DPG calls made from background threads (logger, tray) through the queue so
+# they run on the main render thread where DearPyGui is safe.
+logger.set_gui_queue(gui_queue)
+tray.set_gui_queue(gui_queue)
+
 #TODO: If needed, possibility of added monitoring method check for these
-gpu_monitor = GPUUsageMonitor(lambda: running, logger, dpg, themes_manager, interval=(cm.gpupollinginterval/1000), max_samples=cm.gpupollingsamples, percentile=cm.gpupercentile)
+gpu_monitor = GPUUsageMonitor(lambda: running, logger, dpg, themes_manager, gui_queue=gui_queue, interval=(cm.gpupollinginterval/1000), max_samples=cm.gpupollingsamples, percentile=cm.gpupercentile)
 cpu_monitor = CPUUsageMonitor(lambda: running, logger, dpg, interval=(cm.cpupollinginterval/1000), max_samples=cm.cpupollingsamples, percentile=cm.cpupercentile)
 
 # Assuming logger and dpg are initialized
@@ -1246,21 +1236,41 @@ logger.add_log("Initialized successfully.")
 #dpg.show_style_editor()
 #dpg.show_imgui_demo()
 
-def _on_first_frame():
+# Per-frame main-thread hook (self-rescheduling). DearPyGui frame callbacks use
+# ABSOLUTE frame numbers and are one-shot (a later registration for the same frame
+# overwrites the earlier one), so the hook re-registers itself for the next frame via
+# get_frame_count() + 1. It drains the GuiQueue every frame (so deferred dpg.* calls
+# from background threads run where DPG is safe) and runs the one-shot first-frame
+# startup work exactly once.
+_frame_state = {"first_done": False}
+
+def _frame_hook():
     try:
-        tray.minimize_on_startup_if_needed(cm.minimizeonstartup)
+        gui_queue.drain()
     except Exception:
         pass
-    # mark DPG/UI initialization complete for ConfigManager
+    if not _frame_state["first_done"]:
+        _frame_state["first_done"] = True
+        try:
+            tray.minimize_on_startup_if_needed(cm.minimizeonstartup)
+        except Exception:
+            pass
+        # mark DPG/UI initialization complete for ConfigManager
+        try:
+            cm.ui_initialized = True
+            # run hide_unselected once now that tables/layouts have been initialized
+            cm.hide_unselected_callback(None, None, None)
+            cm.startup_profile_selection()
+            cm.refresh_ui_callbacks()
+        except Exception:
+            pass
+    # Re-register for the next frame. Guarded because a queued callback (e.g. the
+    # tray Exit action) may have destroyed the DPG context during the drain above.
     try:
-        cm.ui_initialized = True
-        # run hide_unselected once now that tables/layouts have been initialized
-        cm.hide_unselected_callback(None, None, None)
-        cm.startup_profile_selection()
-        cm.refresh_ui_callbacks()
+        dpg.set_frame_callback(dpg.get_frame_count() + 1, _frame_hook)
     except Exception:
         pass
 
-dpg.set_frame_callback(1, _on_first_frame)
+dpg.set_frame_callback(1, _frame_hook)
 
 dpg.start_dearpygui()

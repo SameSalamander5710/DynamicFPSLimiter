@@ -26,6 +26,7 @@ SRC_DIR = REPO_ROOT / "src"
 CORE_MODULES = [
     "core.autopilot",
     "core.autostart",
+    "core.cap_policy",
     "core.config_manager",
     "core.cpu_monitor",
     "core.fps_utils",

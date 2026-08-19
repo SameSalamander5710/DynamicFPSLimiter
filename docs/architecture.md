@@ -90,15 +90,17 @@ are shared **without locks**; `monitoring_loop` writes them while GUI callbacks 
 |---|---|
 | `src/__main__.py` | Entry point: UAC self-elevation (dev mode), `--build` PyInstaller runner |
 | `src/core/DFL_v5.py` | Main app: all DPG UI, the four background loops, orchestration (~1,265 lines, no app class) |
-| `src/core/config_manager.py` | INI load/save, defaults, profile management, GUI↔config sync, dynamic LHM keys |
-| `src/core/fps_utils.py` | FPS-cap ladder (custom/step/ratio) + core `evaluate_cap_change` decision engine |
-| `src/core/librehardwaremonitor.py` | `LHMSensor` polling thread + `get_all_sensor_infos` hardware discovery |
-| `src/core/lhm_loader.py` | pythonnet CLR bootstrap, .NET runtime detection, DLL-variant selection |
-| `src/core/gpu_monitor.py` | Legacy GPU usage via PDH performance counters (per-LUID 3D engine) |
+| `src/core/config_manager.py` | INI load/save, defaults, profile management, GUI↔config sync, dynamic LHM keys; maintains a `current_method` snapshot (init + `current_method_callback`) for the tray hover text (F3 fix) |
+| `src/core/fps_utils.py` | FPS-cap ladder (custom/step/ratio) + core `evaluate_cap_change` decision engine; `current_stepped_limits()` is total — always returns a non-empty list, falling back to the stepped ladder on bad/unknown capmethod (F5 fix) |
+| `src/core/cap_policy.py` | Pure cap **decrease** policy (`next_cap_on_decrease`), extracted from `DFL_v5` (F1 fix); no GUI/RTSS/.NET deps |
+| `src/core/librehardwaremonitor.py` | `LHMSensor` polling thread + `get_all_sensor_infos` hardware discovery; degrades to a disabled no-sensor state when LHM is unavailable (F2 fix); `start()` re-opens a closed `Computer` so Stop→Start keeps working and `get_all_sensor_infos` closes its one-shot `Computer` (F7 fix) |
+| `src/core/lhm_loader.py` | pythonnet CLR bootstrap, .NET runtime detection, DLL-variant selection; raises `LHMLoadError` on load failure (F2 fix) |
+| `src/core/gpu_monitor.py` | Legacy GPU usage via PDH performance counters (per-LUID 3D engine); `initialize()` closes the prior PDH query before re-opening and `reinitialize()` re-assigns `counter_handles` (F8 fix); `get_gpu_usage()` reuses the live query (no re-init), `self.luid` reads/writes are lock-guarded, and its `dpg.*` calls defer to the `GuiQueue` (F9 fix) |
+| `src/core/gui_queue.py` | Thread-safe `GuiQueue` — background threads `submit(fn, *args, **kwargs)`; a per-frame main-thread hook `drain()`s the queue (per-callback exception isolation, optional `on_error`) so DearPyGui is only touched on the main thread. The hook self-reschedules via `dpg.set_frame_callback(dpg.get_frame_count() + 1, hook)` because DPG frame callbacks use **absolute** frame numbers and are one-shot. Injected into `GPUUsageMonitor`, `logger`, and `TrayManager` (F3 fix — complete) |
 | `src/core/cpu_monitor.py` | Legacy CPU usage via psutil (per-core max) |
-| `src/core/rtss_functions.py` | `RTSSController`: loads `RTSSHooks64.dll`, profile API + `.cfg` edits |
+| `src/core/rtss_functions.py` | `RTSSController`: loads `RTSSHooks64.dll`, profile API + `.cfg` edits; `set_fractional_fps_direct` safely appends missing `Limit=`/`LimitDenominator=` lines (F4 fix) |
 | `src/core/rtss_interface.py` | `RTSSInterface`: reads live FPS from `RTSSSharedMemoryV2` |
-| `src/core/tray_functions.py` | pystray tray icon + Win32 taskbar show/hide + title-bar drag |
+| `src/core/tray_functions.py` | pystray tray icon + Win32 taskbar show/hide + title-bar drag; every pystray-thread action (start/stop toggle, profile/method menu, restore/exit) and `update_hover_text` are routed to the main DPG thread via an injected `GuiQueue` (`_run_on_main`), and the hover text reads profile/method from the ConfigManager snapshot (F3 fix) |
 | `src/core/themes.py` | DearPyGui theme + font definitions (`ThemesManager`) |
 | `src/core/tooltips.py` | Central tooltip text registry + DPG apply helpers |
 | `src/core/launch_popup.py` | Loading / missing-RTSS / RTSS-error popups (own DPG lifecycles) |
@@ -107,7 +109,7 @@ are shared **without locks**; `monitoring_loop` writes them while GUI callbacks 
 | `src/core/autopilot.py` | Foreground-process detection + autopilot start/stop |
 | `src/core/autostart.py` | `AutoStartManager`: `schtasks` Run-key create/delete |
 | `src/core/idle_timer.py` | Win32 `GetLastInputInfo` idle duration (idle FPS-cap mode) |
-| `src/core/logger.py` | logging setup, DPG log-text refresh, uncaught-exception hook |
+| `src/core/logger.py` | logging setup, DPG log-text refresh, uncaught-exception hook; `log_messages` is lock-guarded (thread-safe) and the DPG `LogText` refresh is the only `dpg.*` touch point, run on the main thread via an injected `GuiQueue` (F3 fix) |
 | `src/core/video2gif.py` | **Dev-only** CLI (MP4→GIF); not imported by the app |
 | `src/core/backup_snippets.py` | **Not Python** — a notes snippet; not imported (see `flaws.md` #7) |
 
@@ -126,8 +128,10 @@ are shared **without locks**; `monitoring_loop` writes them while GUI callbacks 
 6. **Cap decision** (only when GPU usage is valid and the active window isn't DFL itself):
    - **Active**: `fps_utils.evaluate_cap_change(gpu_values, cpu_values)` →
      `(should_decrease, should_increase)`.
-     - **Decrease**: if not already at `mincap`, step the cap **down** the ladder toward
-       `fps_mean` (larger jumps when far above).
+      - **Decrease**: if not already at `mincap`, `cap_policy.next_cap_on_decrease` picks the
+        next rung — one step down when `cap <= fps_mean`, a jump to the highest rung below
+        `fps_mean` when `cap > fps_mean`, or the highest rung below the current cap when it is
+        not on the ladder; `None` (no change) at the floor or empty ladder.
      - **Increase**: if below `maxcap` and the increase-cooldown has expired, step the cap
        **up one** ladder value; reset the cooldown to `delaybeforeincrease`.
    - **Idle**: record the active cap, drop to `idle_fps_cap` for `idle_fps_delay` seconds.
@@ -174,7 +178,10 @@ Config lives in `<app dir>/config/` (`src/config/` in dev, next to the exe when 
   popup and exits. Caps are written via the profile API **and** direct `.cfg` text edits.
 - **LibreHardwareMonitor** — `lhm_loader` boots the .NET CLR (`pythonnet`), detects the
   available .NET runtime (Framework 4.x / .NET Core), and picks the matching
-  `LibreHardwareMonitorLib.dll` variant (net472 / net6.0 / net8.0 / netstandard2.0).
+  `LibreHardwareMonitorLib.dll` variant (net472 / net6.0 / net8.0 / netstandard2.0). Load
+  failure raises `LHMLoadError` (with the attempted DLL path); every bootstrap site degrades
+  gracefully — `get_all_sensor_infos` returns `[]`, `LHMSensor` runs disabled, `FPSUtils`
+  keeps `None` types — so the app still starts with LibreHM simply missing its sensors (F2 fix).
 - **Windows Performance Counters** (Legacy GPU) — PDH via `ctypes`, per-LUID
   `\GPU Engine(...)\Utilization Percentage` (3D engine only).
 - **psutil** (Legacy CPU) — per-core `cpu_percent`, max core.

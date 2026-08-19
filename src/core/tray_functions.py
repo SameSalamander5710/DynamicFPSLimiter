@@ -55,7 +55,7 @@ def is_left_mouse_button_down():
     return (ctypes.windll.user32.GetAsyncKeyState(VK_LBUTTON) & 0x8000) != 0
 
 class TrayManager:
-    def __init__(self, app_name, icon_path, on_restore, on_exit, viewport_width, config_manager_instance, hover_text=None, start_stop_callback=None, fps_utils=None):
+    def __init__(self, app_name, icon_path, on_restore, on_exit, viewport_width, config_manager_instance, hover_text=None, start_stop_callback=None, fps_utils=None, gui_queue=None):
         self.app_name = app_name
         self.icon_path = icon_path
         self.on_restore = on_restore
@@ -72,6 +72,24 @@ class TrayManager:
         self.start_stop_callback = start_stop_callback
         self.running = False  # Track running state for menu
         self.fps_utils = fps_utils
+        self.gui_queue = gui_queue
+
+    def set_gui_queue(self, queue):
+        """Inject the GuiQueue so tray-triggered DPG calls run on the main thread."""
+        self.gui_queue = queue
+
+    def _run_on_main(self, fn):
+        """Run ``fn`` on the main DPG thread via the GuiQueue, or inline if no queue.
+
+        Tray menu callbacks fire on the pystray background thread, where DearPyGui
+        is not safe. Deferring the whole action to the main thread keeps every
+        ``dpg.*`` call (including those inside the ConfigManager callbacks it
+        triggers) on the render thread.
+        """
+        if self.gui_queue is not None:
+            self.gui_queue.submit(fn)
+        else:
+            fn()
 
     @staticmethod
     def get_centered_viewport_position(viewport_width, viewport_height):
@@ -145,11 +163,13 @@ class TrayManager:
         if self.cm and getattr(self.cm, "autopilot", False):
             return
         if self.start_stop_callback:
-            self.start_stop_callback(None, None, self.cm)
-            #self.running = not self.running
-            # Update menu label
-            self._update_menu()
-            self.update_hover_text()
+            def _do():
+                self.start_stop_callback(None, None, self.cm)
+                #self.running = not self.running
+                # Update menu label
+                self._update_menu()
+                self.update_hover_text()
+            self._run_on_main(_do)
 
     def _update_menu(self):
         if self.icon:
@@ -188,10 +208,10 @@ class TrayManager:
         if hasattr(self.cm, "profiles_config"):
             for profile in self.cm.profiles_config.sections():
                 def make_callback(profile_name):
-                    return lambda icon, item: (
-                        dpg.set_value("profile_dropdown", profile_name),
+                    def _do():
+                        dpg.set_value("profile_dropdown", profile_name)
                         self._select_profile_from_tray(profile_name)
-                    )
+                    return lambda icon, item: self._run_on_main(_do)
                 profiles.append(MenuItem(
                     profile,
                     make_callback(profile)
@@ -203,10 +223,10 @@ class TrayManager:
         methods = ["ratio", "step", "custom"]
         for m in methods:
             def make_callback(method_name):
-                return lambda icon, item: (
-                    dpg.set_value("input_capmethod", method_name),
+                def _do():
+                    dpg.set_value("input_capmethod", method_name)
                     self._select_method_from_tray(method_name)
-                )
+                return lambda icon, item: self._run_on_main(_do)
             yield MenuItem(
                 m.capitalize(),
                 make_callback(m)
@@ -270,15 +290,25 @@ class TrayManager:
         2) _toggle_start_stop
         3) _create_icon
         """
+        # May be called from the tray (pystray) thread. Defer to the main DPG thread
+        # so the dpg.* reads inside (e.g. fps_utils.current_stepped_limits) are safe.
+        if threading.current_thread() is threading.main_thread() or self.gui_queue is None:
+            self._update_hover_text_impl()
+        else:
+            self.gui_queue.submit(self._update_hover_text_impl)
+
+    def _update_hover_text_impl(self):
         if getattr(self.cm, "autopilot", False):
             status = "Autopilot Mode"
         else:
             status = "Click to Start" if not self.running else "Click to Stop"
 
-        profile_name = dpg.get_value("profile_dropdown")
-        method = dpg.get_value("input_capmethod")
+        # Read from the ConfigManager snapshot (thread-safe) instead of dpg.get_value,
+        # so this is safe even if the surrounding call path is off the main thread.
+        profile_name = getattr(self.cm, "current_profile", "?")
+        method = getattr(self.cm, "current_method", "ratio").capitalize()
         max_fps = max(self.fps_utils.current_stepped_limits()) if self.fps_utils else "?"
-        
+
         self.hover_text = (
             f"{self.app_name}\n"
             f"Profile: {profile_name}\n"
@@ -307,15 +337,19 @@ class TrayManager:
             self.icon.icon = image
 
     def _restore_window(self, icon, item):
-        # Called from tray thread, so use a thread to call the GUI callback
-        threading.Thread(target=self.on_restore, daemon=True).start()
+        # Called from the tray thread; defer the restore action to the main thread.
+        if self.on_restore:
+            self._run_on_main(self.on_restore)
         self.is_tray_active = False
         show_to_taskbar()
         if self.icon:
             self.icon.stop()
 
     def _exit_app(self, icon, item):
-        threading.Thread(target=self.on_exit, daemon=True).start()
+        # Called from the tray thread; defer the exit action to the main thread so
+        # its dpg.* calls (e.g. destroy_context) run where DearPyGui is safe.
+        if self.on_exit:
+            self._run_on_main(self.on_exit)
         self.is_tray_active = False
         if self.icon:
             self.icon.stop()

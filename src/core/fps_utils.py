@@ -1,4 +1,4 @@
-from core.lhm_loader import ensure_loaded, get_types
+from core.lhm_loader import get_types, LHMLoadError
 import os
 from pathlib import Path
 import dearpygui.dearpygui as dpg
@@ -17,13 +17,12 @@ class FPSUtils:
         self.reset_summary_statistics()
 
         # Ensure LHM assembly loaded and get types (pass Base_dir from caller)
-        SensorType, HardwareType = None, None
         try:
             Computer, SensorType, HardwareType = get_types(base_dir)
-        except Exception:
-            # fallback: call ensure_loaded explicitly
-            Computer, SensorType, HardwareType = ensure_loaded(base_dir)
-        # store types if needed: self.SensorType = SensorType, etc.
+        except LHMLoadError as exc:
+            if self.logger is not None:
+                self.logger.add_log(f"LibreHardwareMonitor unavailable ({exc}); LibreHM monitoring disabled.")
+            SensorType, HardwareType = None, None
         self.SensorType = SensorType
         self.HardwareType = HardwareType
 
@@ -39,14 +38,22 @@ class FPSUtils:
             if custom_limits and self.cm:
                 try:
                     custom_limits = self.cm.parse_and_normalize_string_to_decimal_set(custom_limits)
-                    return custom_limits
+                    if custom_limits:
+                        return custom_limits
                 except Exception as e:
                     if self.logger:
                         self.logger.add_log(f"Error parsing custom FPS limits: {e}")
+            if self.logger:
+                self.logger.add_log("Custom FPS limits unavailable; falling back to stepped limits.")
+            return self.make_stepped_values(maximum, minimum, step)
         elif use_custom == "step":
             return self.make_stepped_values(maximum, minimum, step)
         elif use_custom == "ratio":
             return self.make_ratioed_values(maximum, minimum, ratio)
+        else:
+            if self.logger:
+                self.logger.add_log(f"Unknown FPS cap method '{use_custom}'; falling back to stepped limits.")
+            return self.make_stepped_values(maximum, minimum, step)
 
     def make_stepped_values(self, maximum, minimum, step):
         values = list(range(maximum, minimum - 1, -step))

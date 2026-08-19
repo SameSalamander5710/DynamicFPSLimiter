@@ -49,7 +49,7 @@ class ConfigManager:
         self.profiles_config = configparser.ConfigParser()
         self.load_or_init_configs()
         self.load_preferences()
-        self.sensor_infos = get_all_sensor_infos(base_dir)
+        self.sensor_infos = get_all_sensor_infos(base_dir, self.logger)
 
         # flag set externally (first-frame) to indicate tables/layouts are ready, to overcome Dear ImGui table bug
         self.ui_initialized = False
@@ -164,6 +164,7 @@ class ConfigManager:
         }
 
         self.current_profile = "Global"
+        self.current_method = "ratio"
         self.Default_settings = {
             key: self.get_setting(key, self.key_type_map.get(key, int))
             for key in self.Default_settings_original
@@ -611,6 +612,7 @@ class ConfigManager:
     def current_method_callback(self, sender=None, app_data=None, user_data=None):
 
         method = app_data.lower() if app_data else dpg.get_value("input_capmethod").lower()
+        self.current_method = method
 
         dpg.bind_item_theme("input_capratio", self.themes["enabled_text_theme"] if method == "ratio" else self.themes["disabled_text_theme"])
         dpg.bind_item_theme("label_capratio", self.themes["enabled_text_theme"] if method == "ratio" else self.themes["disabled_text_theme"])

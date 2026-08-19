@@ -14,7 +14,7 @@ class PDH_FMT_COUNTERVALUE(ctypes.Structure):
     _fields_ = [("CStatus", ctypes.c_ulong), ("doubleValue", ctypes.c_double)]
 
 class GPUUsageMonitor:
-    def __init__(self, get_running, logger_instance, dpg_instance, themes_instance, interval=0.1, max_samples=20, percentile=70):
+    def __init__(self, get_running, logger_instance, dpg_instance, themes_instance, gui_queue=None, interval=0.1, max_samples=20, percentile=70):
         self.interval = interval
         self.max_samples = max_samples
         self.samples = []
@@ -23,6 +23,7 @@ class GPUUsageMonitor:
         self.logger = logger_instance
         self.dpg = dpg_instance
         self.themes_manager = themes_instance
+        self.gui_queue = gui_queue
         self.query_handle = None
         self.counter_handles = {}
         self.instances = []  # Add this line
@@ -38,8 +39,20 @@ class GPUUsageMonitor:
         self._thread.start()
         self.logger.add_log(f"GPU monitoring started with interval: {round(self.interval*1000)} ms, max_samples: {self.max_samples}, percentile: {self.percentile}")
 
+    def _close_query(self) -> None:
+        """Close the current PDH query (if any) and reset its state.
+
+        Counter handles belong to the query, so they are invalidated and cleared
+        when the query is closed.
+        """
+        if self.query_handle:
+            pdh.PdhCloseQuery(self.query_handle)
+            self.query_handle = None
+            self.counter_handles = {}
+
     def initialize(self) -> None:
         """Initialize PDH query."""
+        self._close_query()
         self.query_handle = self._init_gpu_state()
         self.instances = self._setup_gpu_instances()  # Store instances
         self.query_handle, self.counter_handles = self._setup_gpu_query_from_instances(
@@ -125,13 +138,14 @@ class GPUUsageMonitor:
         return query_handle, dict(counter_handles_by_luid)
 
     def get_gpu_usage(self, target_luid: Optional[str] = None, engine_type: str = "engtype_") -> Tuple[int, str]:
-        
-        self.initialize()
-        temp_counter_handles = {}
-        # Setup counters for the specified engine type
-        _, temp_counter_handles = self._setup_gpu_query_from_instances(
-            self.query_handle, self.instances, engine_type  # Use stored instances
-        )
+
+        # Reuse the existing PDH query and counter handles instead of re-initializing
+        # (F9 fix). This method runs on the DPG/main thread (from the LUID button
+        # callback) while gpu_run uses the same handles on the monitor thread; calling
+        # initialize() here would clobber query_handle/counter_handles mid-run and
+        # previously leaked the old query. The stored counter_handles are set up for
+        # engtype_3D, which matches the only caller (toggle_luid_selection).
+        counter_handles = self.counter_handles
 
         pdh.PdhCollectQueryData(self.query_handle)
         time.sleep(0.1)
@@ -139,9 +153,9 @@ class GPUUsageMonitor:
 
         usage_by_luid = {}
         handles_to_use = (
-            {target_luid: temp_counter_handles[target_luid]}
-            if target_luid and target_luid in temp_counter_handles
-            else temp_counter_handles
+            {target_luid: counter_handles[target_luid]}
+            if target_luid and target_luid in counter_handles
+            else counter_handles
         )
 
         for luid, handles in handles_to_use.items():
@@ -198,7 +212,8 @@ class GPUUsageMonitor:
                     pdh.PdhCollectQueryData(self.query_handle)
 
                     usage_by_luid = {}
-                    target_luid = self.luid
+                    with self._lock:
+                        target_luid = self.luid
                     handles_to_use = (
                         {target_luid: self.counter_handles[target_luid]}
                         if target_luid and target_luid in self.counter_handles
@@ -246,31 +261,43 @@ class GPUUsageMonitor:
             usage, luid = self.get_gpu_usage(engine_type="engtype_3D")
             if luid:
                 self.logger.add_log(f"Tracking LUID: {luid} | Current 3D engine Utilization: {usage}%")
-                self.dpg.configure_item("luid_button", label="Revert to all GPUs")
-                self.dpg.bind_item_theme("luid_button", self.themes_manager.themes["revert_gpu_theme"])  # Apply blue theme
-                self.luid = luid
+                self._submit_dpg(self.dpg.configure_item, "luid_button", label="Revert to all GPUs")
+                self._submit_dpg(self.dpg.bind_item_theme, "luid_button", self.themes_manager.themes["revert_gpu_theme"])  # Apply blue theme
+                with self._lock:
+                    self.luid = luid
                 self.luid_selected = True
-                self.dpg.set_value("luid_status_text", f"Tracking LUID: {luid} ({usage}% 3D)")
+                self._submit_dpg(self.dpg.set_value, "luid_status_text", f"Tracking LUID: {luid} ({usage}% 3D)")
             else:
                 self.logger.add_log("Failed to detect active LUID.")
-                self.dpg.set_value("luid_status_text", "Failed to detect active LUID.")
+                self._submit_dpg(self.dpg.set_value, "luid_status_text", "Failed to detect active LUID.")
         else:
             # Second click: deselect
-            self.luid = "All"
+            with self._lock:
+                self.luid = "All"
             self.logger.add_log("Tracking all GPU 3D usages.")
-            self.dpg.configure_item("luid_button", label="Detect Render GPU")
-            self.dpg.bind_item_theme("luid_button", self.themes_manager.themes["detect_gpu_theme"])  # Apply default grey theme
+            self._submit_dpg(self.dpg.configure_item, "luid_button", label="Detect Render GPU")
+            self._submit_dpg(self.dpg.bind_item_theme, "luid_button", self.themes_manager.themes["detect_gpu_theme"])  # Apply default grey theme
             self.luid_selected = False
-            self.dpg.set_value("luid_status_text", "Tracking all GPU 3D usages.")
+            self._submit_dpg(self.dpg.set_value, "luid_status_text", "Tracking all GPU 3D usages.")
         return self.luid, self.luid_selected
+
+    def _submit_dpg(self, fn, *args, **kwargs) -> None:
+        """Route a ``dpg`` call through the GuiQueue so it runs on the main thread.
+
+        Falls back to calling ``fn`` directly if no GuiQueue is configured (e.g. in
+        tests that construct the monitor without one), preserving prior behavior.
+        """
+        if self.gui_queue is not None:
+            self.gui_queue.submit(fn, *args, **kwargs)
+        else:
+            fn(*args, **kwargs)
 
     def reinitialize(self, engine_type: str = "engtype_3D"):
         self.logger.add_log("Reinitializing GPU monitor.")
         self.initialize()
 
-        temp_counter_handles = {}
         # Setup counters for the specified engine type
-        _, temp_counter_handles = self._setup_gpu_query_from_instances(
+        _, self.counter_handles = self._setup_gpu_query_from_instances(
             self.query_handle, self.instances, engine_type  # Use stored instances
         )
 

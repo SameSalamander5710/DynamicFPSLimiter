@@ -218,7 +218,8 @@ class RTSSController:
         with open(profile_file, "r", encoding="utf-8") as f:
             lines = f.readlines()
 
-        found = False
+        found_limit = False
+        found_denominator = False
         for i, line in enumerate(lines):
             stripped = line.strip()
             if stripped.startswith("Limit="):

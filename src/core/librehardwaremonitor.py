@@ -1,4 +1,4 @@
-from core.lhm_loader import ensure_loaded, get_types
+from core.lhm_loader import ensure_loaded, get_types, LHMLoadError
 from pathlib import Path
 from collections import deque, defaultdict
 import time
@@ -33,13 +33,14 @@ def get_selected_sensor_values(hardware, sensor_map):
             result.setdefault(sensor.SensorType, {})[name] = sensor.Value
     return result
 
-def get_all_sensor_infos(base_dir):
+def get_all_sensor_infos(base_dir, logger=None):
 
     try:
         Computer, SensorType, HardwareType = get_types(base_dir)
-    except Exception:
-        # fallback: call ensure_loaded explicitly
-        Computer, SensorType, HardwareType = ensure_loaded(base_dir)
+    except LHMLoadError as exc:
+        if logger is not None and hasattr(logger, "add_log"):
+            logger.add_log(f"LibreHardwareMonitor unavailable ({exc}); no LibreHM sensors will be listed.")
+        return []
 
     sensors = []
     cpu_count = 0
@@ -51,68 +52,71 @@ def get_all_sensor_infos(base_dir):
     computer.IsCpuEnabled = True
     computer.Open()
 
-    for hw in computer.Hardware:
-        hw.Update()
-        if hw.HardwareType == HardwareType.Cpu:
-            cpu_count += 1
-            param_indices = {"Load": 0, "Power": 0, "Temperature": 0}
-            name_counts = {}  # track duplicate sensor names per hardware
-            for sensor in hw.Sensors:
-                if sensor.SensorType in [SensorType.Load, SensorType.Power, SensorType.Temperature]:
-                    sensor_type_str = sensor.SensorType.ToString() if hasattr(sensor.SensorType, "ToString") else str(sensor.SensorType)
-                    param_indices[sensor_type_str] += 1
+    try:
+        for hw in computer.Hardware:
+            hw.Update()
+            if hw.HardwareType == HardwareType.Cpu:
+                cpu_count += 1
+                param_indices = {"Load": 0, "Power": 0, "Temperature": 0}
+                name_counts = {}  # track duplicate sensor names per hardware
+                for sensor in hw.Sensors:
+                    if sensor.SensorType in [SensorType.Load, SensorType.Power, SensorType.Temperature]:
+                        sensor_type_str = sensor.SensorType.ToString() if hasattr(sensor.SensorType, "ToString") else str(sensor.SensorType)
+                        param_indices[sensor_type_str] += 1
 
-                    # Handle duplicate sensor names like LHMSensor.get_selected_sensor_values does
-                    base_name = sensor.Name
-                    count = name_counts.get(base_name, 0)
-                    if count == 0:
-                        indexed_name = base_name
-                    else:
-                        indexed_name = f"{base_name} ({count})"
-                    name_counts[base_name] = count + 1
+                        # Handle duplicate sensor names like LHMSensor.get_selected_sensor_values does
+                        base_name = sensor.Name
+                        count = name_counts.get(base_name, 0)
+                        if count == 0:
+                            indexed_name = base_name
+                        else:
+                            indexed_name = f"{base_name} ({count})"
+                        name_counts[base_name] = count + 1
 
-                    parameter_id = f"cpu{cpu_count}_{sensor_type_str.lower()}_{param_indices[sensor_type_str]:02d}"
-                    hw_id = f"cpu{cpu_count}"
-                    sensors.append({
-                        "hw_type": hw.HardwareType,
-                        "hw_name": hw.Name,
-                        "sensor_type": sensor.SensorType,
-                        "sensor_name": sensor.Name,
-                        "sensor_name_indexed": indexed_name,   # match LHMSensor naming for duplicates
-                        "parameter_id": parameter_id,
-                        "hw_id": hw_id
-                    })
-        elif hw.HardwareType in (HardwareType.GpuAmd, HardwareType.GpuNvidia):
-            gpu_count += 1
-            param_indices = {"Load": 0, "Power": 0, "Temperature": 0}
-            name_counts = {}  # track duplicate sensor names per GPU
-            for sensor in hw.Sensors:
-                if sensor.SensorType in [SensorType.Load, SensorType.Power, SensorType.Temperature]:
-                    sensor_type_str = sensor.SensorType.ToString() if hasattr(sensor.SensorType, "ToString") else str(sensor.SensorType)
-                    param_indices[sensor_type_str] += 1
+                        parameter_id = f"cpu{cpu_count}_{sensor_type_str.lower()}_{param_indices[sensor_type_str]:02d}"
+                        hw_id = f"cpu{cpu_count}"
+                        sensors.append({
+                            "hw_type": hw.HardwareType,
+                            "hw_name": hw.Name,
+                            "sensor_type": sensor.SensorType,
+                            "sensor_name": sensor.Name,
+                            "sensor_name_indexed": indexed_name,   # match LHMSensor naming for duplicates
+                            "parameter_id": parameter_id,
+                            "hw_id": hw_id
+                        })
+            elif hw.HardwareType in (HardwareType.GpuAmd, HardwareType.GpuNvidia):
+                gpu_count += 1
+                param_indices = {"Load": 0, "Power": 0, "Temperature": 0}
+                name_counts = {}  # track duplicate sensor names per GPU
+                for sensor in hw.Sensors:
+                    if sensor.SensorType in [SensorType.Load, SensorType.Power, SensorType.Temperature]:
+                        sensor_type_str = sensor.SensorType.ToString() if hasattr(sensor.SensorType, "ToString") else str(sensor.SensorType)
+                        param_indices[sensor_type_str] += 1
 
-                    # Handle duplicate sensor names the same way LHMSensor does
-                    base_name = sensor.Name
-                    count = name_counts.get(base_name, 0)
-                    if count == 0:
-                        indexed_name_only = base_name
-                    else:
-                        indexed_name_only = f"{base_name} ({count})"
-                    name_counts[base_name] = count + 1
+                        # Handle duplicate sensor names the same way LHMSensor does
+                        base_name = sensor.Name
+                        count = name_counts.get(base_name, 0)
+                        if count == 0:
+                            indexed_name_only = base_name
+                        else:
+                            indexed_name_only = f"{base_name} ({count})"
+                        name_counts[base_name] = count + 1
 
-                    parameter_id = f"gpu{gpu_count}_{sensor_type_str.lower()}_{param_indices[sensor_type_str]:02d}"
-                    hw_id = f"gpu{gpu_count}"
-                    # Build the indexed sensor name exactly as LHMSensor._poll_loop uses for gpu_percentiles keys
-                    sensor_name_indexed = f"{gpu_count} {indexed_name_only}"
-                    sensors.append({
-                        "hw_type": hw.HardwareType,
-                        "hw_name": hw.Name,
-                        "sensor_type": sensor.SensorType,
-                        "sensor_name": sensor.Name,
-                        "sensor_name_indexed": sensor_name_indexed,
-                        "parameter_id": parameter_id,
-                        "hw_id": hw_id
-                    })
+                        parameter_id = f"gpu{gpu_count}_{sensor_type_str.lower()}_{param_indices[sensor_type_str]:02d}"
+                        hw_id = f"gpu{gpu_count}"
+                        # Build the indexed sensor name exactly as LHMSensor._poll_loop uses for gpu_percentiles keys
+                        sensor_name_indexed = f"{gpu_count} {indexed_name_only}"
+                        sensors.append({
+                            "hw_type": hw.HardwareType,
+                            "hw_name": hw.Name,
+                            "sensor_type": sensor.SensorType,
+                            "sensor_name": sensor.Name,
+                            "sensor_name_indexed": sensor_name_indexed,
+                            "parameter_id": parameter_id,
+                            "hw_id": hw_id
+                        })
+    finally:
+        computer.Close()
     return sensors
 
 class LHMSensor:
@@ -133,19 +137,28 @@ class LHMSensor:
         self._thread = None
         self._lock = threading.Lock()
         self._should_stop = threading.Event()
+        self.disabled = False
 
         # Ensure assembly loaded and types available
-        Computer, SensorType, HardwareType = ensure_loaded(base_dir, self.logger)
-
+        try:
+            Computer, SensorType, HardwareType = ensure_loaded(base_dir, self.logger)
+        except LHMLoadError as exc:
+            self.disabled = True
+            self.logger.add_log(f"LibreHardwareMonitor unavailable ({exc}); LibreHM monitoring disabled.")
+            self.Computer = None
+            self.SensorType = None
+            self.HardwareType = None
+            self.computer = None
+            self.cpu_name = None
+            self.gpu_name = None
+            return
         self.Computer = Computer
         self.SensorType = SensorType
         self.HardwareType = HardwareType
 
         # Initialize computer
-        self.computer = Computer()
-        self.computer.IsGpuEnabled = True
-        self.computer.IsCpuEnabled = True
-        self.computer.Open()
+        self._computer_open = False
+        self._create_and_open_computer()
 
 
         # Define which sensors to extract for each hardware type and sensor type
@@ -184,7 +197,22 @@ class LHMSensor:
                 names.append(hw.Name)
         return names
 
+    def _create_and_open_computer(self):
+        """Create a fresh Computer, enable CPU/GPU, and open it.
+
+        Idempotent with respect to a prior close: always builds a new instance
+        so a Stop -> Start cycle re-opens clean hardware rather than iterating
+        a Computer that has already been Closed.
+        """
+        self.computer = self.Computer()
+        self.computer.IsGpuEnabled = True
+        self.computer.IsCpuEnabled = True
+        self.computer.Open()
+        self._computer_open = True
+
     def start(self):
+        if self.disabled:
+            return
     # Reset histories and percentiles
         with self._lock:
             self.cpu_history.clear()
@@ -195,6 +223,9 @@ class LHMSensor:
             self.gpu_percentiles.clear()
         if self._thread and self._thread.is_alive():
             return  # Already running
+        if self.computer is None or not self._computer_open:
+            self._create_and_open_computer()
+            self.cpu_name = self.get_cpu_name()
         self._should_stop.clear()
         self._thread = threading.Thread(target=self._poll_loop, daemon=True)
         self._thread.start()
@@ -203,7 +234,9 @@ class LHMSensor:
         self._should_stop.set()
         if self._thread:
             self._thread.join(timeout=2)
-        self.computer.Close()
+        if self.computer is not None and self._computer_open:
+            self.computer.Close()
+            self._computer_open = False
         self.logger.add_log("Stopped LibreHardwareMonitor polling.")
 
     def _poll_loop(self):
