@@ -85,6 +85,12 @@ frame callback, or `dpg`-safe wrappers). Never call `dpg.*` from a worker thread
 `_frame_hook` in `DFL_v5.py` — DearPyGui frame callbacks use **absolute** frame numbers and are
 one-shot, so the hook re-registers via `dpg.set_frame_callback(dpg.get_frame_count() + 1, hook)`;
 there is no `update_callback`).
+
+> **Update (2026-08-20):** the self-rescheduling `_frame_hook` drain was replaced by the
+> explicit main render loop at the end of `DFL_v5.py`, which drains the `GuiQueue` once per
+> frame on the main thread (the hook could be orphaned forever by a long callback — see
+> [`plan.md` Phase 2.5](../plan.md) and [notes.md N2](./notes.md)). Everything else in this
+> resolution (the queue itself, logger and tray routing) is unchanged.
 - **`logger.py`**: `log_messages` is guarded by a module `_log_lock` (thread-safe insert + trim to
   50). `_apply_log_text_to_widget()` reads a snapshot under the lock and is the only place `dpg.*`
   is touched; `add_log` / `refresh_log_display` submit it to the injected `GuiQueue` (via
@@ -271,7 +277,14 @@ made from a non-main thread. To unblock this, **F3's `GuiQueue` was pulled forwa
 `src/core/gui_queue.py` is a thread-safe `submit`/`drain` queue (per-callback exception isolation,
 optional `on_error` hook), and `DFL_v5.py` drains it once per frame via a single self-rescheduling
 `_frame_hook` that re-registers for the next frame via `dpg.set_frame_callback(dpg.get_frame_count() + 1, _frame_hook)` — DearPyGui frame callbacks use **absolute** frame numbers and are one-shot (a later registration for the same frame overwrites the earlier one, so the naive `set_frame_callback(1, hook)` self-reschedule fires only once), and there is no `update_callback`; the queue is passed to
-`GPUUsageMonitor(..., gui_queue=gui_queue)`. Covered by `tests/test_gpu_monitor_luid.py`
+`GPUUsageMonitor(..., gui_queue=gui_queue)`.
+
+> **Update (2026-08-20):** the `_frame_hook` drain described above was replaced by the
+> explicit main render loop draining the `GuiQueue` once per frame (see
+> [`plan.md` Phase 2.5](../plan.md) and [notes.md N2](./notes.md)). The F9 code-level fixes
+> (no re-init in `get_gpu_usage`, lock-guarded `luid`, `_submit_dpg`) are unchanged.
+
+Covered by `tests/test_gpu_monitor_luid.py`
 (`get_gpu_usage` does not call `initialize`; the `self.luid` write is lock-guarded; `dpg.*` calls
 are buffered in the `GuiQueue` and only executed on drain — for both the select and deselect
 paths) and `tests/test_gui_queue.py` (ordering, kwargs, concurrent-submission safety, and that a

@@ -27,6 +27,11 @@ class GPUUsageMonitor:
         self.query_handle = None
         self.counter_handles = {}
         self.instances = []  # Add this line
+        # S2: serializes every Pdh* call on the shared query/counter handles. Re-entrant
+        # because reinitialize() (called from inside a locked read section in gpu_run)
+        # re-enters initialize()/_close_query() on the same thread.
+        self._pdh_lock = threading.RLock()
+        self._detecting = False  # S1: True while a LUID-detection worker is in flight
         self.initialize()
         self.luid_selected = False
         self.luid = "All"
@@ -43,23 +48,26 @@ class GPUUsageMonitor:
         """Close the current PDH query (if any) and reset its state.
 
         Counter handles belong to the query, so they are invalidated and cleared
-        when the query is closed.
+        when the query is closed. Serialized on self._pdh_lock so a close can never
+        race an in-flight collect/read from another thread (S2).
         """
-        if self.query_handle:
-            pdh.PdhCloseQuery(self.query_handle)
-            self.query_handle = None
-            self.counter_handles = {}
+        with self._pdh_lock:
+            if self.query_handle:
+                pdh.PdhCloseQuery(self.query_handle)
+                self.query_handle = None
+                self.counter_handles = {}
 
     def initialize(self) -> None:
-        """Initialize PDH query."""
-        self._close_query()
-        self.query_handle = self._init_gpu_state()
-        self.instances = self._setup_gpu_instances()  # Store instances
-        self.query_handle, self.counter_handles = self._setup_gpu_query_from_instances(
-            self.query_handle, self.instances, "engtype_3D"
-        )
-        if self.query_handle is None:
-            raise RuntimeError("Query handle not set up.")
+        """Initialize PDH query. Serialized on self._pdh_lock (S2)."""
+        with self._pdh_lock:
+            self._close_query()
+            self.query_handle = self._init_gpu_state()
+            self.instances = self._setup_gpu_instances()  # Store instances
+            self.query_handle, self.counter_handles = self._setup_gpu_query_from_instances(
+                self.query_handle, self.instances, "engtype_3D"
+            )
+            if self.query_handle is None:
+                raise RuntimeError("Query handle not set up.")
 
     def _init_gpu_state(self) -> ctypes.c_void_p:
         """Initialize PDH query and return the handle."""
@@ -140,40 +148,41 @@ class GPUUsageMonitor:
     def get_gpu_usage(self, target_luid: Optional[str] = None, engine_type: str = "engtype_") -> Tuple[int, str]:
 
         # Reuse the existing PDH query and counter handles instead of re-initializing
-        # (F9 fix). This method runs on the DPG/main thread (from the LUID button
-        # callback) while gpu_run uses the same handles on the monitor thread; calling
-        # initialize() here would clobber query_handle/counter_handles mid-run and
-        # previously leaked the old query. The stored counter_handles are set up for
-        # engtype_3D, which matches the only caller (toggle_luid_selection).
-        counter_handles = self.counter_handles
+        # (F9 fix). This method runs on the LUID-detection worker thread (S1) while
+        # gpu_run uses the same handles on the monitor thread; every Pdh* call on the
+        # shared query is therefore serialized on self._pdh_lock (S2). Holding the lock
+        # across the 0.1 s gap between the two collects means a monitor tick slips at
+        # most one interval during a detection — an accepted trade-off (plan.md S2).
+        with self._pdh_lock:
+            counter_handles = self.counter_handles
 
-        pdh.PdhCollectQueryData(self.query_handle)
-        time.sleep(0.1)
-        pdh.PdhCollectQueryData(self.query_handle)
+            pdh.PdhCollectQueryData(self.query_handle)
+            time.sleep(0.1)
+            pdh.PdhCollectQueryData(self.query_handle)
 
-        usage_by_luid = {}
-        handles_to_use = (
-            {target_luid: counter_handles[target_luid]}
-            if target_luid and target_luid in counter_handles
-            else counter_handles
-        )
+            usage_by_luid = {}
+            handles_to_use = (
+                {target_luid: counter_handles[target_luid]}
+                if target_luid and target_luid in counter_handles
+                else counter_handles
+            )
 
-        for luid, handles in handles_to_use.items():
-            total = 0.0
-            for h in handles:
-                val = PDH_FMT_COUNTERVALUE()
-                status = pdh.PdhGetFormattedCounterValue(h, PDH_FMT_DOUBLE, None, ctypes.byref(val))
-                if status == 0 and val.CStatus == 0:
-                    total += val.doubleValue
-                else:
-                    raise RuntimeError(f"01_Failed to read counter (LUID: {luid}): status={status}")
-            usage_by_luid[luid] = total
+            for luid, handles in handles_to_use.items():
+                total = 0.0
+                for h in handles:
+                    val = PDH_FMT_COUNTERVALUE()
+                    status = pdh.PdhGetFormattedCounterValue(h, PDH_FMT_DOUBLE, None, ctypes.byref(val))
+                    if status == 0 and val.CStatus == 0:
+                        total += val.doubleValue
+                    else:
+                        raise RuntimeError(f"01_Failed to read counter (LUID: {luid}): status={status}")
+                usage_by_luid[luid] = total
 
-        if not usage_by_luid:
-            return 0, ""
+            if not usage_by_luid:
+                return 0, ""
 
-        max_luid, max_usage = max(usage_by_luid.items(), key=lambda item: item[1])
-        return int(max_usage), str(max_luid)
+            max_luid, max_usage = max(usage_by_luid.items(), key=lambda item: item[1])
+            return int(max_usage), str(max_luid)
 
     def list_all_luids(self) -> List[str]:
         """
@@ -192,47 +201,50 @@ class GPUUsageMonitor:
         self.looping = False
         if self._thread.is_alive():
             self._thread.join()
-        if self.query_handle:
-            pdh.PdhCloseQuery(self.query_handle)
-            self.query_handle = None
+        with self._pdh_lock:
+            if self.query_handle:
+                pdh.PdhCloseQuery(self.query_handle)
+                self.query_handle = None
 
     def gpu_run(self, engine_type: str = "engtype_3D"):
 
         # Setup counters for the specified engine type
-        _, self.counter_handles = self._setup_gpu_query_from_instances(
-            self.query_handle, self.instances, engine_type  # Use stored instances
-        )
+        with self._pdh_lock:
+            _, self.counter_handles = self._setup_gpu_query_from_instances(
+                self.query_handle, self.instances, engine_type  # Use stored instances
+            )
 
-        pdh.PdhCollectQueryData(self.query_handle)
-        
+            pdh.PdhCollectQueryData(self.query_handle)
+
         while self.looping:
             time.sleep(self.interval)
             if self._running():
                 try:
-                    pdh.PdhCollectQueryData(self.query_handle)
+                    with self._pdh_lock:
+                        pdh.PdhCollectQueryData(self.query_handle)
 
-                    usage_by_luid = {}
-                    with self._lock:
-                        target_luid = self.luid
-                    handles_to_use = (
-                        {target_luid: self.counter_handles[target_luid]}
-                        if target_luid and target_luid in self.counter_handles
-                        else self.counter_handles
-                    )
+                        usage_by_luid = {}
+                        with self._lock:
+                            target_luid = self.luid
+                        handles_to_use = (
+                            {target_luid: self.counter_handles[target_luid]}
+                            if target_luid and target_luid in self.counter_handles
+                            else self.counter_handles
+                        )
 
-                    for luid, handles in handles_to_use.items():
-                        total = 0.0
-                        #max_value = 0.0
-                        for h in handles:
-                            val = PDH_FMT_COUNTERVALUE()
-                            status = pdh.PdhGetFormattedCounterValue(h, PDH_FMT_DOUBLE, None, ctypes.byref(val))
-                            if status == 0 and val.CStatus == 0:
-                                total += val.doubleValue
-                                #max_value = max(max_value, val.doubleValue)
-                            else:
-                                self.logger.add_log(f"02_Failed to read counter (LUID: {luid}): status={status}")
-                                self.reinitialize()
-                        usage_by_luid[luid] = total #max_value or total
+                        for luid, handles in handles_to_use.items():
+                            total = 0.0
+                            #max_value = 0.0
+                            for h in handles:
+                                val = PDH_FMT_COUNTERVALUE()
+                                status = pdh.PdhGetFormattedCounterValue(h, PDH_FMT_DOUBLE, None, ctypes.byref(val))
+                                if status == 0 and val.CStatus == 0:
+                                    total += val.doubleValue
+                                    #max_value = max(max_value, val.doubleValue)
+                                else:
+                                    self.logger.add_log(f"02_Failed to read counter (LUID: {luid}): status={status}")
+                                    self.reinitialize()
+                            usage_by_luid[luid] = total #max_value or total
 
                     if not usage_by_luid:
                         return 0, ""
@@ -255,10 +267,42 @@ class GPUUsageMonitor:
         """
         Toggle between tracking all GPUs and the most active LUID.
         Updates internal state and returns the new luid and selection state.
+
+        Detection (a ~100 ms PDH double-collect) runs on a short-lived worker thread so
+        the DPG callback thread is never blocked (notes.md N3); state + UI updates are
+        applied on the main thread via the GuiQueue (S1). A second click while a
+        detection is in flight is ignored.
         """
         if not self.luid_selected:
-            # First click: detect top LUID
+            # First click: detect top LUID on a worker thread (S1).
+            with self._lock:
+                if self._detecting:
+                    return self.luid, self.luid_selected
+                self._detecting = True
+            threading.Thread(target=self._detect_luid_worker, daemon=True).start()
+        else:
+            # Second click: deselect (cheap, no PDH work — safe inline).
+            with self._lock:
+                self.luid = "All"
+            self.logger.add_log("Tracking all GPU 3D usages.")
+            self._submit_dpg(self.dpg.configure_item, "luid_button", label="Detect Render GPU")
+            self._submit_dpg(self.dpg.bind_item_theme, "luid_button", self.themes_manager.themes["detect_gpu_theme"])  # Apply default grey theme
+            self.luid_selected = False
+            self._submit_dpg(self.dpg.set_value, "luid_status_text", "Tracking all GPU 3D usages.")
+        return self.luid, self.luid_selected
+
+    def _detect_luid_worker(self):
+        """Run the PDH LUID detection off the DPG callback thread (S1), then apply
+        the state + UI updates on the main thread via the GuiQueue."""
+        try:
             usage, luid = self.get_gpu_usage(engine_type="engtype_3D")
+        except Exception as e:
+            self.logger.add_log(f"LUID detection error: {e}")
+            usage, luid = 0, ""
+
+        def _apply():
+            with self._lock:
+                self._detecting = False
             if luid:
                 self.logger.add_log(f"Tracking LUID: {luid} | Current 3D engine Utilization: {usage}%")
                 self._submit_dpg(self.dpg.configure_item, "luid_button", label="Revert to all GPUs")
@@ -270,16 +314,8 @@ class GPUUsageMonitor:
             else:
                 self.logger.add_log("Failed to detect active LUID.")
                 self._submit_dpg(self.dpg.set_value, "luid_status_text", "Failed to detect active LUID.")
-        else:
-            # Second click: deselect
-            with self._lock:
-                self.luid = "All"
-            self.logger.add_log("Tracking all GPU 3D usages.")
-            self._submit_dpg(self.dpg.configure_item, "luid_button", label="Detect Render GPU")
-            self._submit_dpg(self.dpg.bind_item_theme, "luid_button", self.themes_manager.themes["detect_gpu_theme"])  # Apply default grey theme
-            self.luid_selected = False
-            self._submit_dpg(self.dpg.set_value, "luid_status_text", "Tracking all GPU 3D usages.")
-        return self.luid, self.luid_selected
+
+        self._submit_dpg(_apply)
 
     def _submit_dpg(self, fn, *args, **kwargs) -> None:
         """Route a ``dpg`` call through the GuiQueue so it runs on the main thread.
@@ -297,13 +333,14 @@ class GPUUsageMonitor:
         self.initialize()
 
         # Setup counters for the specified engine type
-        _, self.counter_handles = self._setup_gpu_query_from_instances(
-            self.query_handle, self.instances, engine_type  # Use stored instances
-        )
+        with self._pdh_lock:
+            _, self.counter_handles = self._setup_gpu_query_from_instances(
+                self.query_handle, self.instances, engine_type  # Use stored instances
+            )
 
-        pdh.PdhCollectQueryData(self.query_handle)
-        time.sleep(0.1)
-        pdh.PdhCollectQueryData(self.query_handle)
+            pdh.PdhCollectQueryData(self.query_handle)
+            time.sleep(0.1)
+            pdh.PdhCollectQueryData(self.query_handle)
 
     def calculate_percentile(data: list, percentile: float) -> float:
         """

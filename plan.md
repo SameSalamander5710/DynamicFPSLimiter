@@ -1,9 +1,15 @@
 # DynamicFPSLimiter — Fix & Refactor Plan
 
-Status: **Phase 1 complete; Phase 2 complete** (F1 ✅, F2 ✅, F5 ✅, F4 ✅, F7 ✅, F8 ✅, F9 ✅, F3 ✅, F6 ✅)
+Status: **Phase 1 complete; Phase 2 complete** (F1 ✅, F2 ✅, F5 ✅, F4 ✅, F7 ✅, F8 ✅, F9 ✅, F3 ✅, F6 ✅); **Phase 2.5 in progress** (S1 ✅, S2 ✅, S3 ✅; S4 manual verification pending)
 Branch: `repo_audit` (clean tree)
 Scope: all 4 phases — test harness → glaring flaws (F1–F9) → architecture → code quality
 Test framework: **pytest** (+ `pytest-cov`)
+
+> 2026-08-20: a post-Phase-2 regression (the self-rescheduling frame-hook drain orphaned by a
+> long LUID-detection callback, freezing all queued GUI updates) was fixed by draining the
+> `GuiQueue` from an explicit main render loop (commit `a8fac09`, manually verified). See
+> **Phase 2.5** and `docs/notes.md`. Line references to `DFL_v5.py` below are as of the Phase 2
+> commits; the 2026-08-20 fix added `import logging` at the top, shifting all later lines by +1.
 
 ## Principles
 
@@ -108,6 +114,7 @@ Each item: fix + regression test. Order within phase: F1, F2, F5 (pure logic, hi
   3. Route its `dpg.*` calls through the `GuiQueue` from F3.
 - **Tests**: `get_gpu_usage` does not call `initialize` (mock spy); concurrent `toggle_luid_selection` + `gpu_run` iterations don't interleave on `luid` (deterministic lock-order test); DPG calls recorded via `GuiQueue`, not direct.
 - **Done** (2026-08-18): `get_gpu_usage()` reuses `self.query_handle`/`self.counter_handles` (no re-init, no leak); `self.luid` reads in `gpu_run()` and writes in `toggle_luid_selection()` are guarded by `self._lock`; all `dpg.*` calls in `toggle_luid_selection()` route through a new `_submit_dpg` helper that defers to the `GuiQueue` (falls back to a direct call when no queue is set). **F3's `GuiQueue` was pulled forward** to unblock this fix: `src/core/gui_queue.py` (thread-safe `submit`/`drain`) is implemented and wired into `DFL_v5.py` via a single self-rescheduling per-frame `_frame_hook` (DearPyGui has no `update_callback`). **Important DPG detail (verified against source + empirically):** `dpg.set_frame_callback(N, cb)` uses **absolute** frame numbers and is one-shot — a later registration for the same frame overwrites the earlier one, so the naive `set_frame_callback(1, hook)` self-reschedule fires only once. The hook therefore re-registers for the **next** frame via `dpg.set_frame_callback(dpg.get_frame_count() + 1, _frame_hook)`; it also performs the one-shot first-frame startup work exactly once. The queue is passed to `GPUUsageMonitor(..., gui_queue=gui_queue)`. `tests/test_gui_queue.py` (5) + `tests/test_gpu_monitor_luid.py` (4) green; suite 79 passed.
+- **Superseded (2026-08-20):** the self-rescheduling `_frame_hook` drain was removed after it orphaned in production — a long callback (LUID detection: `sleep(0.1)` + two PDH collects) ran on the same DPG callback thread that the hook's re-registration was queued on, so the registration for frame M+1 landed *after* the main thread had already checked frame M+1; frame-callback entries are keyed by exact absolute frame number and never re-checked, so the hook died forever and every queued GUI update silently froze. The `GuiQueue` is now drained by the explicit main render loop at the end of `DFL_v5.py` (`while dpg.is_dearpygui_running(): dpg.render_dearpygui_frame(); gui_queue.drain()`), and the one-shot first-frame startup work runs synchronously on the main thread before the loop. See **Phase 2.5** and `docs/notes.md` (N1/N2).
 
 ### F3 (High) — Cross-thread DPG calls
 
@@ -119,10 +126,10 @@ Each item: fix + regression test. Order within phase: F1, F2, F5 (pure logic, hi
   4. Wire the drain hook into `DFL_v5.py` render loop startup.
 - **Tests**: queue buffers out-of-order submissions and flushes them in order on the main thread; `add_log` from a worker thread never invokes the dpg stub directly (assert via the stub's thread-recording); tray callback path only enqueues.
 - **Progress**: **DONE (2026-08-18)**.
-  - **Part 1 (GuiQueue, pulled forward for F9)**: `src/core/gui_queue.py` implemented (thread-safe `submit`/`drain`, per-callback error isolation, `on_error` hook) and the drain hook is wired into `DFL_v5.py` as a single self-rescheduling per-frame `_frame_hook` that re-registers for the next frame via `dpg.set_frame_callback(dpg.get_frame_count() + 1, _frame_hook)` (DearPyGui frame callbacks use **absolute** frame numbers and are one-shot — same-frame registration overwrites — and there is no `update_callback`). `tests/test_gui_queue.py` (5).
+  - **Part 1 (GuiQueue, pulled forward for F9)**: `src/core/gui_queue.py` implemented (thread-safe `submit`/`drain`, per-callback error isolation, `on_error` hook) and the drain hook was wired into `DFL_v5.py` as a single self-rescheduling per-frame `_frame_hook` that re-registered for the next frame via `dpg.set_frame_callback(dpg.get_frame_count() + 1, _frame_hook)` (DearPyGui frame callbacks use **absolute** frame numbers and are one-shot — same-frame registration overwrites — and there is no `update_callback`). `tests/test_gui_queue.py` (5). **Superseded (2026-08-20):** the `_frame_hook` drain was replaced by the explicit main render loop — see the F9 addendum and Phase 2.5.
   - **Part 2 (logger)**: `logger.py` keeps a `_log_lock`-guarded `log_messages` buffer (thread-safe insert+trim); `_apply_log_text_to_widget()` reads a snapshot under the lock and is the only place `dpg.*` is touched. `add_log`/`refresh_log_display` submit that update to the `GuiQueue` (injected via `set_gui_queue`), falling back to an inline call when no queue is set.
   - **Part 3 (tray)**: `TrayManager` takes an optional `gui_queue` (injected via `set_gui_queue`); a `_run_on_main(fn)` helper submits `fn` to the queue (or runs inline when absent). Every pystray-thread action is routed through it: `_toggle_start_stop`, the `_profile_menu_items` / `_method_menu_items` lambdas, and the `on_restore` / `on_exit` paths in `_restore_window` / `_exit_app` (replacing the old raw `threading.Thread` calls, guarded for `None` callbacks). `update_hover_text` is split into a thread-checking wrapper + `_update_hover_text_impl`; it reads profile/method from the ConfigManager snapshot (`cm.current_profile` / `cm.current_method`, the latter newly maintained by `current_method_callback`) instead of `dpg.get_value`, and defers to the queue when called off the main thread so the DPG reads inside `fps_utils.current_stepped_limits` stay on the render thread.
-  - **Part 4 (wiring)**: `DFL_v5.py` injects the queue into `logger` and `tray` right after `gui_queue = GuiQueue()`; the `_frame_hook` re-registration is wrapped in `try/except` so a queued `exit_gui` (which destroys the DPG context) can't raise during shutdown. `ConfigManager` gained a `current_method` snapshot (init + `current_method_callback`).
+  - **Part 4 (wiring)**: `DFL_v5.py` injects the queue into `logger` and `tray` right after `gui_queue = GuiQueue()`; the `_frame_hook` re-registration was wrapped in `try/except` so a queued `exit_gui` (which destroys the DPG context) can't raise during shutdown. `ConfigManager` gained a `current_method` snapshot (init + `current_method_callback`). **Superseded (2026-08-20):** the `_frame_hook` (and its try/except wrapper) is gone with the hook; the main render loop wraps `gui_queue.drain()` in its own `try/except` + `logging.error`.
   - **Tests**: `tests/test_logger.py` (5) — `set_gui_queue`, `add_log` defers DPG to the queue (no `set_value` on the worker thread, runs on the draining main thread), inline fallback without a queue, 50-message trim, and an 8-thread buffer-consistency check; `tests/test_tray.py` (8) — `_run_on_main` defer/inline, `update_hover_text` defer-off-main-thread + inline-on-main (built from the cm snapshot), profile/method menu lambdas defer, and `_exit_app` / `_restore_window` defer. Suite **92 passed**.
 
 ### F6 (Medium) — Non-atomic / interleaved RTSS profile writes
@@ -145,15 +152,52 @@ Each item: fix + regression test. Order within phase: F1, F2, F5 (pure logic, hi
 
 ---
 
+## Phase 2.5 — GUI-threading hardening (post-Phase-2 regression follow-ups)
+
+**Context (2026-08-20):** After Phase 2, "Detect Render GPU" appeared to do nothing and the in-app log froze. Root cause (verified against DPG v2.0.0 C++ source): all Python callbacks — button clicks *and* frame callbacks — run on one dedicated background thread, and `set_frame_callback(N, cb)` defers its registration to that same thread. The self-rescheduling `_frame_hook` re-registered for `get_frame_count() + 1` from inside the callback thread; `toggle_luid_selection` then blocked that thread ≥100 ms (`time.sleep(0.1)` + two `PdhCollectQueryData`), so the re-registration for frame M+1 landed *after* the main thread had already checked frame M+1. Frame-callback entries are keyed by exact absolute frame number and never re-checked → the hook was orphaned forever → `gui_queue.drain()` never ran again → log widget and all queued button feedback silently froze.
+
+**Main fix (DONE, commit `a8fac09`, manually verified 2026-08-20):** deleted the frame hook; the one-shot startup work runs synchronously on the main thread pre-loop, and the app ends with an explicit main render loop that drains `gui_queue` every frame on the main thread (`DFL_v5.py` bottom). Regression guards: `tests/test_dfl_main_loop.py` (drain wiring present; `dpg.set_frame_callback(`/`_frame_hook` absent) + `tests/test_gui_queue.py::test_drain_survives_long_running_items_across_frames`.
+
+Remaining hardening items, in order:
+
+### S3 — Make `GuiQueue` drain failures visible — DONE
+
+- **Where:** `DFL_v5.py` — `gui_queue = GuiQueue()` is constructed without `on_error`, so a failing queued callback is swallowed silently (this is how the regression above hid).
+- **Fix:** pass an `on_error` that calls `logging.error` (root logging is configured by `logger.init_logging` at DFL_v5.py:67, so it reaches `error_log.txt`).
+- **Tests:** unit — a failing callback invokes `on_error` with the exception; source guard — DFL_v5 constructs `GuiQueue` with an `on_error`.
+
+### S1 — Move LUID detection off the DPG callback thread — DONE
+
+- **Where:** `gpu_monitor.py` `toggle_luid_selection` — a button callback running on the DPG callback thread; `get_gpu_usage()` does `PdhCollectQueryData` + `time.sleep(0.1)` + `PdhCollectQueryData` + per-counter reads inline (≥100 ms block), delaying *every* other DPG callback.
+- **Fix:** spawn a short-lived daemon worker that runs the PDH read; a single queued closure then applies the state (`self.luid`, `self.luid_selected`) and all `_submit_dpg` updates on the main thread. A `_detecting` flag under `self._lock` ignores double-clicks mid-detection.
+- **Tests:** toggle performs no `pdh` calls on the calling thread (thread-recording mock); result applied on drain; double-click → one worker; failure path queues "Failed to detect".
+
+### S2 — Lock the shared PDH query — DONE
+
+- **Where:** `gpu_monitor.py` — `get_gpu_usage` (DPG/worker thread) and `gpu_run` (monitor thread) both call `PdhCollectQueryData`/`PdhGetFormattedCounterValue` on the same `query_handle`/`counter_handles` without synchronization; `reinitialize` can close/re-open the query mid-read.
+- **Fix:** new `self._pdh_lock` (re-entrant — `reinitialize` is called from inside a locked read section on read failure) around every `Pdh*` call on the shared query in `gpu_run` (collect + reads), `get_gpu_usage` (both collects + reads), and `initialize`/`_close_query`/`reinitialize`/`cleanup` (open/close/add/collect). Known trade-off: `get_gpu_usage` holds the lock across its 0.1 s sleep, so with the default 100 ms poll interval the monitor tick slips ≤1 interval during a detection — acceptable, documented.
+- **Tests:** concurrency test (mock `pdh` recording thread+event order, short sleep inside collect) — `get_gpu_usage` and a reinit/collect from another thread never interleave; reinit serializes against an in-flight collect.
+
+### S4 — Manual LUID verification — PENDING
+
+Detect/revert with a 3D game running: the tracked LUID is the rendering one, status text + button flip correctly, revert restores all-GPU tracking, repeated toggles do not grow the PDH handle count.
+
+### Phase 2.5 exit criteria
+
+- `pytest -q` green after each item.
+- Manual smoke (Windows + admin): Detect Render GPU responds instantly (no UI stall during detection); log line, button label/theme, and status text all update; revert works; no PDH handle growth over repeated toggles.
+
+---
+
 ## Phase 3 — Architecture & test infrastructure
 
 No behavior changes; the full suite must stay green after each step.
 
-- **A1 — Split the god module `DFL_v5.py` (1266 lines)** into:
+- **A1 — Split the god module `DFL_v5.py` (~1,270 lines)** into:
   - `src/core/state.py`: `AppState` dataclass/object owning the shared mutable globals (`time_series`, `fps_time_series`, `gpu_usage_series`, `cpu_usage_series`, `fps_series`, `cap_series`, `fps_values`, `gpu_values`, `cpu_values`, `CurrentFPSOffset`, `fps_mean`, `idle_state`, `elapsed_time`, `running`) with a lock.
   - `src/core/loops.py`: `monitoring_loop`, `plotting_loop`, `gui_update_loop`, `update_plot_FPS`, `update_plot_usage` (rewired to take `AppState`).
   - `src/core/view.py`: GUI construction (the ~450-line `dpg` builder section).
-  - `src/core/app.py`: orchestration — instance wiring, start/stop callback, render loop, exit handling.
+  - `src/core/app.py`: orchestration — instance wiring, start/stop callback, render loop, exit handling. **The explicit main render loop (with the per-frame `gui_queue.drain()`, see Phase 2.5) must live here**, and `tests/test_dfl_main_loop.py` must be re-pointed/extended to guard the wiring at its new location.
 - **A2 — Inject `dpg` instead of module-level imports**: `config_manager.py:3`, `fps_utils.py:4`, `logger.py`, `DFL_v5.py` — pass the dpg module (or a facade) via constructor/parameters so modules import cleanly under test.
 - **A3 — Remove import-time coupling in `rtss_functions.py:5`** (`from core.launch_popup import show_rtss_error_and_exit`): inject an error handler into `RTSSController.__init__`; default behavior unchanged.
 - **A4 — (Optional, do last) Rename `DFL_v5.py` → stable name** (e.g. `app.py`, per A1 the file is already split, so this becomes "the entry module keeps a stable name"): update `src/__main__.py` import; remove the stale `DFL_v4` reference and `__pycache__/DFL_v4.*.pyc`. *Flagged higher-risk — only after A1 lands and the suite is green.*

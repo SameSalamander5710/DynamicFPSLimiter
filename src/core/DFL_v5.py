@@ -1195,7 +1195,12 @@ else:
 # Thread-safe queue for deferring dpg.* calls to the main render thread (F3/F9).
 # Background threads submit callables; the main render loop (bottom of this file)
 # drains the queue once per frame on the main thread, where DearPyGui is safe to call.
-gui_queue = GuiQueue()
+def _gui_queue_error(fn, exc):
+    # A failing queued callback must not vanish silently (notes.md N5). Root logging
+    # is configured by logger.init_logging above, so this reaches error_log.txt.
+    logging.error("GuiQueue callback %s failed: %s", getattr(fn, "__qualname__", fn), exc, exc_info=exc)
+
+gui_queue = GuiQueue(on_error=_gui_queue_error)
 # Route DPG calls made from background threads (logger, tray) through the queue so
 # they run on the main render thread where DearPyGui is safe.
 logger.set_gui_queue(gui_queue)

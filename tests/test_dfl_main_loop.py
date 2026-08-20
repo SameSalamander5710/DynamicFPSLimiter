@@ -30,3 +30,10 @@ def test_no_frame_callback_drain_wiring():
     src = _source()
     assert "dpg.set_frame_callback(" not in src
     assert "_frame_hook" not in src
+
+
+def test_gui_queue_wired_with_on_error():
+    """S3: the app must route GuiQueue failures to logging so a broken queued
+    callback is diagnosable in error_log.txt instead of vanishing."""
+    src = _source()
+    assert "GuiQueue(on_error=" in src

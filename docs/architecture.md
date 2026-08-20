@@ -62,15 +62,16 @@ sustained load is high and raises it (with a cooldown) when load is low, reactin
 
 ## 3. Threading model
 
-The **main thread** owns the DearPyGui render loop. Everything else is a daemon thread.
-**DearPyGui is not thread-safe**, yet several threads call `dpg.*` directly — see
-`flaws.md` (systemic cross-thread DPG, the single most important latent risk).
+The **main thread** owns the DearPyGui render loop (the explicit loop at the end of
+`DFL_v5.py`). Everything else is a daemon thread. **DearPyGui is not thread-safe**; all
+background-thread DPG calls are marshalled onto the main thread via the `GuiQueue`, which the
+main render loop drains once per frame (F3 fix — see `flaws.md`).
 
 | Thread | Started by | Period | Touches DPG? |
 |---|---|---|---|
-| Main (render) | `dpg.start_dearpygui()` | continuous | yes (owner) |
-| `gui_update_loop` | module init (DFL_v5:1222) | 0.1 s | yes (warnings, log, cap viz) |
-| `autopilot_loop` | module init (DFL_v5:1226) | 1 s | yes (profile switch) |
+| Main (render) | explicit loop, end of `DFL_v5.py` | continuous | yes (owner) |
+| `gui_update_loop` | module init (DFL_v5:1213) | 0.1 s | yes (warnings, log, cap viz) |
+| `autopilot_loop` | module init (DFL_v5:1217) | 1 s | yes (profile switch) |
 | `monitoring_loop` | Start button | 1 s | yes (series, plots) |
 | `plotting_loop` | Start button | `lcm(gpu,cpu interval)` | yes (usage plot) |
 | `LHMSensor._poll_loop` | Start | `lhwmonitorpollinginterval` ms | yes (readings table) |
@@ -89,7 +90,7 @@ are shared **without locks**; `monitoring_loop` writes them while GUI callbacks 
 | Module | Role |
 |---|---|
 | `src/__main__.py` | Entry point: UAC self-elevation (dev mode), `--build` PyInstaller runner |
-| `src/core/DFL_v5.py` | Main app: all DPG UI, the four background loops, orchestration (~1,265 lines, no app class) |
+| `src/core/DFL_v5.py` | Main app: all DPG UI, the four background loops, orchestration (~1,270 lines, no app class) |
 | `src/core/config_manager.py` | INI load/save, defaults, profile management, GUI↔config sync, dynamic LHM keys; maintains a `current_method` snapshot (init + `current_method_callback`) for the tray hover text (F3 fix) |
 | `src/core/fps_utils.py` | FPS-cap ladder (custom/step/ratio) + core `evaluate_cap_change` decision engine; `current_stepped_limits()` is total — always returns a non-empty list, falling back to the stepped ladder on bad/unknown capmethod (F5 fix) |
 | `src/core/cap_policy.py` | Pure cap **decrease** policy (`next_cap_on_decrease`), extracted from `DFL_v5` (F1 fix); no GUI/RTSS/.NET deps |
@@ -232,7 +233,7 @@ See the module map (§4) for Python sources. Non-code:
 
 Glaring, fix-first issues are in **`flaws.md`**. Lower-priority debt worth noting:
 
-- **Single-file orchestrator** — `DFL_v5.py` is ~1,265 lines of module-level script with heavy
+- **Single-file orchestrator** — `DFL_v5.py` is ~1,270 lines of module-level script with heavy
   global state and import-order-dependent startup; hard to test or reason about.
 - **GUI coupling in core** — several non-GUI modules (`logger`, `cpu_monitor`, `autostart`,
   `tray_functions`) import DearPyGui at module top, preventing headless use.
