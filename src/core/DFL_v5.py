@@ -13,6 +13,7 @@ import math
 import os
 import sys
 import csv
+import logging
 from decimal import Decimal, InvalidOperation
 
 # tweak path so "src/" (or wherever your modules live) is on sys.path
@@ -1192,7 +1193,7 @@ else:
     dpg.configure_item("legacy_childwindow", show=True)
 
 # Thread-safe queue for deferring dpg.* calls to the main render thread (F3/F9).
-# Background threads submit callables; the per-frame hook (_frame_hook, defined below)
+# Background threads submit callables; the main render loop (bottom of this file)
 # drains the queue once per frame on the main thread, where DearPyGui is safe to call.
 gui_queue = GuiQueue()
 # Route DPG calls made from background threads (logger, tray) through the queue so
@@ -1236,41 +1237,33 @@ logger.add_log("Initialized successfully.")
 #dpg.show_style_editor()
 #dpg.show_imgui_demo()
 
-# Per-frame main-thread hook (self-rescheduling). DearPyGui frame callbacks use
-# ABSOLUTE frame numbers and are one-shot (a later registration for the same frame
-# overwrites the earlier one), so the hook re-registers itself for the next frame via
-# get_frame_count() + 1. It drains the GuiQueue every frame (so deferred dpg.* calls
-# from background threads run where DPG is safe) and runs the one-shot first-frame
-# startup work exactly once.
-_frame_state = {"first_done": False}
+# One-shot startup work (previously ran in the first frame callback). The UI and
+# viewport are fully built at this point, so run it synchronously on the main
+# thread before entering the render loop.
+try:
+    tray.minimize_on_startup_if_needed(cm.minimizeonstartup)
+except Exception:
+    pass
+# mark DPG/UI initialization complete for ConfigManager
+try:
+    cm.ui_initialized = True
+    # run hide_unselected once now that tables/layouts have been initialized
+    cm.hide_unselected_callback(None, None, None)
+    cm.startup_profile_selection()
+    cm.refresh_ui_callbacks()
+except Exception:
+    pass
 
-def _frame_hook():
+# Main render loop. DearPyGui 2.x runs all Python callbacks on a dedicated
+# background thread and defers set_frame_callback() registration to that same
+# thread, so a self-rescheduling frame hook is an unreliable drain point: a long
+# callback (e.g. LUID detection) can delay the re-registration until after the
+# target frame has already been checked, orphaning the hook forever and silently
+# freezing all queued GUI updates. Drain the GuiQueue directly on the main render
+# thread (the thread that owns the DPG context) instead.
+while dpg.is_dearpygui_running():
+    dpg.render_dearpygui_frame()
     try:
         gui_queue.drain()
     except Exception:
-        pass
-    if not _frame_state["first_done"]:
-        _frame_state["first_done"] = True
-        try:
-            tray.minimize_on_startup_if_needed(cm.minimizeonstartup)
-        except Exception:
-            pass
-        # mark DPG/UI initialization complete for ConfigManager
-        try:
-            cm.ui_initialized = True
-            # run hide_unselected once now that tables/layouts have been initialized
-            cm.hide_unselected_callback(None, None, None)
-            cm.startup_profile_selection()
-            cm.refresh_ui_callbacks()
-        except Exception:
-            pass
-    # Re-register for the next frame. Guarded because a queued callback (e.g. the
-    # tray Exit action) may have destroyed the DPG context during the drain above.
-    try:
-        dpg.set_frame_callback(dpg.get_frame_count() + 1, _frame_hook)
-    except Exception:
-        pass
-
-dpg.set_frame_callback(1, _frame_hook)
-
-dpg.start_dearpygui()
+        logging.error("GuiQueue drain failed", exc_info=True)

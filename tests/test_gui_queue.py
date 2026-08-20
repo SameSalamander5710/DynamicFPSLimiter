@@ -6,6 +6,7 @@
 - A callback that raises does not stall the queue; it is reported to on_error.
 """
 import threading
+import time
 
 from core.gui_queue import GuiQueue
 
@@ -85,4 +86,41 @@ def test_failing_callback_does_not_stall_queue():
     assert order == ["before", "after"]
     assert len(errors) == 1
     assert isinstance(errors[0], ZeroDivisionError)
+    assert len(q) == 0
+
+
+def test_drain_survives_long_running_items_across_frames():
+    """Regression guard for the dead frame-hook freeze.
+
+    The old self-rescheduling frame hook died when a long callback (e.g. LUID
+    detection, ~100 ms) delayed its re-registration past the target frame,
+    permanently stopping all queue draining. The main render loop drains every
+    frame instead; verify the queue keeps flowing across many drain cycles even
+    after slow and failing items.
+    """
+    errors = []
+    q = GuiQueue(on_error=lambda fn, e: errors.append(e))
+    order = []
+
+    def slow():
+        time.sleep(0.05)
+        order.append("slow")
+
+    def boom():
+        raise RuntimeError("boom")
+
+    q.submit(order.append, "first")
+    q.submit(slow)
+    q.submit(boom)
+    q.submit(order.append, "last")
+
+    # Simulate the per-frame drain performed by the main render loop.
+    for _ in range(5):
+        q.drain()
+        if not q:
+            break
+
+    assert order == ["first", "slow", "last"]
+    assert len(errors) == 1
+    assert isinstance(errors[0], RuntimeError)
     assert len(q) == 0
