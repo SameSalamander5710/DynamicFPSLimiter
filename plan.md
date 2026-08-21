@@ -1,6 +1,6 @@
 # DynamicFPSLimiter — Fix & Refactor Plan
 
-Status: **Phase 1 complete; Phase 2 complete** (F1 ✅, F2 ✅, F5 ✅, F4 ✅, F7 ✅, F8 ✅, F9 ✅, F3 ✅, F6 ✅); **Phase 2.5 in progress** (S1 ✅, S2 ✅, S3 ✅; S4 manual verification pending)
+Status: **Phase 1 complete; Phase 2 complete** (F1 ✅, F2 ✅, F5 ✅, F4 ✅, F7 ✅, F8 ✅, F9 ✅, F3 ✅, F6 ✅); **Phase 2.5 in progress** (S1 ✅, S2 ✅, S3 ✅; **S4 LUID verify pending — NEXT**)
 Branch: `repo_audit` (clean tree)
 Scope: all 4 phases — test harness → glaring flaws (F1–F9) → architecture → code quality
 Test framework: **pytest** (+ `pytest-cov`)
@@ -178,9 +178,128 @@ Remaining hardening items, in order:
 - **Fix:** new `self._pdh_lock` (re-entrant — `reinitialize` is called from inside a locked read section on read failure) around every `Pdh*` call on the shared query in `gpu_run` (collect + reads), `get_gpu_usage` (both collects + reads), and `initialize`/`_close_query`/`reinitialize`/`cleanup` (open/close/add/collect). Known trade-off: `get_gpu_usage` holds the lock across its 0.1 s sleep, so with the default 100 ms poll interval the monitor tick slips ≤1 interval during a detection — acceptable, documented.
 - **Tests:** concurrency test (mock `pdh` recording thread+event order, short sleep inside collect) — `get_gpu_usage` and a reinit/collect from another thread never interleave; reinit serializes against an in-flight collect.
 
-### S4 — Manual LUID verification — PENDING
+### S4 — LUID detect/revert verification — **PENDING (NEXT TASK)**
 
-Detect/revert with a 3D game running: the tracked LUID is the rendering one, status text + button flip correctly, revert restores all-GPU tracking, repeated toggles do not grow the PDH handle count.
+> **Workflow state:** S1, S2 and S3 are DONE and committed. **S4 is the immediate next
+> step** — do not start Phase 3 until S4 is done (or explicitly descoped). The fake game
+> (`tests/fake_game.py`) and the PDH/RTSS spike (`tests/spike_fake_game.py`) are already
+> committed (`5c2003a`) and are the harness for S4.
+
+**Goal.** Verify the legacy "Detect Render GPU" button end-to-end against a real workload
+under real PDH: selecting picks the LUID with the highest 3D-engine usage, the status text
+and button label/theme flip correctly, "Revert to all GPUs" restores all-GPU tracking, and
+repeated toggles do not grow the PDH handle count.
+
+> **Clarification (user, 2026-08-21):** we do **not** care whether the button truly
+> identifies the *render* GPU. It only needs to select whichever LUID has the highest
+> `engtype_3D` usage **at the moment of the click**. Under the fake 8K workload that LUID
+> is unambiguous (see `docs/notes.md` N7) — on this machine it is `0x000100F7`. "Render
+> GPU" attribution is best-effort at best (see the caveat at the end of this section).
+
+> **How to run the app for S4 (user, 2026-08-21):** the user will run **VSCode as
+> Administrator**, so `opencode` launched from the VSCode integrated terminal can execute
+> the app and run the tests end-to-end (the app must be admin — RTSS runs elevated).
+> Launching `src/core/DFL_v5.py` directly (e.g. via the Python debugger's "Run") is a
+> valid way to start the app and is expected to work from the agent's terminal as well.
+
+**Already covered (do not re-test in S4).**
+- `tests/test_gpu_monitor_luid.py` — toggle *logic* with **mocked** PDH: `get_gpu_usage()`
+  does not re-initialize; the `self.luid` write is lock-guarded; `dpg.*` calls route through
+  the `GuiQueue`; detection runs off the DPG callback thread (S1); double-click while
+  detecting is ignored; a detection failure queues a status update.
+- Spike **M1c / M1d** already prove `get_gpu_usage()` picks the workload's LUID
+  (`0x000100F7` > `0x000136CC`) under the fake 8K game.
+
+**What S4 must close (the remaining gaps).**
+1. The real app button path (`DFL_v5.py:576` → `gpu_monitor.py:266`) selects the
+   highest-3D-usage LUID under **real** PDH.
+2. "Revert to all GPUs" restores all-GPU tracking (`luid == "All"`, label/theme/status flip).
+3. No PDH handle growth across repeated select/revert cycles under real PDH.
+4. (Manual) GUI visual behavior: button label/theme flip, status text, no UI stall.
+
+**Key code facts (confirmed against current source).**
+- Button: `src/core/DFL_v5.py:1154`, tag `luid_button`, label `Detect Render GPU`, callback
+  `toggle_luid_selection`. Status field: `src/core/DFL_v5.py:1152`, tag `luid_status_text`,
+  default `Tracking all GPU 3D usages.`. Tooltip: `src/core/tooltips.py:20`.
+- `toggle_luid_selection()` is at `src/core/gpu_monitor.py:266`. **Select** (first click)
+  spawns a short-lived worker (`_detect_luid_worker`) that runs
+  `get_gpu_usage(engine_type="engtype_3D")` off the callback thread (S1), then submits a
+  single `_apply` closure to the `GuiQueue`; `_apply` sets `self.luid`/`self.luid_selected`
+  and issues the three `_submit_dpg` UI updates. **Deselect** (second click) is inline:
+  sets `self.luid = "All"`, `self.luid_selected = False`, and issues the three `_submit_dpg`
+  UI updates directly. The toggle does **not** call `initialize()`/`reinitialize()`;
+  `get_gpu_usage()` reuses the live query/counters (F9) and holds `self._pdh_lock` (S2).
+- `GPUUsageMonitor.__init__(get_running, logger, dpg, themes, gui_queue=None, …)` stores
+  `self.dpg`, `self.themes_manager`, `self.gui_queue`. `toggle_luid_selection` reads
+  `self.themes_manager.themes["detect_gpu_theme"]` / `["revert_gpu_theme"]` and calls
+  `self.dpg.configure_item` / `bind_item_theme` / `set_value` via `_submit_dpg` (which
+  defers to `self.gui_queue` when set, else calls inline).
+
+#### Part A — Automate in `tests/spike_fake_game.py` (insert S4 between M1d and M2)
+
+Placement: right after M1d, while the fake game is at full 8K load and **no** RTSS limit has
+yet been applied — the workload LUID is unambiguously the highest 3D usage.
+
+Before S4, reassign the warm monitor's UI hooks (safe: the `gpu_run` thread never reads
+`dpg`, `gui_queue`, or `themes_manager`):
+- `mon.dpg = _RecDPG()` — records `configure_item` / `bind_item_theme` / `set_value`.
+- `mon.themes_manager = _Themes()` whose `.themes` dict has `detect_gpu_theme` and
+  `revert_gpu_theme` keys (the current spike's `_Themes.themes` is empty and would raise
+  `KeyError`).
+- `q = GuiQueue()`; `mon.gui_queue = q` (so `_submit_dpg` defers to the queue instead of
+  calling the bare `object()` dpg).
+- Add `from core.gui_queue import GuiQueue` and a `_wait_queue(q, timeout)` helper that
+  polls until `len(q) > 0`.
+
+Note on draining: `GuiQueue.drain()` loops until the queue is empty, so a **single**
+`q.drain()` after the worker submits `_apply` will run `_apply` *and* the three nested
+`_submit_dpg` calls it enqueues. No second drain is needed.
+
+- **S4a — detect:** `mon.toggle_luid_selection()` (spawns the worker); `_wait_queue(q)`;
+  `q.drain()`. Assert `mon.luid == fake_luid`, `mon.luid_selected is True`, and the
+  recorded DPG calls include `configure_item("luid_button", label="Revert to all GPUs")`,
+  `bind_item_theme("luid_button", <revert theme>)`, and
+  `set_value("luid_status_text", "Tracking LUID: …")` (value starts with
+  `Tracking LUID: {fake_luid}`).
+- **S4b — revert:** `mon.toggle_luid_selection()` again (inline deselect); `q.drain()`.
+  Assert `mon.luid == "All"`, `mon.luid_selected is False`, and the recorded DPG calls
+  include `configure_item("luid_button", label="Detect Render GPU")`,
+  `bind_item_theme("luid_button", <detect theme>)`, and
+  `set_value("luid_status_text", "Tracking all GPU 3D usages.")`.
+- **S4c — no PDH handle growth:** capture `len(mon.counter_handles)` and the total counter
+  count (`sum(len(v) for v in mon.counter_handles.values())`); run 5 select/revert cycles
+  (each: `toggle_luid_selection()` → `_wait_queue(q)` → `q.drain()` → `toggle_luid_selection()`
+  → `q.drain()`); assert both counts are unchanged and `mon.query_handle is not None`. Use
+  count stability (not `id(query_handle)`) so a benign `reinitialize()` cannot false-fail.
+
+#### Part B — Manual GUI checklist (visual / no-stall)
+
+1. Launch the app as admin — `python src/__main__.py`, or run `src/core/DFL_v5.py` in the
+   Python debugger (both valid; see the VSCode-admin note above).
+2. `python tests\fake_game.py --width 7680 --height 4320 --load 8 --no-vsync`.
+3. Click **Detect Render GPU** (`DFL_v5.py:1154`): expect an instant response (no UI freeze
+   during the ~100 ms detection), status `Tracking LUID: <highest 3D LUID> (NN% 3D)` —
+   `0x000100F7` under the 8K workload — and the button becoming **Revert to all GPUs** with
+   the revert (blue) theme.
+4. Click **Revert to all GPUs**: expect status `Tracking all GPU 3D usages.` and the button
+   back to **Detect Render GPU** with the detect (grey) theme.
+5. Toggle several more times: no freeze, stable behavior.
+
+#### Part C — Verification
+
+- Run the full spike without `--test-limit` (S4a/b/c + M1/M2/M4) and `pytest -q` — all green.
+- Do the Part B manual GUI checklist.
+- Mark S4 **DONE** in this file (and the Status line) and move on to Phase 3.
+
+> Supporting docs are already in place from the planning pass: `docs/notes.md` N8 (S4
+> approach + the "highest 3D usage at click time" clarification) and the
+> `docs/architecture.md` LUID/PDH section. No further planning doc edits are needed for S4.
+
+**Caveat (do not block S4 on this).** Highest-usage detection works for the heavy 8K
+workload, but can misattribute a *light* game whose render load dips below the
+display/DWM compositor's `engtype_3D` load (see `docs/notes.md` N7). The button is a
+best-effort "pick the busiest 3D LUID right now" heuristic — exactly the behavior the user
+has confirmed is acceptable.
 
 ### Phase 2.5 exit criteria
 

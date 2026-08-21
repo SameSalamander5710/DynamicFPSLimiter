@@ -184,7 +184,12 @@ Config lives in `<app dir>/config/` (`src/config/` in dev, next to the exe when 
   gracefully — `get_all_sensor_infos` returns `[]`, `LHMSensor` runs disabled, `FPSUtils`
   keeps `None` types — so the app still starts with LibreHM simply missing its sensors (F2 fix).
 - **Windows Performance Counters** (Legacy GPU) — PDH via `ctypes`, per-LUID
-  `\GPU Engine(...)\Utilization Percentage` (3D engine only).
+  `\GPU Engine(...)\Utilization Percentage` (3D engine only). The "Detect Render GPU" button
+  (`gpu_monitor.toggle_luid_selection`) selects the LUID with the **highest** `engtype_3D`
+  usage **at click time** — a best-effort render-GPU heuristic, **not** a guaranteed
+  attribution (a light game can dip below the display/DWM compositor's load; see
+  `notes.md` N7/N8). Verified end-to-end by `tests/spike_fake_game.py` S4a/b/c under the 8K
+  fake game plus a manual GUI checklist (`plan.md` Phase 2.5 S4).
 - **psutil** (Legacy CPU) — per-core `cpu_percent`, max core.
 - **Win32** — `GetForegroundWindow`/`GetWindowThreadProcessId` (foreground process),
   `GetLastInputInfo` (idle), `Get/SetWindowLongW` (tray/taskbar), `shcore` DPI awareness.

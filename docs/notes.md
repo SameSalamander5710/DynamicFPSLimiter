@@ -115,3 +115,41 @@ the DXGI adapter LUID the target process actually owns, rather than by absolute 
 `GPUUsageMonitor` (a one-shot PDH query reads `0.0` for GPU Engine utilization), and (b) expect
 **two** non-zero LUIDs (render + display), not one. `tests/spike_fake_game.py` M1 verifies the
 app's `get_gpu_usage()` LUID matches the LUID with the largest rise over baseline.
+
+## N8 — S4: "Detect Render GPU" verification = highest 3D usage at click time
+
+**Clarification (user, 2026-08-21):** the "Detect Render GPU" button is **not** required to
+identify the true render GPU. It only needs to select whichever LUID has the highest
+`engtype_3D` usage **at the moment of the click**. That is exactly what
+`GPUUsageMonitor.get_gpu_usage(engine_type="engtype_3D")` returns (the max-usage LUID), so the
+button's behavior is correct by construction — S4 verifies the wiring, not the attribution.
+The N7 misattribution caveat (a light game dipping below the DWM compositor's load) is accepted
+and is **not** a blocker for S4.
+
+**How to run the app for S4 (user, 2026-08-21):** VSCode is run **as Administrator** so that
+`opencode` (launched from the VSCode integrated terminal) can execute the app and run the tests
+end-to-end — the app must be admin because RTSS runs elevated. Launching `src/core/DFL_v5.py`
+directly (e.g. the Python debugger's "Run") is also a valid, working way to start the app and is
+expected to work from the agent's terminal too.
+
+**Verification approach (full detail in [`plan.md`](../plan.md) Phase 2.5 S4):**
+- **Automated** — extend `tests/spike_fake_game.py` with S4a/S4b/S4c inserted between M1d and
+  M2 (fake game at full 8K load, no RTSS limit applied, so the workload LUID is unambiguously
+  the busiest). Reassign the warm monitor's UI hooks first: `mon.dpg = _RecDPG()` (records
+  `configure_item`/`bind_item_theme`/`set_value`), `mon.themes_manager` with both
+  `detect_gpu_theme`/`revert_gpu_theme` keys, and `mon.gui_queue = GuiQueue()`. Then:
+  - **S4a detect:** `toggle_luid_selection()` → wait for the queue → `drain()`; assert
+    `mon.luid == fake_luid`, `luid_selected is True`, and the recorded button label/theme/status
+    flips.
+  - **S4b revert:** `toggle_luid_selection()` again → `drain()`; assert `mon.luid == "All"`,
+    `luid_selected is False`, and the flips back.
+  - **S4c no handle growth:** 5 select/revert cycles; assert `len(mon.counter_handles)` and the
+    total counter count are unchanged and `mon.query_handle is not None` (count stability, not
+    `id(query_handle)`, so a benign `reinitialize()` can't false-fail).
+- **Manual** — see the Part B checklist in `plan.md` (launch app + fake game, click detect/revert,
+  confirm an instant response with no UI stall and the correct label/theme/status).
+
+**Draining detail that bites:** `GuiQueue.drain()` loops until the queue is empty. The select
+path's worker submits a single `_apply` closure, but `_apply` itself issues three `_submit_dpg`
+calls that re-enter the queue. So **one** `drain()` after the worker submits `_apply` flushes
+`_apply` *and* its three nested UI calls — no second drain is needed.
