@@ -89,3 +89,29 @@ reaches `error_log.txt`.
   (`tests/test_gui_queue.py::test_drain_survives_long_running_items_across_frames`).
 - **Every refactor that moves threading-sensitive wiring ships its regression test in the
   same commit** (plan.md principle, enforced).
+
+## N7 — A D3D app lights up TWO GPU LUIDs in PDH `engtype_3D` (render + DWM)
+
+**Verified 2026-08-21** with an 8K (7680×4320) DearPyGui overdraw workload
+(`tests/fake_game.py --width 7680 --height 4320 --load 8 --no-vsync`) read through the app's
+real `GPUUsageMonitor` (`src/core/gpu_monitor.py`).
+
+- With no 3D app running, **every** LUID's `engtype_3D` utilization is `0%`. A local LLM
+  (compute engine, not the 3D engine) does **not** contaminate the counter.
+- Once a D3D app renders, **two** LUIDs go non-zero:
+  - the **render GPU** — the adapter the app's D3D device lives on (highest usage);
+  - the **display / DWM GPU** — the adapter that composites & presents the window (lower usage).
+- On this machine (RX 6700 XT primary render + RX 9070 XT display): render LUID `0x000100F7`
+  ≈ 15–19%, display LUID `0x000136CC` ≈ 13–14%, third LUID `0x0001365B` = 0%.
+
+**Consequence for "Detect Render GPU":** the heuristic that picks the **highest-usage** LUID as
+the render GPU is correct while the game's render load exceeds the DWM compositing load (true
+for the 8K workload: 16–19% vs 13%). It is a **latent misattribution** if a light game's render
+load drops below the display GPU's compositing load — the detector would then pick the display
+GPU. A robust fix should attribute by per-LUID *delta from a no-game baseline* and, ideally, by
+the DXGI adapter LUID the target process actually owns, rather than by absolute peak.
+
+**Testing consequence:** a per-LUID PDH test must (a) read a **persistent, warm**
+`GPUUsageMonitor` (a one-shot PDH query reads `0.0` for GPU Engine utilization), and (b) expect
+**two** non-zero LUIDs (render + display), not one. `tests/spike_fake_game.py` M1 verifies the
+app's `get_gpu_usage()` LUID matches the LUID with the largest rise over baseline.
