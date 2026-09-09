@@ -55,6 +55,21 @@ def test_get_all_sensor_infos_returns_empty_and_logs_on_lhm_failure(monkeypatch,
     assert any("unavailable" in m for m in stub_logger.messages)
 
 
+def test_get_all_sensor_infos_returns_empty_when_open_fails(monkeypatch, fake_lhm, stub_logger):
+    """A .NET runtime failure during Computer.Open() (e.g. a missing
+    dependency assembly such as System.Memory) must degrade gracefully
+    instead of crashing startup."""
+    fake_computer = fake_lhm[0]
+
+    def boom(self):
+        raise RuntimeError("simulated .NET runtime failure (missing dependency)")
+
+    monkeypatch.setattr(fake_computer, "Open", boom)
+
+    assert lhm_mod.get_all_sensor_infos(None, stub_logger) == []
+    assert any("unavailable" in m for m in stub_logger.messages)
+
+
 def test_config_manager_constructs_without_lhm(monkeypatch, fake_dpg, stub_logger, tmp_path):
     def boom(base_dir=None):
         raise _lhm_load_error()

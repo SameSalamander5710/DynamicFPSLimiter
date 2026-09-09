@@ -46,11 +46,16 @@ def get_all_sensor_infos(base_dir, logger=None):
     cpu_count = 0
     gpu_count = 0
 
-    computer = Computer()
+    try:
+        computer = Computer()
 
-    computer.IsGpuEnabled = True
-    computer.IsCpuEnabled = True
-    computer.Open()
+        computer.IsGpuEnabled = True
+        computer.IsCpuEnabled = True
+        computer.Open()
+    except Exception as exc:
+        if logger is not None and hasattr(logger, "add_log"):
+            logger.add_log(f"LibreHardwareMonitor unavailable ({exc}); no LibreHM sensors will be listed.")
+        return []
 
     try:
         for hw in computer.Hardware:
