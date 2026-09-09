@@ -95,7 +95,7 @@ def _choose_asset_variant(base_dir):
     # available variants are folders under assets
     available = set()
     if assets_root and os.path.isdir(assets_root):
-        # if assets contains a single package folder (like LHM_0.9.4_lib), descend into it
+        # if assets contains a single package folder (like LHM_0.9.6_lib), descend into it
         children = [n for n in os.listdir(assets_root) if os.path.isdir(os.path.join(assets_root, n))]
         if len(children) == 1:
             nested = os.path.join(assets_root, children[0])
@@ -164,9 +164,9 @@ def ensure_loaded(base_dir=None, logger=None):
     if variant:
         dll_path = os.path.join(base_dir, 'assets', variant, 'LibreHardwareMonitorLib.dll')
         if not os.path.isfile(dll_path):
-            dll_path = os.path.join(base_dir, 'assets', 'LHM_0.9.4_lib', 'net472', 'LibreHardwareMonitorLib.dll')  # fallback
+            dll_path = os.path.join(base_dir, 'assets', 'LHM_0.9.6_lib', 'net472', 'LibreHardwareMonitorLib.dll')  # fallback
     else:
-        dll_path = os.path.join(base_dir, 'assets', 'LHM_0.9.4_lib', 'net472', 'LibreHardwareMonitorLib.dll')
+        dll_path = os.path.join(base_dir, 'assets', 'LHM_0.9.6_lib', 'net472', 'LibreHardwareMonitorLib.dll')
 
     try:
         clr.AddReference(str(dll_path))

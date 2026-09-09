@@ -1060,7 +1060,7 @@ with dpg.window(label=app_title, tag="Primary Window"):
             with dpg.group(horizontal=True):
                 with dpg.drawlist(width=15, height=15):
                     dpg.draw_line((0, 13), (15, 13), color=(180,180,180), thickness=1)
-                dpg.add_text("LibreHardwareMonitorLib v0.9.4")
+                dpg.add_text("LibreHardwareMonitorLib v0.9.6")
                 with dpg.drawlist(width=100, height=15):
                     dpg.draw_line((0, 13), (100, 13), color=(180,180,180), thickness=1)
 
