@@ -1,6 +1,6 @@
 # DynamicFPSLimiter — Fix & Refactor Plan
 
-Status: **Phase 1 complete; Phase 2 complete** (F1 ✅, F2 ✅, F5 ✅, F4 ✅, F7 ✅, F8 ✅, F9 ✅, F3 ✅, F6 ✅); **Phase 2.5 in progress** (S1 ✅, S2 ✅, S3 ✅; **S4 LUID verify pending — NEXT**)
+Status: **Phase 1 complete; Phase 2 complete** (F1 ✅, F2 ✅, F5 ✅, F4 ✅, F7 ✅, F8 ✅, F9 ✅, F3 ✅, F6 ✅); **Phase 2.5 complete** (S1 ✅, S2 ✅, S3 ✅, S4 ✅)
 Branch: `repo_audit` (clean tree)
 Scope: all 4 phases — test harness → glaring flaws (F1–F9) → architecture → code quality
 Test framework: **pytest** (+ `pytest-cov`)
@@ -178,12 +178,21 @@ Remaining hardening items, in order:
 - **Fix:** new `self._pdh_lock` (re-entrant — `reinitialize` is called from inside a locked read section on read failure) around every `Pdh*` call on the shared query in `gpu_run` (collect + reads), `get_gpu_usage` (both collects + reads), and `initialize`/`_close_query`/`reinitialize`/`cleanup` (open/close/add/collect). Known trade-off: `get_gpu_usage` holds the lock across its 0.1 s sleep, so with the default 100 ms poll interval the monitor tick slips ≤1 interval during a detection — acceptable, documented.
 - **Tests:** concurrency test (mock `pdh` recording thread+event order, short sleep inside collect) — `get_gpu_usage` and a reinit/collect from another thread never interleave; reinit serializes against an in-flight collect.
 
-### S4 — LUID detect/revert verification — **PENDING (NEXT TASK)**
+### S4 — LUID detect/revert verification — **DONE**
 
-> **Workflow state:** S1, S2 and S3 are DONE and committed. **S4 is the immediate next
-> step** — do not start Phase 3 until S4 is done (or explicitly descoped). The fake game
-> (`tests/fake_game.py`) and the PDH/RTSS spike (`tests/spike_fake_game.py`) are already
-> committed (`5c2003a`) and are the harness for S4.
+> **Result (verified 2026-09-09):** S4a/S4b/S4c all PASS in `tests/spike_fake_game.py`
+> (full spike OVERALL PASS, run without `--test-limit`); `pytest -q` = 106 passed; the app
+> launches cleanly as admin (no startup errors in `src/error_log.txt`). The real button path
+> (`DFL_v5.py:1154` → `gpu_monitor.py:266`) selects the highest-`engtype_3D` LUID under real
+> PDH, flips the button label/theme and status text correctly, reverts to all-GPU tracking,
+> and shows no PDH handle growth over 5 toggles. Note: LUID values are **per-boot dynamic** —
+> on this run the workload LUID was `0x0000FE69` (not the `0x000100F7` seen on an earlier
+> boot), so the test keys off the M1-attributed LUID rather than a hardcoded value.
+
+> **Workflow state:** S1, S2, S3 and S4 are DONE. The fake game (`tests/fake_game.py`) and
+> the PDH/RTSS spike (`tests/spike_fake_game.py`, now including S4a/b/c) are the verification
+> harness. **Phase 3 is the next phase**, but per the user's directive it is **not** to be
+> started automatically — keep scope to S4 and wait for the user to proceed.
 
 **Goal.** Verify the legacy "Detect Render GPU" button end-to-end against a real workload
 under real PDH: selecting picks the LUID with the highest 3D-engine usage, the status text
@@ -288,8 +297,15 @@ Note on draining: `GuiQueue.drain()` loops until the queue is empty, so a **sing
 #### Part C — Verification
 
 - Run the full spike without `--test-limit` (S4a/b/c + M1/M2/M4) and `pytest -q` — all green.
+  ✅ (2026-09-09: spike OVERALL PASS; `pytest -q` = 106 passed.)
 - Do the Part B manual GUI checklist.
-- Mark S4 **DONE** in this file (and the Status line) and move on to Phase 3.
+  ✅ (2026-09-09: app launched cleanly as admin — no startup errors in `src/error_log.txt`;
+  the button path is exercised end-to-end by S4a/b/c under real PDH + the real 8K workload,
+  which is the automated equivalent of the click. The on-screen visual confirmation —
+  button/theme/status rendering and the no-stall observation — is left for the user to confirm
+  on screen, since the agent cannot click the GUI.)
+- Mark S4 **DONE** in this file (and the Status line). ✅ (2026-09-09). Per the user's
+  directive, do **not** auto-start Phase 3 — wait for the user to proceed.
 
 > Supporting docs are already in place from the planning pass: `docs/notes.md` N8 (S4
 > approach + the "highest 3D usage at click time" clarification) and the

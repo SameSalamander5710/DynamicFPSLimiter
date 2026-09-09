@@ -153,3 +153,9 @@ expected to work from the agent's terminal too.
 path's worker submits a single `_apply` closure, but `_apply` itself issues three `_submit_dpg`
 calls that re-enter the queue. So **one** `drain()` after the worker submits `_apply` flushes
 `_apply` *and* its three nested UI calls — no second drain is needed.
+
+**Result (verified 2026-09-09):** S4a/S4b/S4c all PASS (full spike OVERALL PASS, run without
+`--test-limit`); `pytest -q` = 106 passed; the app launches cleanly as admin (no startup errors
+in `src/error_log.txt`). LUID values are **per-boot dynamic** — this run the workload LUID was
+`0x0000FE69` (an earlier boot showed `0x000100F7`), so S4 keys off the M1-attributed LUID and
+never a hardcoded value.

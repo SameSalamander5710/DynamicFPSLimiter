@@ -188,8 +188,10 @@ Config lives in `<app dir>/config/` (`src/config/` in dev, next to the exe when 
   (`gpu_monitor.toggle_luid_selection`) selects the LUID with the **highest** `engtype_3D`
   usage **at click time** — a best-effort render-GPU heuristic, **not** a guaranteed
   attribution (a light game can dip below the display/DWM compositor's load; see
-  `notes.md` N7/N8). Verified end-to-end by `tests/spike_fake_game.py` S4a/b/c under the 8K
-  fake game plus a manual GUI checklist (`plan.md` Phase 2.5 S4).
+   `notes.md` N7/N8). Verified end-to-end (2026-09-09) by `tests/spike_fake_game.py` S4a/b/c
+   under the 8K fake game (spike OVERALL PASS; `pytest -q` = 106 passed) plus a clean admin
+   app launch (`plan.md` Phase 2.5 S4). LUID values are per-boot dynamic, so the test keys off
+   the M1-attributed LUID, never a hardcoded value.
 - **psutil** (Legacy CPU) — per-core `cpu_percent`, max core.
 - **Win32** — `GetForegroundWindow`/`GetWindowThreadProcessId` (foreground process),
   `GetLastInputInfo` (idle), `Get/SetWindowLongW` (tray/taskbar), `shcore` DPI awareness.

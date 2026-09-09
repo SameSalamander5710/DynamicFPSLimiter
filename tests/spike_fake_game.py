@@ -5,6 +5,10 @@ Verifies, end to end, against a *real* GPU and (if running) *real* RTSS:
   M1  PDH visibility  -- the app's real GPUUsageMonitor.get_gpu_usage() reports
       non-zero 3D-engine utilization, and the LUID whose utilization jumps when the
       fake game starts is attributed to the fake game (before/after PDH).
+  S4  LUID detect/revert -- the real "Detect Render GPU" button path
+      (GPUUsageMonitor.toggle_luid_selection) picks the highest-3D-usage LUID under
+      real PDH, flips the button label/theme + status text, reverts to all-GPU
+      tracking, and does not grow the PDH handle count over repeated toggles.
   M2  RTSS recognition-- the fake game's PID appears in RTSS shared memory
       (RTSSSharedMemoryV2), i.e. RTSS has hooked it, and its FPS is readable.
   M3  RTSS limiting   -- (opt-in, --test-limit) a Global FramerateLimit is applied
@@ -12,7 +16,7 @@ Verifies, end to end, against a *real* GPU and (if running) *real* RTSS:
       original limit is restored. This briefly changes your real RTSS Global limit.
 
 Run:
-    python tests/spike_fake_game.py                 # M1 + M2 (read-only w.r.t. RTSS)
+    python tests/spike_fake_game.py                 # M1 + S4 + M2 (read-only w.r.t. RTSS)
     python tests/spike_fake_game.py --test-limit    # also M3 (applies + restores limit)
         [--limit 30] [--load 8] [--title "DFL Fake Game"]
 
@@ -199,7 +203,10 @@ def main() -> int:
             pass
 
     class _Themes:
-        themes = {}
+        # S4: toggle_luid_selection reads these keys; give them distinct sentinel
+        # values so the spike can assert which theme the button was bound to.
+        themes = {"detect_gpu_theme": "detect_theme_id",
+                  "revert_gpu_theme": "revert_theme_id"}
 
     running = {"v": True}
     mon = GPUUsageMonitor(lambda: running["v"], _Logger(), object(), _Themes(),
@@ -264,6 +271,112 @@ def main() -> int:
         res.add("M1d app get_gpu_usage() LUID == attributed LUID",
                 fake_luid is not None and app_luid == fake_luid,
                 f"app={app_luid} attributed={fake_luid}")
+
+        # ---- S4: LUID detect/revert verification (real PDH, real workload) -- #
+        # Inserted between M1d and M2: the fake game is at full 8K load and no RTSS
+        # limit has been applied, so the workload LUID is unambiguously the highest
+        # 3D usage. Verifies the real app button path end-to-end (plan.md S4).
+        print("\n[spike] S4 verifying LUID detect/revert (real PDH, real workload)...")
+        from core.gui_queue import GuiQueue
+
+        class _RecDPG:
+            """Records dpg calls so S4 can assert the button/status flips."""
+            def __init__(self):
+                self.calls = []
+            def configure_item(self, *a, **k):
+                self.calls.append(("configure_item", a, k))
+            def bind_item_theme(self, *a, **k):
+                self.calls.append(("bind_item_theme", a, k))
+            def set_value(self, *a, **k):
+                self.calls.append(("set_value", a, k))
+
+        def _wait_queue(q, timeout=10.0):
+            end = time.time() + timeout
+            while time.time() < end:
+                if len(q) > 0:
+                    return True
+                time.sleep(0.02)
+            return len(q) > 0
+
+        def _last_call(rec, name):
+            for c in reversed(rec.calls):
+                if c[0] == name:
+                    return c
+            return None
+
+        # Reassign the warm monitor's UI hooks (safe: gpu_run never reads dpg /
+        # gui_queue / themes_manager). mon.themes_manager already carries the
+        # detect/revert theme keys (see _Themes above).
+        rec = _RecDPG()
+        mon.dpg = rec
+        q = GuiQueue()
+        mon.gui_queue = q
+
+        # S4a -- detect: first click spawns a worker; wait for _apply, then a single
+        # drain() runs _apply AND the three nested dpg calls it enqueues.
+        mon.toggle_luid_selection()
+        _wait_queue(q)
+        q.drain()
+        s4a_cfg = _last_call(rec, "configure_item")
+        s4a_bind = _last_call(rec, "bind_item_theme")
+        s4a_val = _last_call(rec, "set_value")
+        s4a_ok = (
+            mon.luid == fake_luid
+            and mon.luid_selected is True
+            and s4a_cfg is not None and s4a_cfg[1] == ("luid_button",)
+            and s4a_cfg[2].get("label") == "Revert to all GPUs"
+            and s4a_bind is not None and s4a_bind[1] == ("luid_button", "revert_theme_id")
+            and s4a_val is not None and s4a_val[1][0] == "luid_status_text"
+            and str(s4a_val[1][1]).startswith(f"Tracking LUID: {fake_luid}")
+        )
+        res.add("S4a detect picks highest-3D LUID + flips UI", s4a_ok,
+                f"luid={mon.luid} selected={mon.luid_selected} "
+                f"cfg={s4a_cfg[2].get('label') if s4a_cfg else None} "
+                f"status={s4a_val[1][1] if s4a_val else None}")
+
+        # S4b -- revert: second click is an inline deselect; one drain() flushes its
+        # three dpg calls.
+        rec.calls.clear()
+        mon.toggle_luid_selection()
+        q.drain()
+        s4b_cfg = _last_call(rec, "configure_item")
+        s4b_bind = _last_call(rec, "bind_item_theme")
+        s4b_val = _last_call(rec, "set_value")
+        s4b_ok = (
+            mon.luid == "All"
+            and mon.luid_selected is False
+            and s4b_cfg is not None and s4b_cfg[1] == ("luid_button",)
+            and s4b_cfg[2].get("label") == "Detect Render GPU"
+            and s4b_bind is not None and s4b_bind[1] == ("luid_button", "detect_theme_id")
+            and s4b_val is not None
+            and s4b_val[1] == ("luid_status_text", "Tracking all GPU 3D usages.")
+        )
+        res.add("S4b revert restores all-GPU tracking + flips UI back", s4b_ok,
+                f"luid={mon.luid} selected={mon.luid_selected} "
+                f"cfg={s4b_cfg[2].get('label') if s4b_cfg else None} "
+                f"status={s4b_val[1][1] if s4b_val else None}")
+
+        # S4c -- no PDH handle growth over repeated toggles (count stability, not
+        # id(query_handle), so a benign reinitialize() cannot false-fail).
+        handles_before = len(mon.counter_handles)
+        counters_before = sum(len(v) for v in mon.counter_handles.values())
+        for _ in range(5):
+            mon.toggle_luid_selection()  # detect
+            _wait_queue(q)
+            q.drain()
+            mon.toggle_luid_selection()  # revert
+            q.drain()
+        handles_after = len(mon.counter_handles)
+        counters_after = sum(len(v) for v in mon.counter_handles.values())
+        s4c_ok = (
+            handles_after == handles_before
+            and counters_after == counters_before
+            and mon.query_handle is not None
+        )
+        res.add("S4c no PDH handle growth over 5 toggles", s4c_ok,
+                f"handles {handles_before}->{handles_after} "
+                f"counters {counters_before}->{counters_after} "
+                f"query={'ok' if mon.query_handle is not None else 'None'}")
 
         # ---- M2: RTSS recognition (read-only) ------------------------------ #
         print("\n[spike] M2 checking RTSS recognition (shared memory)...")
