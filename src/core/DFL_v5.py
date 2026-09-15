@@ -1,7 +1,7 @@
 # DFL_v5.py
 # Dynamic FPS Limiter v5.0.0
 
-version = "v5.0.0-beta.2"
+version = "v5.0.0"
 
 import ctypes
 ctypes.windll.shcore.SetProcessDpiAwareness(2)

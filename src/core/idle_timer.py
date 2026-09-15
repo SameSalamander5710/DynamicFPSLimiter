@@ -13,9 +13,16 @@ def get_idle_duration():
     if not ctypes.windll.user32.GetLastInputInfo(ctypes.byref(lii)):
         raise ctypes.WinError()
 
-    # Match dwTime's 32-bit counter and handle signed results and wraparound.
-    ticks = ctypes.windll.kernel32.GetTickCount()
-    delta_ms = (int(ticks) - int(lii.dwTime)) & 0xFFFFFFFF
+    # Prefer GetTickCount64 if available
+    try:
+        ticks = ctypes.windll.kernel32.GetTickCount64()
+        # dwTime is 32-bit, keep arithmetic safe
+        delta_ms = (int(ticks) - int(lii.dwTime)) & ((1 << 64) - 1)
+
+    except AttributeError:
+        # fallback to 32-bit GetTickCount
+        ticks = ctypes.windll.kernel32.GetTickCount()
+        delta_ms = (int(ticks) - int(lii.dwTime)) & 0xFFFFFFFF
     return delta_ms / 1000.0
 
 def monitor_idle(threshold=5, interval=0.5):
