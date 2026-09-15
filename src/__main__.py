@@ -48,6 +48,7 @@ def build_executable():
         '--noconfirm',
         '--noconsole',
         '--name', 'DynamicFPSLimiter',
+        '--paths', 'src',
         '--icon', 'src/core/assets/DynamicFPSLimiter.ico',
         '--version-file', 'src/metadata/version.txt',
         '--distpath', 'output/dist',

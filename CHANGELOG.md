@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## [v5.0.0-beta.2] - 2026-09-15
+
+### Fixed
+- Preserve the configured idle FPS cap and timeout when creating, switching, or reloading profiles. A custom limit such as 10 FPS no longer reverts to the startup value of 30 FPS.
+- Keep all numeric global settings in sync with the in-memory settings used by profile and quick-save operations.
+- Prevent long Windows uptime from causing recent keyboard or mouse input to be treated as prolonged inactivity.
+
+### Build
+- Add an automated Windows x64 build with regression checks and a downloadable ZIP.
+
 ## [v5.0.0-beta.1] - 2025-11-15
 
 ### Added
