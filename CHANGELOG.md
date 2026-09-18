@@ -1,5 +1,23 @@
 # CHANGELOG
 
+## [v5.0.1] - 2026-09-18
+
+### Changed
+- Updated the LibreHardwareMonitor library to v0.9.6 with its required net472 dependencies.
+- Idle FPS settings now stay applied after a profile change (by @kaxonomy in #52).
+- The plot update interval now uses the shorter of the GPU and CPU polling intervals.
+- The app sets DPI awareness once at startup instead of at import time.
+
+### Fixed
+- The app no longer crashes when RTSS is missing while the loading popup is active. A second `setup_dearpygui()` call on the same live context caused an access violation.
+- Background monitoring, plotting, and autopilot threads no longer update the GUI directly. All GUI updates run on the main render thread.
+- The FPS-limit gate now treats a 0% GPU usage reading as valid.
+- Corrected the typo in the min-valid-FPS warning message.
+- Autostart no longer runs `schtasks` with `shell=True`.
+
+### Removed
+- Removed debug `print()` statements from the shipped code.
+
 ## [v5.0.0-beta.1] - 2025-11-15
 
 ### Added

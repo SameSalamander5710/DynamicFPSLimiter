@@ -2,7 +2,7 @@
 
 > Companion to [`status.md`](./status.md) (done / pending / deferred fix tracking) and
 > [`lessons.md`](./lessons.md) (engineering lessons). This document describes the
-> **current v5.0.0-beta.1** codebase.
+> **current v5.0.1** codebase.
 
 ## 1. Overview
 
@@ -235,7 +235,7 @@ See the module map (§4) for Python sources. Non-code:
 | `src/requirements.txt` | dearpygui, psutil, pyinstaller, pystray, pythonnet, numpy |
 | `src/core/assets/*.ico`, `*.png` | App/tray icons + window-control icons |
 | `src/core/assets/faqs.csv` | FAQ rows shown in the GUI |
-| `src/core/assets/LHM_0.9.4_lib/` | LibreHardwareMonitorLib.dll (4 .NET variants) + license |
+| `src/core/assets/LHM_0.9.6_lib/` | LibreHardwareMonitorLib.dll (4 .NET variants) + license |
 | `src/Public_SameSalamander5710.cer` | Code-signing public certificate |
 | `README.md`, `CHANGELOG.md`, `src/BUILD.md` | User/release docs |
 | `docs/README.md`, `docs/architecture.md`, `docs/status.md`, `docs/lessons.md` | Design docs + status tracker |

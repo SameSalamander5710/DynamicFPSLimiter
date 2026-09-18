@@ -25,3 +25,4 @@ src/error_log.txt
 src/core/video2gif.py
 src/core/backup_snippets.py
 opencode.json
+docs/AGENTS.md

@@ -1,4 +1,4 @@
-# Dynamic FPS Limiter v5 (beta!)
+# Dynamic FPS Limiter v5
 
 A lightweight companion app for RTSS that leverages its profile-modification API to dynamically adjust framerate limits based on real-time GPU and CPU conditions. It uses LibreHardwareMonitor to read GPU/CPU usage, power draw, and temperatures, with Windows Performance Counters available as a fallback.
 
@@ -9,12 +9,10 @@ A lightweight companion app for RTSS that leverages its profile-modification API
 
 
 <p align="center">
-  <img src="docs/Images/v5.0.0-beta.1.1.gif" width="45%" />
+  <img src="docs/Images/demo.gif" width="45%" />
 </p>
 
 ## Installation
-
-For the last stable build, check [DFL_v4](https://github.com/SameSalamander5710/DynamicFPSLimiter/tree/DFL_v4).
 
 ### To Build It Yourself,
 If you'd like to inspect or customize the source code, follow the instructions in [BUILD.md](/src/BUILD.md)
@@ -27,10 +25,10 @@ If you'd like to inspect or customize the source code, follow the instructions i
     - This can be done by holding the **Shift** key and clicking **Add** in RTSS, while the app is running.
     - **Note**: While not strictly necessary, this step is strongly recommended if you have disabled 'passive waiting' for the Global profile in RTSS
 
-Watch the demo here! (Based on v5.0.0-beta.1)
+Watch the demo here! (App version v5.0.1)
 
 <a href="https://youtu.be/62VOtJndsgk" target="_blank" rel="noopener noreferrer">
-  <img src="https://img.youtube.com/vi/62VOtJndsgk/hqdefault.jpg" width="45%" alt="Watch the demo here! (Based on v5.0.0-beta.1)">
+  <img src="https://img.youtube.com/vi/62VOtJndsgk/hqdefault.jpg" width="45%" alt="Watch the demo here! (App version v5.0.1)">
 </a>
 
 > [!NOTE]
