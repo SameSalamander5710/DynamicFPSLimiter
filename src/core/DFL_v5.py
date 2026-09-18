@@ -6,7 +6,7 @@ version = "v5.0.0"
 import dearpygui.dearpygui as dpg
 import threading
 import time
-import math
+
 import os
 import sys
 import csv
@@ -459,7 +459,7 @@ def plotting_loop():
         # CALL update_plot_usage with the current time and usage values
         update_plot_usage(elapsed_time, gpuUsage, cpuUsage)
 
-        time.sleep(math.lcm(cm.gpupollinginterval, cm.cpupollinginterval) / 1000.0)  # Convert to seconds
+        time.sleep(min(cm.gpupollinginterval, cm.cpupollinginterval) / 1000.0)  # Convert to seconds
 
         #Update summary statistics
         fps_utils.update_summary_statistics()

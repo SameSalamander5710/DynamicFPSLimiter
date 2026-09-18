@@ -32,6 +32,15 @@ def test_no_frame_callback_drain_wiring():
     assert "_frame_hook" not in src
 
 
+def test_plotting_loop_uses_min_polling_interval():
+    """L18: the plotting-loop sleep must use min() of the two polling intervals,
+    not math.lcm() which couples unrelated sensors and can produce surprising
+    long sleep values."""
+    src = _source()
+    assert "math.lcm(" not in src
+    assert "min(cm.gpupollinginterval, cm.cpupollinginterval)" in src
+
+
 def test_gui_queue_wired_with_on_error():
     """S3: the app must route GuiQueue failures to logging so a broken queued
     callback is diagnosable in error_log.txt instead of vanishing."""
