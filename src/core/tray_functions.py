@@ -156,7 +156,6 @@ class TrayManager:
             self._dragging_viewport = True
             self._drag_start_mouse_pos = mouse_pos_global
             self._drag_start_viewport_pos = self.dpg.get_viewport_pos()
-            print(f"Started dragging viewport at {mouse_pos_global}")
         else:
             self._dragging_viewport = False
             self._drag_start_mouse_pos = None

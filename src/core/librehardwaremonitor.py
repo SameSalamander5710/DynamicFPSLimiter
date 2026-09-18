@@ -321,7 +321,6 @@ class LHMSensor:
             try:
                 self._submit_dpg(self.dpg.set_value, "ReadingsText", readings)
             except Exception as e:
-                print("Failed to update ReadingsText:", e)
                 self.logger.add_log(f"Failed to update ReadingsText: {e}")
             time.sleep(self.interval)
 

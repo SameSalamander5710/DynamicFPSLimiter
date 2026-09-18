@@ -158,8 +158,6 @@ def ensure_loaded(base_dir=None, logger=None):
         except Exception:
             # swallow logger errors to avoid breaking loading
             pass
-    else:
-        print(msg)  # TODO: remove or route to logger in production
 
     if variant:
         dll_path = os.path.join(base_dir, 'assets', variant, 'LibreHardwareMonitorLib.dll')

@@ -42,13 +42,15 @@ def _unblock_alternate_data_streams(root_dirs):
     return True
 
 def mark_first_launch_done(base, cm):
-    cm = cm
-    config_dir, settings_path = _settings_path_for_base(base)
-    config = configparser.ConfigParser()
+    _, settings_path = _settings_path_for_base(base)
     try:
         cm.update_preference_setting('first_launch_done', None, True, None)
-        #print(f"Marked first_launch_done=True at {settings_path}")
-
         return True
     except Exception as exc:
-        print(f"Failed to write settings.ini at {settings_path}: {exc!r}")
+        cm_logger = getattr(cm, "logger", None)
+        if cm_logger is not None and hasattr(cm_logger, "add_log"):
+            try:
+                cm_logger.add_log(f"Failed to write settings.ini at {settings_path}: {exc!r}")
+            except Exception:
+                pass
+        return False
