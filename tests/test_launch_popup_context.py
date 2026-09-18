@@ -93,3 +93,11 @@ def test_source_guards_single_context_lifecycle():
     err_block = text[text.index("def show_rtss_error_and_exit") : text.index("def show_loading_popup")]
     assert "_loading_popup_active" in err_block
     assert err_block.index("_loading_popup_active") < err_block.index("create_context")
+
+
+def test_no_dead_destroy_viewport_call_in_hide_loading_popup():
+    text = (SRC_DIR / "core" / "launch_popup.py").read_text(encoding="utf-8")
+    hide_block = text[text.index("def hide_loading_popup") : text.index('if __name__ == "__main__"')]
+    # destroy_viewport() does not exist in DearPyGui 2.x; it must not be called.
+    assert "dpg_mod.destroy_viewport()" not in hide_block
+    assert "dpg_mod.destroy_context()" in hide_block

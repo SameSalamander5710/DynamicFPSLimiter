@@ -206,17 +206,11 @@ def hide_loading_popup(dpg=None):
     global _loading_popup_active
     _loading_popup_active = False
     dpg_mod = dpg if dpg is not None else _default_dpg()
+    # Destroy the temporary loading DPG context. destroy_viewport() does not exist
+    # in DearPyGui 2.x (the viewport is destroyed implicitly with the context), so
+    # only destroy_context() is meaningful here.
     try:
-        # destroy viewport if present
-        try:
-            dpg_mod.destroy_viewport()
-        except Exception:
-            pass
-        # destroy context
-        try:
-            dpg_mod.destroy_context()
-        except Exception:
-            pass
+        dpg_mod.destroy_context()
     except Exception:
         pass
 
