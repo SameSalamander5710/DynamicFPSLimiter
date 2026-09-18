@@ -342,6 +342,7 @@ class GPUUsageMonitor:
             time.sleep(0.1)
             pdh.PdhCollectQueryData(self.query_handle)
 
+    @staticmethod
     def calculate_percentile(data: list, percentile: float) -> float:
         """
         Calculate the percentile of a list of numbers.

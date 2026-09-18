@@ -48,6 +48,7 @@ class CPUUsageMonitor:
         if self._thread.is_alive():
             self._thread.join()
 
+    @staticmethod
     def calculate_percentile(data: list, percentile: float) -> float:
         """
         Calculate the percentile of a list of numbers.
