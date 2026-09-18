@@ -4,10 +4,13 @@ import os
 import sys
 import ctypes
 from PIL import Image
-import dearpygui.dearpygui as dpg
 from pystray import Icon, MenuItem, Menu
 
 app_title = "Dynamic FPS Limiter"
+
+def _default_dpg():
+    import dearpygui.dearpygui as dpg
+    return dpg
 
 def get_hwnd_by_title(window_title):
     """
@@ -55,8 +58,9 @@ def is_left_mouse_button_down():
     return (ctypes.windll.user32.GetAsyncKeyState(VK_LBUTTON) & 0x8000) != 0
 
 class TrayManager:
-    def __init__(self, app_name, icon_path, on_restore, on_exit, viewport_width, config_manager_instance, hover_text=None, start_stop_callback=None, fps_utils=None, gui_queue=None):
+    def __init__(self, app_name, icon_path, on_restore, on_exit, viewport_width, config_manager_instance, hover_text=None, start_stop_callback=None, fps_utils=None, gui_queue=None, dpg=None):
         self.app_name = app_name
+        self.dpg = dpg if dpg is not None else _default_dpg()
         self.icon_path = icon_path
         self.on_restore = on_restore
         self.on_exit = on_exit
@@ -132,7 +136,7 @@ class TrayManager:
         #print(f"Dragging viewport by ({dx}, {dy}) to new position: ({new_x}, {new_y})")
         #current_viewport_pos = dpg.get_viewport_pos()
         #if (current_viewport_pos[0] != new_x) or (current_viewport_pos[1] != new_y):
-        dpg.set_viewport_pos([new_x, new_y])
+        self.dpg.set_viewport_pos([new_x, new_y])
 
     def on_mouse_release(self, sender, app_data, user_data):
         if self._dragging_viewport:
@@ -145,13 +149,13 @@ class TrayManager:
 
     def on_mouse_click(self, sender, app_data, user_data):
         mouse_pos_global = get_mouse_screen_pos()
-        mouse_pos_app = dpg.get_mouse_pos(local=False)
+        mouse_pos_app = self.dpg.get_mouse_pos(local=False)
         mouse_y = mouse_pos_app[1]
         mouse_x = mouse_pos_app[0]
-        if mouse_y < 40 and dpg.is_mouse_button_down(0) and mouse_x < (self.viewport_width - 75):
+        if mouse_y < 40 and self.dpg.is_mouse_button_down(0) and mouse_x < (self.viewport_width - 75):
             self._dragging_viewport = True
             self._drag_start_mouse_pos = mouse_pos_global
-            self._drag_start_viewport_pos = dpg.get_viewport_pos()
+            self._drag_start_viewport_pos = self.dpg.get_viewport_pos()
             print(f"Started dragging viewport at {mouse_pos_global}")
         else:
             self._dragging_viewport = False
@@ -209,7 +213,7 @@ class TrayManager:
             for profile in self.cm.profiles_config.sections():
                 def make_callback(profile_name):
                     def _do():
-                        dpg.set_value("profile_dropdown", profile_name)
+                        self.dpg.set_value("profile_dropdown", profile_name)
                         self._select_profile_from_tray(profile_name)
                     return lambda icon, item: self._run_on_main(_do)
                 profiles.append(MenuItem(
@@ -224,7 +228,7 @@ class TrayManager:
         for m in methods:
             def make_callback(method_name):
                 def _do():
-                    dpg.set_value("input_capmethod", method_name)
+                    self.dpg.set_value("input_capmethod", method_name)
                     self._select_method_from_tray(method_name)
                 return lambda icon, item: self._run_on_main(_do)
             yield MenuItem(

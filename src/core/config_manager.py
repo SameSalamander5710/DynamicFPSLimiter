@@ -1,6 +1,5 @@
 import os
 import configparser
-import dearpygui.dearpygui as dpg
 from decimal import Decimal, InvalidOperation
 from core.librehardwaremonitor import get_all_sensor_infos
 
@@ -452,12 +451,12 @@ class ConfigManager:
                 return self.Default_settings_original[key]
             
     def save_to_profile(self):
-        selected_profile = dpg.get_value("profile_dropdown")
+        selected_profile = self.dpg.get_value("profile_dropdown")
 
         if selected_profile:
             # Update profile-specific settings
             for key in self.input_field_keys:
-                value = dpg.get_value(f"input_{key}")
+                value = self.dpg.get_value(f"input_{key}")
                 parsed_value = self.parse_input_value(key, value)
                 # Store as string for config file
                 self.profiles_config[selected_profile][key] = str(parsed_value)
@@ -469,13 +468,13 @@ class ConfigManager:
     
     def update_profile_dropdown(self, select_first=False):
         profiles = self.profiles_config.sections()
-        dpg.configure_item("profile_dropdown", items=profiles)
+        self.dpg.configure_item("profile_dropdown", items=profiles)
 
         if select_first and profiles:
-            dpg.set_value("profile_dropdown", profiles[0])  # Set combo selection
+            self.dpg.set_value("profile_dropdown", profiles[0])  # Set combo selection
 
-        current_profile = dpg.get_value("profile_dropdown")
-        dpg.set_value("game_name", current_profile)
+        current_profile = self.dpg.get_value("profile_dropdown")
+        self.dpg.set_value("game_name", current_profile)
 
     def load_profile_callback(self, sender, app_data, user_data):
         
@@ -487,38 +486,38 @@ class ConfigManager:
         for key in self.input_field_keys:
             value = self.profiles_config[profile_name].get(key, self.Default_settings_original[key])
             parsed_value = self.parse_input_value(key, value)
-            dpg.set_value(f"input_{key}", parsed_value)
+            self.dpg.set_value(f"input_{key}", parsed_value)
         self.update_global_variables()
-        dpg.set_value("new_profile_input", "")
-        dpg.set_value("game_name", profile_name)
+        self.dpg.set_value("new_profile_input", "")
+        self.dpg.set_value("game_name", profile_name)
 
-        #dpg.configure_item("game_name", label=profile_name)
+        #self.dpg.configure_item("game_name", label=profile_name)
         self.refresh_ui_callbacks()
 
     def save_profile(self, profile_name):
         self.profiles_config[profile_name] = {}
         # Save input fields
         for key in self.input_field_keys:
-            value = dpg.get_value(f"input_{key}")
+            value = self.dpg.get_value(f"input_{key}")
             parsed_value = self.parse_input_value(key, value)
             self.profiles_config[profile_name][key] = str(parsed_value)
         with open(self.profiles_path, 'w') as f:
             self.profiles_config.write(f)
         self.update_profile_dropdown()
-        dpg.set_value("profile_dropdown", profile_name)
+        self.dpg.set_value("profile_dropdown", profile_name)
         self.load_profile_callback(None, profile_name, None)
 
     def add_new_profile_callback(self):
-        new_name = dpg.get_value("new_profile_input")
+        new_name = self.dpg.get_value("new_profile_input")
         if new_name and new_name not in self.profiles_config:
             self.save_profile(new_name)
-            dpg.set_value("new_profile_input", "")
+            self.dpg.set_value("new_profile_input", "")
             self.logger.add_log(f"New profile created: {new_name}")
         else:
             self.logger.add_log("Profile name is empty or already exists.")
 
     def add_process_profile_callback(self):
-        new_name = dpg.get_value("LastProcess")
+        new_name = self.dpg.get_value("LastProcess")
         if new_name and new_name not in self.profiles_config:
             self.save_profile(new_name)
             self.logger.add_log(f"New profile created: {new_name}")
@@ -527,7 +526,7 @@ class ConfigManager:
 
     def delete_selected_profile_callback(self):
         
-        profile_to_delete = dpg.get_value("profile_dropdown")
+        profile_to_delete = self.dpg.get_value("profile_dropdown")
         if profile_to_delete == "Global":
             self.logger.add_log("Cannot delete the default 'Global' profile.")
             return
@@ -544,7 +543,7 @@ class ConfigManager:
                     try:
                         value = self.profiles_config["Global"][key]
                         parsed_value = self.parse_input_value(key, value)
-                        dpg.set_value(f"input_{key}", parsed_value)
+                        self.dpg.set_value(f"input_{key}", parsed_value)
                     except Exception as e:
                         self.logger.add_log(f"Error: Unable to convert value for key '{key}': {e}")
                 self.update_global_variables()  # Ensure global variables are updated
@@ -569,13 +568,13 @@ class ConfigManager:
     # Read values from UI input fields without modifying `settings`
     def apply_current_input_values(self):
         for key in self.input_field_keys:
-            value = dpg.get_value(f"input_{key}")
+            value = self.dpg.get_value(f"input_{key}")
             #globals()[key] = self.parse_input_value(key, value)
             setattr(self, key, self.parse_input_value(key, value))
 
     def quick_save_settings(self):
         for key in self.input_field_keys:
-            value = dpg.get_value(f"input_{key}")
+            value = self.dpg.get_value(f"input_{key}")
             self.settings[key] = self.parse_input_value(key, value)
         self.update_global_variables()
         self.logger.add_log("Settings quick saved")
@@ -584,7 +583,7 @@ class ConfigManager:
         for key in self.input_field_keys:
             value = self.settings[key]
             parsed_value = self.parse_input_value(key, value)
-            dpg.set_value(f"input_{key}", parsed_value)
+            self.dpg.set_value(f"input_{key}", parsed_value)
         self.update_global_variables()
         self.logger.add_log("Settings quick loaded")
         self.refresh_ui_callbacks()
@@ -593,7 +592,7 @@ class ConfigManager:
         for key in self.input_field_keys:
             value = self.Default_settings_original[key]
             parsed_value = self.parse_input_value(key, value)
-            dpg.set_value(f"input_{key}", parsed_value)
+            self.dpg.set_value(f"input_{key}", parsed_value)
         self.refresh_ui_callbacks()
         self.logger.add_log("Settings reset to program default")
 
@@ -602,27 +601,27 @@ class ConfigManager:
         profile_name = self.settings_config["GlobalSettings"].get("profileonstartup_name", "Global")
         if self.profileonstartup:
             if profile_name in self.profiles_config:
-                dpg.set_value("profile_dropdown", profile_name)
+                self.dpg.set_value("profile_dropdown", profile_name)
                 self.load_profile_callback(None, profile_name, None)
             else:
                 self.logger.add_log(f"Profile '{profile_name}' not found. Defaulting to 'Global'.")
-                dpg.set_value("profile_dropdown", "Global")
+                self.dpg.set_value("profile_dropdown", "Global")
                 self.load_profile_callback(None, "Global", None)
 
     def current_method_callback(self, sender=None, app_data=None, user_data=None):
 
-        method = app_data.lower() if app_data else dpg.get_value("input_capmethod").lower()
+        method = app_data.lower() if app_data else self.dpg.get_value("input_capmethod").lower()
         self.current_method = method
 
-        dpg.bind_item_theme("input_capratio", self.themes["enabled_text_theme"] if method == "ratio" else self.themes["disabled_text_theme"])
-        dpg.bind_item_theme("label_capratio", self.themes["enabled_text_theme"] if method == "ratio" else self.themes["disabled_text_theme"])
-        dpg.bind_item_theme("label_capstep", self.themes["enabled_text_theme"] if method == "step" else self.themes["disabled_text_theme"])
-        dpg.bind_item_theme("input_capstep", self.themes["enabled_text_theme"] if method == "step" else self.themes["disabled_text_theme"])
-        dpg.bind_item_theme("input_customfpslimits", self.themes["enabled_text_theme"] if method == "custom" else self.themes["disabled_text_theme"])
-        dpg.bind_item_theme("label_maxcap", self.themes["disabled_text_theme"] if method == "custom" else self.themes["enabled_text_theme"])
-        dpg.bind_item_theme("label_mincap", self.themes["disabled_text_theme"] if method == "custom" else self.themes["enabled_text_theme"])
-        dpg.bind_item_theme("input_maxcap", self.themes["disabled_text_theme"] if method == "custom" else self.themes["enabled_text_theme"])
-        dpg.bind_item_theme("input_mincap", self.themes["disabled_text_theme"] if method == "custom" else self.themes["enabled_text_theme"])
+        self.dpg.bind_item_theme("input_capratio", self.themes["enabled_text_theme"] if method == "ratio" else self.themes["disabled_text_theme"])
+        self.dpg.bind_item_theme("label_capratio", self.themes["enabled_text_theme"] if method == "ratio" else self.themes["disabled_text_theme"])
+        self.dpg.bind_item_theme("label_capstep", self.themes["enabled_text_theme"] if method == "step" else self.themes["disabled_text_theme"])
+        self.dpg.bind_item_theme("input_capstep", self.themes["enabled_text_theme"] if method == "step" else self.themes["disabled_text_theme"])
+        self.dpg.bind_item_theme("input_customfpslimits", self.themes["enabled_text_theme"] if method == "custom" else self.themes["disabled_text_theme"])
+        self.dpg.bind_item_theme("label_maxcap", self.themes["disabled_text_theme"] if method == "custom" else self.themes["enabled_text_theme"])
+        self.dpg.bind_item_theme("label_mincap", self.themes["disabled_text_theme"] if method == "custom" else self.themes["enabled_text_theme"])
+        self.dpg.bind_item_theme("input_maxcap", self.themes["disabled_text_theme"] if method == "custom" else self.themes["enabled_text_theme"])
+        self.dpg.bind_item_theme("input_mincap", self.themes["disabled_text_theme"] if method == "custom" else self.themes["enabled_text_theme"])
 
         if self.tray:
             self.tray.update_hover_text() #Add  max_fps if easy
@@ -634,7 +633,7 @@ class ConfigManager:
     def monitoring_method_callback(self, sender=None, app_data=None, user_data=None):
         # app_data is the selected value
 
-        app_data = app_data.lower() if app_data else dpg.get_value("input_monitoring_method").lower()
+        app_data = app_data.lower() if app_data else self.dpg.get_value("input_monitoring_method").lower()
 
         if app_data == "librehm":
             self.dpg.configure_item("LHwM_childwindow", show=True)
@@ -751,7 +750,7 @@ class ConfigManager:
             self.logger.add_log(f"{key} set to: {getattr(self, key)}")
         else:
             self.logger.add_log(f"Invalid value entered for {key}: {app_data}. Reverting.")
-            dpg.set_value(sender, getattr(self, key))
+            self.dpg.set_value(sender, getattr(self, key))
 
     def update_GlobalSettings_settings_callback(self, key):
         def callback(sender, app_data, user_data):
@@ -760,8 +759,8 @@ class ConfigManager:
 
     def select_default_profile_callback(self, sender, app_data, user_data):
 
-        current_profile = dpg.get_value("profile_dropdown")
-        dpg.set_value("profileonstartup_name", current_profile)
+        current_profile = self.dpg.get_value("profile_dropdown")
+        self.dpg.set_value("profileonstartup_name", current_profile)
         self.settings_config["GlobalSettings"]["profileonstartup_name"] = current_profile
         with open(self.settings_path, 'w') as f:
             self.settings_config.write(f)

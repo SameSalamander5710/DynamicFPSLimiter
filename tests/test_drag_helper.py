@@ -82,7 +82,7 @@ def test_viewport_drag_handler_works_without_tray_manager(
 
     from core.drag_helper import ViewportDragHandler
 
-    handler = ViewportDragHandler(viewport_width=420)
+    handler = ViewportDragHandler(viewport_width=420, dpg=fake_dpg)
     assert hasattr(handler, "on_mouse_click")
     assert hasattr(handler, "drag_viewport")
     assert hasattr(handler, "on_mouse_release")

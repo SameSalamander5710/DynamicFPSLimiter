@@ -5,7 +5,6 @@ import mmap
 import struct
 import time
 from collections import defaultdict
-import dearpygui.dearpygui as dpg
 import threading
 import os
 from decimal import Decimal, InvalidOperation

@@ -27,6 +27,7 @@ from core.pre_launch import _unblock_alternate_data_streams, mark_first_launch_d
 DLLs_unblocked = _unblock_alternate_data_streams([parent_dir])
 
 from core import logger
+logger.set_dpg(dpg)
 from core.rtss_interface import RTSSInterface
 from core.cpu_monitor import CPUUsageMonitor
 from core.gpu_monitor import GPUUsageMonitor
@@ -45,14 +46,14 @@ from core.autopilot import autopilot_on_check, get_foreground_process_name
 from core.launch_popup import show_loading_popup, hide_loading_popup
 from core.idle_timer import get_idle_duration
 
-show_loading_popup(f"Loading Dynamic FPS Limiter {version}...", Base_dir=Base_dir)
+show_loading_popup(f"Loading Dynamic FPS Limiter {version}...", Base_dir=Base_dir, dpg=dpg)
 
 # Default viewport size
 Viewport_width = 610
 Viewport_height = 700
 
 rtss = RTSSController(logger)
-themes_manager = ThemesManager(Base_dir)
+themes_manager = ThemesManager(Base_dir, dpg)
 cm = ConfigManager(logger, dpg, rtss, None, themes_manager, Base_dir)
 
 # Paths to configuration files
@@ -565,7 +566,8 @@ tray = TrayManager(
     config_manager_instance=cm,  # Pass ConfigManager instance
     hover_text=app_title,
     start_stop_callback=start_stop_callback,  # Pass the callback
-    fps_utils=fps_utils
+    fps_utils=fps_utils,
+    dpg=dpg
 )
 
 cm.tray = tray  # Set tray manager in ConfigManager
@@ -810,7 +812,7 @@ def build_settings_window():
             dpg.add_button(label="Hide Settings", width=100, callback=lambda: dpg.configure_item("settings_window", show=False))
             dpg.bind_item_theme("settings_window", themes_manager.themes["nested_window_theme"])
 
-hide_loading_popup()
+hide_loading_popup(dpg=dpg)
 
 # GUI setup: Main Window
 dpg.create_context()

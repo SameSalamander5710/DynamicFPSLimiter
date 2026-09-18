@@ -3,7 +3,6 @@
 import time
 import threading
 import psutil
-import dearpygui.dearpygui as dpg
 
 class CPUUsageMonitor:
     def __init__(self, get_running, logger_instance, dpg_instance, interval=0.1, max_samples=20, percentile=70):

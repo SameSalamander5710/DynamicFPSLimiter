@@ -1,7 +1,6 @@
 import os
 import sys
 import subprocess
-import dearpygui.dearpygui as dpg
 
 TASK_NAME = "DynamicFPSLimiter"
 

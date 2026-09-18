@@ -1,7 +1,6 @@
 from core.lhm_loader import get_types, LHMLoadError
 import os
 from pathlib import Path
-import dearpygui.dearpygui as dpg
 import statistics
 from collections import deque
 
@@ -27,14 +26,14 @@ class FPSUtils:
         self.HardwareType = HardwareType
 
     def current_stepped_limits(self):
-        maximum = int(dpg.get_value("input_maxcap"))
-        minimum = int(dpg.get_value("input_mincap"))
-        step = int(dpg.get_value("input_capstep"))
-        ratio = int(dpg.get_value("input_capratio"))
-        use_custom = dpg.get_value("input_capmethod").lower()
+        maximum = int(self.dpg.get_value("input_maxcap"))
+        minimum = int(self.dpg.get_value("input_mincap"))
+        step = int(self.dpg.get_value("input_capstep"))
+        ratio = int(self.dpg.get_value("input_capratio"))
+        use_custom = self.dpg.get_value("input_capmethod").lower()
 
         if use_custom == "custom":
-            custom_limits = dpg.get_value("input_customfpslimits")
+            custom_limits = self.dpg.get_value("input_customfpslimits")
             if custom_limits and self.cm:
                 try:
                     custom_limits = self.cm.parse_and_normalize_string_to_decimal_set(custom_limits)
@@ -293,7 +292,7 @@ class FPSUtils:
             else:
                 summary_text = "No enabled LibreHM sensors with data."
             try:
-                dpg.set_value("SummaryText", summary_text)
+                self.dpg.set_value("SummaryText", summary_text)
             except Exception:
                 pass
 

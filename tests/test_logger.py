@@ -18,6 +18,7 @@ def test_set_gui_queue_injects_queue(monkeypatch):
 
 def test_add_log_defers_dpg_to_queue(fake_dpg, monkeypatch):
     monkeypatch.setattr(logger, "log_messages", [])
+    monkeypatch.setattr(logger, "_dpg", fake_dpg)
     queue = GuiQueue()
     monkeypatch.setattr(logger, "_gui_queue", queue)
     fake_dpg.calls.clear()
@@ -47,6 +48,7 @@ def test_add_log_defers_dpg_to_queue(fake_dpg, monkeypatch):
 
 def test_add_log_inline_without_queue(fake_dpg, monkeypatch):
     monkeypatch.setattr(logger, "log_messages", [])
+    monkeypatch.setattr(logger, "_dpg", fake_dpg)
     monkeypatch.setattr(logger, "_gui_queue", None)
     fake_dpg.calls.clear()
     fake_dpg.items.add("LogText")  # pretend the log widget exists

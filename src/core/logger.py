@@ -1,4 +1,3 @@
-import dearpygui.dearpygui as dpg
 import logging
 import sys # Import sys module
 import threading
@@ -10,12 +9,19 @@ log_messages = []
 # and DearPyGui is only safe on the thread that owns the render context.
 _gui_queue = None
 _log_lock = threading.Lock()
+_dpg = None
 
 
 def set_gui_queue(queue):
     """Inject the GuiQueue so DPG log-widget updates run on the main thread."""
     global _gui_queue
     _gui_queue = queue
+
+
+def set_dpg(dpg_instance):
+    """Inject the dearpygui module instance used for log-widget updates."""
+    global _dpg
+    _dpg = dpg_instance
 
 # Function to initialize logging configuration and set the exception hook
 def init_logging(log_file_path):
@@ -45,9 +51,12 @@ def _apply_log_text_to_widget():
     """
     with _log_lock:
         text = "\n".join(log_messages)
+    global _dpg
+    if _dpg is None:
+        return
     try:
-        if dpg.does_item_exist("LogText"):
-            dpg.set_value("LogText", text)
+        if _dpg.does_item_exist("LogText"):
+            _dpg.set_value("LogText", text)
     except Exception:
         # If there's any issue with the GUI update, just continue silently.
         # The log messages are still stored in the log_messages list.

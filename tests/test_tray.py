@@ -30,7 +30,7 @@ class _FpsUtilsStub:
         return [60, 120]
 
 
-def _make_tray(cm=None, fps_utils=None, queue=None):
+def _make_tray(cm=None, fps_utils=None, queue=None, dpg=None):
     return tray_functions.TrayManager(
         app_name="TestApp",
         icon_path="",
@@ -42,12 +42,13 @@ def _make_tray(cm=None, fps_utils=None, queue=None):
         start_stop_callback=None,
         fps_utils=fps_utils,
         gui_queue=queue,
+        dpg=dpg,
     )
 
 
-def test_run_on_main_defers_to_queue():
+def test_run_on_main_defers_to_queue(fake_dpg):
     queue = GuiQueue()
-    tray = _make_tray(queue=queue)
+    tray = _make_tray(queue=queue, dpg=fake_dpg)
     called = []
     tray._run_on_main(lambda: called.append(1))
     assert called == []
@@ -56,8 +57,8 @@ def test_run_on_main_defers_to_queue():
     assert called == [1]
 
 
-def test_run_on_main_inline_without_queue():
-    tray = _make_tray()
+def test_run_on_main_inline_without_queue(fake_dpg):
+    tray = _make_tray(dpg=fake_dpg)
     assert tray.gui_queue is None
     called = []
     tray._run_on_main(lambda: called.append(1))
@@ -68,7 +69,7 @@ def test_update_hover_text_defers_off_main_thread(fake_dpg):
     queue = GuiQueue()
     cm = _CmStub(profile="MyProfile", method="step")
     fps = _FpsUtilsStub(fake_dpg)
-    tray = _make_tray(cm=cm, fps_utils=fps, queue=queue)
+    tray = _make_tray(cm=cm, fps_utils=fps, queue=queue, dpg=fake_dpg)
     fake_dpg.calls.clear()
 
     def _bg():
@@ -97,7 +98,7 @@ def test_update_hover_text_defers_off_main_thread(fake_dpg):
 def test_update_hover_text_inline_on_main_thread(fake_dpg):
     cm = _CmStub(profile="Global", method="ratio")
     fps = _FpsUtilsStub(fake_dpg)
-    tray = _make_tray(cm=cm, fps_utils=fps, queue=GuiQueue())
+    tray = _make_tray(cm=cm, fps_utils=fps, queue=GuiQueue(), dpg=fake_dpg)
     fake_dpg.calls.clear()
 
     tray.update_hover_text()  # called from the main thread
@@ -115,7 +116,7 @@ def test_profile_menu_lambda_defers_to_queue(fake_dpg):
     cfg["Global"] = {}
     cfg["GameA"] = {}
     cm.profiles_config = cfg
-    tray = _make_tray(cm=cm, queue=queue)
+    tray = _make_tray(cm=cm, queue=queue, dpg=fake_dpg)
     fake_dpg.calls.clear()
 
     items = tray._profile_menu_items()
@@ -145,7 +146,7 @@ def test_profile_menu_lambda_defers_to_queue(fake_dpg):
 def test_method_menu_lambda_defers_to_queue(fake_dpg):
     queue = GuiQueue()
     cm = _CmStub()
-    tray = _make_tray(cm=cm, queue=queue)
+    tray = _make_tray(cm=cm, queue=queue, dpg=fake_dpg)
     fake_dpg.calls.clear()
 
     items = list(tray._method_menu_items())
@@ -171,10 +172,10 @@ def test_method_menu_lambda_defers_to_queue(fake_dpg):
     assert set_value_calls[0][1][1] == "step"
 
 
-def test_exit_app_defers_to_queue():
+def test_exit_app_defers_to_queue(fake_dpg):
     queue = GuiQueue()
     ran = []
-    tray = _make_tray(queue=queue)
+    tray = _make_tray(queue=queue, dpg=fake_dpg)
     tray.on_exit = lambda: ran.append("exit")
 
     tray._exit_app(None, None)
@@ -187,10 +188,10 @@ def test_exit_app_defers_to_queue():
     assert ran == ["exit"]
 
 
-def test_restore_window_defers_to_queue(monkeypatch):
+def test_restore_window_defers_to_queue(monkeypatch, fake_dpg):
     queue = GuiQueue()
     ran = []
-    tray = _make_tray(queue=queue)
+    tray = _make_tray(queue=queue, dpg=fake_dpg)
     tray.on_restore = lambda: ran.append("restore")
     # Avoid a real Win32 ShowWindow call during the test.
     monkeypatch.setattr(tray_functions, "show_to_taskbar", lambda: None)
