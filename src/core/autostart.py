@@ -15,8 +15,8 @@ class AutoStartManager:
         return os.path.abspath(sys.argv[0])
 
     def task_exists(self):
-        result = subprocess.run(f'schtasks /Query /TN "{self.task_name}"',
-                                shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        result = subprocess.run(["schtasks", "/Query", "/TN", self.task_name],
+                                stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         return result.returncode == 0
 
     def create(self):
@@ -29,17 +29,17 @@ class AutoStartManager:
             "/RL", "HIGHEST",
             "/F"
         ]
-        subprocess.run(" ".join(cmd), shell=True)
+        subprocess.run(cmd)
 
     def delete(self):
         if self.task_exists():
-            subprocess.run(f'schtasks /Delete /TN "{self.task_name}" /F', shell=True)
+            subprocess.run(["schtasks", "/Delete", "/TN", self.task_name, "/F"])
 
     def update_if_needed(self, startup_checkbox):
         if startup_checkbox:
             if self.task_exists():
-                result = subprocess.run(f'schtasks /Query /TN "{self.task_name}" /XML',
-                                        shell=True, stdout=subprocess.PIPE, text=True)
+                result = subprocess.run(["schtasks", "/Query", "/TN", self.task_name, "/XML"],
+                                        stdout=subprocess.PIPE, text=True)
                 if self.app_path.lower() not in result.stdout.lower():
                     self.delete()
                     self.create()
