@@ -47,6 +47,19 @@ Status legend: ✅ Done · 🟨 Pending · ⏸️ Deferred · ❌ Not started
 |---|---|
 | Idle FPS settings reverted after profile changes. `ConfigManager` now persists/stores idle settings across profile switches; merged into `repo_audit` (2026-09-18) as `e1ab654`. | `src/core/config_manager.py` (+1 line net) |
 
+### 1.5 Code-quality / latent issues (previously "Phase 4", L-items)
+
+| ID | What was fixed | Tests |
+|---|---|---|
+| L10 | `calculate_percentile` is now a real `@staticmethod` in both monitors (was silently working by accident as a plain class function). | `tests/test_percentile_staticmethod.py` |
+| L11 | Removed the no-op `self.dpg = dpg or dpg` fallback in `FPSUtils`; plain `self.dpg = dpg` with `dpg=None` default retained. | `tests/test_fps_utils_dpg_assignment.py` |
+| L13 | Typo fixed: "This setting can be changes" → "can be changed" in the min-valid-FPS warning. | `tests/test_warning_typo.py` |
+| L14 | Dropped `shell=True` from all four `schtasks` `subprocess.run` calls in `autostart.py`; argument lists passed instead. | `tests/test_autostart.py` |
+| L15 | DPI awareness set **once** in `src/__main__.py` (`run_app`, failure-tolerant); removed import-time `SetProcessDpiAwareness(2)` from `DFL_v5.py` and `launch_popup.py`. | `tests/test_dpi_awareness.py` |
+| L16 | Extracted a reusable `ViewportDragHandler` into `src/core/drag_helper.py`; popups no longer construct a full `TrayManager` just for drag handling. | `tests/test_drag_helper.py` |
+| L18 | Plotting-loop sleep now `min(gpupollinginterval, cpupollinginterval)` instead of meaningless `math.lcm`; removed unused `import math`. | `tests/test_dfl_main_loop.py` |
+| L20 | Limiting gate now uses `gpuUsage is not None` so a valid 0% GPU reading doesn't silently disable limiting. | `tests/test_dfl_main_loop.py` |
+
 ---
 
 ## 2. Pending
@@ -64,21 +77,6 @@ Status legend: ✅ Done · 🟨 Pending · ⏸️ Deferred · ❌ Not started
 | A4 | (Optional, last) Rename `DFL_v5.py` to a stable name; update `src/__main__.py`; remove stale `DFL_v4` references. | Not started |
 | A5 | Split `ConfigManager` (**690 lines**): config I/O (`load_or_init_configs`, saving, key maps) vs GUI population (input field wiring, tooltips). | Not started |
 | A6 | `idle_timer.py`: wire `monitor_idle` into the monitoring loop (currently only prints at `src/core/idle_timer.py:48`) or delete the module. Prefer wiring — `get_idle_duration` is already used in `DFL_v5.py:350`. | Not started |
-
-### 2.2 Code-quality / latent issues (previously "Phase 4", L-items)
-
-> Minor, low-risk cleanups. All verified still present in the current source.
-
-| ID | Item | Current source |
-|---|---|---|
-| L10 | `calculate_percentile` is *not* a real `@staticmethod` but is called on the class (works by accident). Same in both monitors. | `src/core/cpu_monitor.py:51`, `src/core/gpu_monitor.py:345` |
-| L11 | No-op `self.dpg = dpg or dpg` fallback. | `src/core/fps_utils.py:13` |
-| L13 | Typo: "This setting can be changes" → "can be changed". | `src/core/warning.py:17` |
-| L14 | Drop `shell=True` in `subprocess.run`, pass argument lists. | `src/core/autostart.py:19,32,36,42` |
-| L15 | Set DPI awareness **once** in `src/__main__.py`; remove import-time `SetProcessDpiAwareness(2)`. | `src/core/DFL_v5.py:7`, `src/core/launch_popup.py:7` |
-| L16 | `launch_popup.py` constructs a full `TrayManager` just for drag handling → extract a small reusable drag helper. | `src/core/launch_popup.py:22` |
-| L18 | Plotting-loop sleep `time.sleep(math.lcm(gpu, cpu interval)/1000.0)` — LCM is meaningless coupling → fixed interval or `min(...)`. | `src/core/DFL_v5.py:465` |
-| L20 | `if gpuUsage and ...` — `0` is a valid reading today and silently disables limiting → `is not None`. | `src/core/DFL_v5.py:357` |
 
 ---
 
