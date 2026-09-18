@@ -1,7 +1,8 @@
 # Dynamic FPS Limiter — Architecture
 
-> Companion to `flaws.md` (glaring issues) and `HOW_IT_WORKS.md` (marked outdated, v4 logic only).
-> This document describes the **current v5.0.0-beta.1** codebase.
+> Companion to [`status.md`](./status.md) (done / pending / deferred fix tracking) and
+> [`lessons.md`](./lessons.md) (engineering lessons). This document describes the
+> **current v5.0.0-beta.1** codebase.
 
 ## 1. Overview
 
@@ -65,7 +66,7 @@ sustained load is high and raises it (with a cooldown) when load is low, reactin
 The **main thread** owns the DearPyGui render loop (the explicit loop at the end of
 `DFL_v5.py`). Everything else is a daemon thread. **DearPyGui is not thread-safe**; all
 background-thread DPG calls are marshalled onto the main thread via the `GuiQueue`, which the
-main render loop drains once per frame (F3 fix — see `flaws.md`).
+main render loop drains once per frame (F3 fix — see `status.md` §1.2).
 
 | Thread | Started by | Period | Touches DPG? |
 |---|---|---|---|
@@ -112,7 +113,7 @@ are shared **without locks**; `monitoring_loop` writes them while GUI callbacks 
 | `src/core/idle_timer.py` | Win32 `GetLastInputInfo` idle duration (idle FPS-cap mode) |
 | `src/core/logger.py` | logging setup, DPG log-text refresh, uncaught-exception hook; `log_messages` is lock-guarded (thread-safe) and the DPG `LogText` refresh is the only `dpg.*` touch point, run on the main thread via an injected `GuiQueue` (F3 fix) |
 | `src/core/video2gif.py` | **Dev-only** CLI (MP4→GIF); not imported by the app |
-| `src/core/backup_snippets.py` | **Not Python** — a notes snippet; not imported (see `flaws.md` #7) |
+| `src/core/backup_snippets.py` | **Not Python** — a notes snippet; not imported (see `status.md` §3) |
 
 ## 5. Core control loop (the decision engine)
 
@@ -188,9 +189,9 @@ Config lives in `<app dir>/config/` (`src/config/` in dev, next to the exe when 
   (`gpu_monitor.toggle_luid_selection`) selects the LUID with the **highest** `engtype_3D`
   usage **at click time** — a best-effort render-GPU heuristic, **not** a guaranteed
   attribution (a light game can dip below the display/DWM compositor's load; see
-   `notes.md` N7/N8). Verified end-to-end (2026-09-09) by `tests/spike_fake_game.py` S4a/b/c
+   `lessons.md` N7/N8). Verified end-to-end (2026-09-09) by `tests/spike_fake_game.py` S4a/b/c
    under the 8K fake game (spike OVERALL PASS; `pytest -q` = 106 passed) plus a clean admin
-   app launch (`plan.md` Phase 2.5 S4). LUID values are per-boot dynamic, so the test keys off
+   app launch (`status.md` §1.3 S4). LUID values are per-boot dynamic, so the test keys off
    the M1-attributed LUID, never a hardcoded value.
 - **psutil** (Legacy CPU) — per-core `cpu_percent`, max core.
 - **Win32** — `GetForegroundWindow`/`GetWindowThreadProcessId` (foreground process),
@@ -214,7 +215,7 @@ Config lives in `<app dir>/config/` (`src/config/` in dev, next to the exe when 
 - `sys.excepthook` → `logger.error_log_exception` writes uncaught exceptions to
   `error_log.txt`.
 - RTSS missing → dedicated popup + exit (by design).
-- LHM load failure → **uncaught** at import (no fallback to Legacy) — see `flaws.md` #17.
+- LHM load failure is caught (F2 fix) — `LHMLoadError` degrades to Legacy with no fallback crash.
 - Most per-sensor / per-counter read failures are logged and skipped, but several daemon
   threads have **no** try/except around their main work, so a single exception kills the thread
   silently (see flaws #18, #21).
@@ -234,11 +235,12 @@ See the module map (§4) for Python sources. Non-code:
 | `src/core/assets/faqs.csv` | FAQ rows shown in the GUI |
 | `src/core/assets/LHM_0.9.4_lib/` | LibreHardwareMonitorLib.dll (4 .NET variants) + license |
 | `src/Public_SameSalamander5710.cer` | Code-signing public certificate |
-| `README.md`, `CHANGELOG.md`, `docs/HOW_IT_WORKS.md`, `src/BUILD.md` | User/release docs |
+| `README.md`, `CHANGELOG.md`, `src/BUILD.md` | User/release docs |
+| `docs/README.md`, `docs/architecture.md`, `docs/status.md`, `docs/lessons.md` | Design docs + status tracker |
 
 ## 11. Known issues & tech debt
 
-Glaring, fix-first issues are in **`flaws.md`**. Lower-priority debt worth noting:
+Glaring, fix-first issues are all resolved — see **`status.md` §1.2**. Lower-priority debt worth noting:
 
 - **Single-file orchestrator** — `DFL_v5.py` is ~1,270 lines of module-level script with heavy
   global state and import-order-dependent startup; hard to test or reason about.
@@ -249,11 +251,13 @@ Glaring, fix-first issues are in **`flaws.md`**. Lower-priority debt worth notin
 - **Two competing RTSS write paths** (API vs direct `.cfg` edits) and non-atomic INI writes.
 - **Dead / stray code** — `idle_timer.monitor_idle` (debug loop), `video2gif.py` and
   `backup_snippets.py` (not part of the app; the latter is not even valid Python).
-- **Outdated doc** — `docs/HOW_IT_WORKS.md` describes the v4 Legacy logic only.
+- **Pending refactor** — the A1–A6 modular split of `DFL_v5.py`/`ConfigManager` is tracked in
+  `status.md` §2.1.
 - **Latent type hazards** — `Decimal` vs `float` in the plot math (currently consistent because
   the FPS reader returns `Decimal`), and `copy_from_plot` truncates fractional custom limits.
 
-## 12. Flaws cross-reference
+## 12. Status cross-reference
 
-See **[`flaws.md`](./flaws.md)** for the prioritized list of glaring issues (crash / wrong-cap /
-data-corruption / security / resource-leak) with `file:line` references and fix guidance.
+See **[`status.md`](./status.md)** — the single source of truth for every done, pending, and
+deferred item (flaw fixes F1–F9, threading hardening S1–S4, the merged idle-FPS fix, and the
+pending A1–A6 / L10–L20 refactor items).

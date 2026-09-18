@@ -1196,7 +1196,7 @@ else:
 # Background threads submit callables; the main render loop (bottom of this file)
 # drains the queue once per frame on the main thread, where DearPyGui is safe to call.
 def _gui_queue_error(fn, exc):
-    # A failing queued callback must not vanish silently (notes.md N5). Root logging
+    # A failing queued callback must not vanish silently (lessons.md N5). Root logging
     # is configured by logger.init_logging above, so this reaches error_log.txt.
     logging.error("GuiQueue callback %s failed: %s", getattr(fn, "__qualname__", fn), exc, exc_info=exc)
 

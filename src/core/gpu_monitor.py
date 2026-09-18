@@ -152,7 +152,7 @@ class GPUUsageMonitor:
         # gpu_run uses the same handles on the monitor thread; every Pdh* call on the
         # shared query is therefore serialized on self._pdh_lock (S2). Holding the lock
         # across the 0.1 s gap between the two collects means a monitor tick slips at
-        # most one interval during a detection — an accepted trade-off (plan.md S2).
+        # most one interval during a detection — an accepted trade-off (lessons.md S2).
         with self._pdh_lock:
             counter_handles = self.counter_handles
 
@@ -269,7 +269,7 @@ class GPUUsageMonitor:
         Updates internal state and returns the new luid and selection state.
 
         Detection (a ~100 ms PDH double-collect) runs on a short-lived worker thread so
-        the DPG callback thread is never blocked (notes.md N3); state + UI updates are
+        the DPG callback thread is never blocked (lessons.md N3); state + UI updates are
         applied on the main thread via the GuiQueue (S1). A second click while a
         detection is in flight is ignored.
         """

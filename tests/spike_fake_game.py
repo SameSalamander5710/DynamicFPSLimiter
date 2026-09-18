@@ -275,7 +275,7 @@ def main() -> int:
         # ---- S4: LUID detect/revert verification (real PDH, real workload) -- #
         # Inserted between M1d and M2: the fake game is at full 8K load and no RTSS
         # limit has been applied, so the workload LUID is unambiguously the highest
-        # 3D usage. Verifies the real app button path end-to-end (plan.md S4).
+        # 3D usage. Verifies the real app button path end-to-end (status.md S4).
         print("\n[spike] S4 verifying LUID detect/revert (real PDH, real workload)...")
         from core.gui_queue import GuiQueue
 

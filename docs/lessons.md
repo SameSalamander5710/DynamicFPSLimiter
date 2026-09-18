@@ -1,8 +1,8 @@
 # Engineering Notes — Lessons Learned
 
 > Durable notes from bug fixes and refactors in this codebase. Read before touching GUI
-> threading, DearPyGui callbacks, or PDH code. Companion to [`architecture.md`](./architecture.md),
-> [`flaws.md`](./flaws.md), and [`../plan.md`](../plan.md).
+> threading, DearPyGui callbacks, or PDH code. Companion to [`architecture.md`](./architecture.md)
+> and [`status.md`](./status.md).
 
 ## N1 — DearPyGui 2.x threading model (verified against the v2.0.0 C++ source)
 
@@ -88,7 +88,7 @@ reaches `error_log.txt`.
   drain cycles and assert order, isolation, and an eventually-empty queue
   (`tests/test_gui_queue.py::test_drain_survives_long_running_items_across_frames`).
 - **Every refactor that moves threading-sensitive wiring ships its regression test in the
-  same commit** (plan.md principle, enforced).
+  same commit** (status.md §4 rule, enforced).
 
 ## N7 — A D3D app lights up TWO GPU LUIDs in PDH `engtype_3D` (render + DWM)
 
@@ -132,7 +132,7 @@ end-to-end — the app must be admin because RTSS runs elevated. Launching `src/
 directly (e.g. the Python debugger's "Run") is also a valid, working way to start the app and is
 expected to work from the agent's terminal too.
 
-**Verification approach (full detail in [`plan.md`](../plan.md) Phase 2.5 S4):**
+**Verification approach (full detail in [`status.md`](./status.md) §1.3 S4):**
 - **Automated** — extend `tests/spike_fake_game.py` with S4a/S4b/S4c inserted between M1d and
   M2 (fake game at full 8K load, no RTSS limit applied, so the workload LUID is unambiguously
   the busiest). Reassign the warm monitor's UI hooks first: `mon.dpg = _RecDPG()` (records
@@ -146,7 +146,7 @@ expected to work from the agent's terminal too.
   - **S4c no handle growth:** 5 select/revert cycles; assert `len(mon.counter_handles)` and the
     total counter count are unchanged and `mon.query_handle is not None` (count stability, not
     `id(query_handle)`, so a benign `reinitialize()` can't false-fail).
-- **Manual** — see the Part B checklist in `plan.md` (launch app + fake game, click detect/revert,
+- **Manual** — see the Part B checklist in `status.md` §1.3 S4 (launch app + fake game, click detect/revert,
   confirm an instant response with no UI stall and the correct label/theme/status).
 
 **Draining detail that bites:** `GuiQueue.drain()` loops until the queue is empty. The select
