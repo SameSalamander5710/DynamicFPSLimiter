@@ -744,6 +744,7 @@ class ConfigManager:
 
         if isinstance(new_value, int) and new_value > 0:
             setattr(self, key, new_value)
+            self.settings[key] = new_value
             self.settings_config["GlobalSettings"][key] = str(new_value)
             with open(self.settings_path, 'w') as f:
                 self.settings_config.write(f)
