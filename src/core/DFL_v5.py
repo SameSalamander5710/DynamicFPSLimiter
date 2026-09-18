@@ -43,7 +43,7 @@ from core.fps_utils import FPSUtils
 from core.cap_policy import next_cap_on_decrease
 from core.tray_functions import TrayManager
 from core.autopilot import autopilot_on_check, get_foreground_process_name
-from core.launch_popup import show_loading_popup, hide_loading_popup
+from core.launch_popup import show_loading_popup, hide_loading_popup, show_rtss_error_and_exit
 from core.idle_timer import get_idle_duration
 
 show_loading_popup(f"Loading Dynamic FPS Limiter {version}...", Base_dir=Base_dir, dpg=dpg)
@@ -52,7 +52,7 @@ show_loading_popup(f"Loading Dynamic FPS Limiter {version}...", Base_dir=Base_di
 Viewport_width = 610
 Viewport_height = 700
 
-rtss = RTSSController(logger)
+rtss = RTSSController(logger, error_handler=show_rtss_error_and_exit)
 themes_manager = ThemesManager(Base_dir, dpg)
 cm = ConfigManager(logger, dpg, rtss, None, themes_manager, Base_dir)
 

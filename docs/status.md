@@ -65,6 +65,7 @@ Status legend: ✅ Done · 🟨 Pending · ⏸️ Deferred · ❌ Not started
 | ID | What was fixed | Tests |
 |---|---|---|
 | A2 | Inject `dpg` instead of module-level imports (`config_manager.py:3`, `fps_utils.py:4`, `logger.py:1`, `DFL_v5.py:9`, plus `cpu_monitor.py`, `launch_popup.py`, `themes.py`, `rtss_interface.py`, `tray_functions.py`, `autostart.py`, and `drag_helper.py`). `DFL_v5.py` is now the single module that imports dpg and injects it downstream (`logger.set_dpg`, ctor/function params on themes/tray/drag/launch-popup; `self.dpg` everywhere else). | `tests/test_dpg_injection.py`, source guards |
+| A3 | Remove `rtss_functions.py:6` import-time coupling (`from core.launch_popup import show_rtss_error_and_exit`) → inject an error handler into `RTSSController.__init__` as `error_handler=None` (called with the DLL path on `OSError`, or re-raise). `DFL_v5.py` passes `show_rtss_error_and_exit`. | `tests/test_rtss_error_handler.py` |
 
 ---
 
@@ -78,7 +79,6 @@ Status legend: ✅ Done · 🟨 Pending · ⏸️ Deferred · ❌ Not started
 | ID | Item | Current state / why |
 |---|---|---|
 | A1 | Split the god module `DFL_v5.py` (**1,102 lines**) into `src/core/state.py`, `loops.py`, `view.py`, `app.py`. The explicit main render loop (`gui_queue.drain()`) must live in the new orchestration module; `tests/test_dfl_main_loop.py` re-pointed to guard it there. | Not started |
-| A3 | Remove `rtss_functions.py:6` import-time coupling (`from core.launch_popup import show_rtss_error_and_exit`) → inject an error handler into `RTSSController.__init__`. | Not started |
 | A4 | (Optional, last) Rename `DFL_v5.py` to a stable name; update `src/__main__.py`; remove stale `DFL_v4` references. | Not started |
 | A5 | Split `ConfigManager` (**690 lines**): config I/O (`load_or_init_configs`, saving, key maps) vs GUI population (input field wiring, tooltips). | Not started |
 | A6 | `idle_timer.py`: wire `monitor_idle` into the monitoring loop (currently only prints at `src/core/idle_timer.py:48`) or delete the module. Prefer wiring — `get_idle_duration` is already used in `DFL_v5.py:350`. | Not started |

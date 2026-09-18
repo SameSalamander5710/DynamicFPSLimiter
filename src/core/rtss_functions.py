@@ -3,12 +3,12 @@ import os
 import threading
 import winreg
 from decimal import Decimal, InvalidOperation
-from core.launch_popup import show_rtss_error_and_exit
 
 class RTSSController:
     RTSSHOOKSFLAG_LIMITER_DISABLED = 4
 
-    def __init__(self, logger_instance):
+    def __init__(self, logger_instance, error_handler=None):
+        self._error_handler = error_handler
         self.rtss_install_path = self.get_rtss_install_path()
         self.rtss_path = os.path.join(self.rtss_install_path, "RTSSHooks64.dll")
         self.logger = logger_instance
@@ -20,7 +20,10 @@ class RTSSController:
         try:
             self.dll = ctypes.WinDLL(self.rtss_path)
         except OSError as e:
-            show_rtss_error_and_exit(self.rtss_path)
+            if self._error_handler is not None:
+                self._error_handler(self.rtss_path)
+            else:
+                raise
         self._setup_functions()
 
     def _setup_functions(self):
