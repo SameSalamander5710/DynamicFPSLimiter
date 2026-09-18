@@ -10,7 +10,7 @@ class FPSUtils:
         self.cm = cm
         self.lhm_sensor = lhm_sensor
         self.logger = logger
-        self.dpg = dpg or dpg  # fallback to global if not passed
+        self.dpg = dpg
         self.viewport_width = viewport_width
         self.last_fps_limits = []
 
