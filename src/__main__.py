@@ -22,6 +22,11 @@ def relaunch_as_admin():
     sys.exit()
 
 def run_app():
+    try:
+        windll.shcore.SetProcessDpiAwareness(2)
+    except Exception:
+        pass
+
     # Import and run DFL_v5 directly
     import core.DFL_v5
 

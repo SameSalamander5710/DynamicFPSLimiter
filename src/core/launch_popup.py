@@ -1,10 +1,7 @@
 import dearpygui.dearpygui as dpg
 import sys
 import os
-import ctypes
 import configparser
-
-ctypes.windll.shcore.SetProcessDpiAwareness(2)
 
 # Add the src directory to the Python path for imports
 _this_dir = os.path.abspath(os.path.dirname(__file__))

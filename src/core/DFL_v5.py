@@ -3,9 +3,6 @@
 
 version = "v5.0.0"
 
-import ctypes
-ctypes.windll.shcore.SetProcessDpiAwareness(2)
-
 import dearpygui.dearpygui as dpg
 import threading
 import time
