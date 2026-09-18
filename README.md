@@ -37,7 +37,7 @@ Watch the demo here! (App version v5.0.1)
 
 > [!CAUTION]
 > - The executable in the release was packaged using PyInstaller and may be flagged by some antivirus software as a Trojan.
-> - You can confirm whether the app is signed by me using the public certificate [here](/src/Public_SameSalamander5710.cer).
+> - You can confirm whether the app is signed by me using the public certificate [here](/src/Public_SameSalamander5710_2026.cer).
 
 ## The Concept
 This app was initially developed to enhance gaming experience in situations where the GPU load/demand varies greatly during a session. This was especially useful when using Lossless Scaling Frame Generation (LSFG). In a single-GPU system, LSFG works best when the game runs with an FPS cap that leaves enough GPU headroom for frame generation. However, if GPU usage hits 100%—which may also cause the game’s base FPS to drop—you may experience input lag, which is undesirable.
