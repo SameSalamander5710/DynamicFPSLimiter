@@ -271,6 +271,29 @@ CurrentFPSOffset = 0
 fps_mean = 0
 idle_state = False
 
+def _load_profile_on_gui(profile_name):
+    """Switch the active profile on the main DPG thread (submitted via the GuiQueue).
+
+    load_profile_callback() writes the profile's values into the GUI input fields and
+    sets cm.current_profile, so it must run together with the dropdown value update on
+    the thread that owns the DearPyGui context.
+    """
+    dpg.set_value("profile_dropdown", profile_name)
+    cm.load_profile_callback(None, profile_name, None)
+    try:
+        cm.apply_current_input_values()
+    except Exception:
+        logger.add_log(f"AutoPilot: Failed to apply {profile_name} profile immediately.")
+
+
+def _update_legend_labels(gpu_label, fps_label, cap_label, cpu_label):
+    """Update the plot legend labels on the main DPG thread (submitted via the GuiQueue)."""
+    dpg.configure_item("gpu_usage_series", label=gpu_label)
+    if fps_label is not None:
+        dpg.configure_item("fps_series", label=fps_label)
+    dpg.configure_item("cap_series", label=cap_label)
+    dpg.configure_item("cpu_usage_series", label=cpu_label)
+
 def monitoring_loop():
     global running, fps_values, CurrentFPSOffset, fps_mean, gpu_values, cpu_values, idle_state
     global max_points
@@ -303,33 +326,24 @@ def monitoring_loop():
                 # Legacy behavior: stop monitoring when the selected specific profile is no longer active
                 if current_profile != "Global" and fg_process != current_profile and running:
                     logger.add_log(f"AutoPilot: Active process changed to '{fg_process}' != selected profile '{current_profile}'; stopping (autopilot_only_profiles).")
-                    start_stop_callback(None, None, cm)
+                    _gui_submit(start_stop_callback, None, None, cm)
             else:
                 # New default: if a specific profile was selected but the foreground process no longer matches,
                 # switch to Global profile and keep monitoring running.
                 if current_profile != "Global" and fg_process != current_profile:
                     logger.add_log(f"AutoPilot: Active process changed to '{fg_process}'; switching to 'Global' profile and keeping monitoring.")
-                    dpg.set_value("profile_dropdown", "Global")
-                    cm.load_profile_callback(None, "Global", None)
-                    # Ensure the running monitor uses the newly loaded Global profile values
-                    try:
-                        cm.apply_current_input_values() 
-                    except Exception:
-                        # Guard in case apply_current_input_values is unavailable or fails
-                        logger.add_log("AutoPilot: Failed to apply Global profile immediately.")
+                    _gui_submit(_load_profile_on_gui, "Global")
 
         if process_name and process_name != last_process_name:
             last_process_name = process_name
             logger.add_log(f"Active window changed to: {last_process_name}") 
             if process_name != "DynamicFPSLimiter.exe":
-                dpg.set_value("LastProcess", last_process_name)
+                _gui_submit(dpg.set_value, "LastProcess", last_process_name)
             gpu_monitor.reinitialize()
 
         if current_profile == "Global" and cm.autopilot and process_name and process_name in profiles:
             logger.add_log(f"AutoPilot: Switching from 'Global' to profile '{process_name}' (detected running process).")
-            dpg.set_value("profile_dropdown", process_name)
-            cm.load_profile_callback(None, process_name, None)
-            cm.apply_current_input_values()
+            _gui_submit(_load_profile_on_gui, process_name)
 
         if fps:
             if len(fps_values) > 2:
@@ -411,12 +425,12 @@ def monitoring_loop():
                     idle_state = True
 
         if running:
-            # Update legend labels with current values
-            dpg.configure_item("gpu_usage_series", label=f"GPU: {gpuUsage}%")
-            if running and fps is not None:
-                dpg.configure_item("fps_series", label=f"FPS: {fps:.1f}")
-            dpg.configure_item("cap_series", label=f"Cap: {current_maxcap + CurrentFPSOffset}")
-            dpg.configure_item("cpu_usage_series", label=f"CPU: {cpuUsage}%")
+            # Update legend labels with current values (deferred to the main DPG thread)
+            _gui_submit(_update_legend_labels,
+                        f"GPU: {gpuUsage}%",
+                        f"FPS: {fps:.1f}" if fps is not None else None,
+                        f"Cap: {current_maxcap + CurrentFPSOffset}",
+                        f"CPU: {cpuUsage}%")
 
             # Update plot if fps is valid
             if fps and process_name not in {"DynamicFPSLimiter.exe"}:
@@ -424,8 +438,8 @@ def monitoring_loop():
                 scaled_fps = ((fps - min_ft)/(max_ft - min_ft)) * Decimal('100')
                 scaled_cap = ((Decimal(current_maxcap) + Decimal(CurrentFPSOffset) - min_ft)/(max_ft - min_ft)) * Decimal('100')
                 actual_cap = current_maxcap + CurrentFPSOffset
-                # Pass actual values, update_plot_FPS handles timing and lists
-                update_plot_FPS(scaled_fps, scaled_cap)
+                # Pass actual values, update_plot_FPS handles timing and lists (deferred to the main DPG thread)
+                _gui_submit(update_plot_FPS, scaled_fps, scaled_cap)
 
                 # Update summary statistics data
                 if len(fps_utils.summary_fps) >= 600:
@@ -454,15 +468,74 @@ def plotting_loop():
         gpuUsage = gpu_monitor.gpu_percentile
         cpuUsage = cpu_monitor.cpu_percentile
 
-        # CALL update_plot_usage with the current time and usage values
-        update_plot_usage(elapsed_time, gpuUsage, cpuUsage)
+        # CALL update_plot_usage with the current time and usage values (deferred to the main DPG thread)
+        _gui_submit(update_plot_usage, elapsed_time, gpuUsage, cpuUsage)
 
         time.sleep(min(cm.gpupollinginterval, cm.cpupollinginterval) / 1000.0)  # Convert to seconds
 
-        #Update summary statistics
-        fps_utils.update_summary_statistics()
+        #Update summary statistics (dpg.set_value runs on the main DPG thread)
+        _gui_submit(fps_utils.update_summary_statistics)
 
 gui_running = True
+
+def _update_idle_ui():
+    """Refresh warnings, the FPS-cap visualization and HW header counts while idle.
+
+    Runs on the main DPG thread (submitted through the GuiQueue from
+    gui_update_loop). update_fps_cap_visualization() deletes and recreates the
+    ``Foreground`` draw layer, so it must never run on a background thread.
+    """
+    try:
+        if fps_utils.current_stepped_limits():
+            warnings = get_active_warnings(dpg, cm, rtss_manager, int(min(fps_utils.current_stepped_limits())))
+            warning_visible = bool(warnings)
+            warning_message = "\n".join(warnings)
+
+            dpg.configure_item("warning_text", show=warning_visible)
+            dpg.configure_item("warning_tooltip", show=warning_visible)
+            dpg.set_value("warning_tooltip_text", warning_message)
+
+            # Update FPS limit visualization based on current input values
+            fps_utils.update_fps_cap_visualization()
+
+        try:
+            # Use ConfigManager helper to build a map of enabled params per hw/section
+            enable_map = cm.build_sensor_enable_map(dpg)
+            for hw_id, info in enable_map.items():
+                hw_name = info.get("hw_name", hw_id)
+                enabled_count = info.get("enabled_count", 0)
+                header_tag = info.get("header_tag", f"input_collapsing_{hw_id}")
+                label = f"{hw_name} : +{enabled_count}" if enabled_count > 0 else hw_name
+                if dpg.does_item_exist(header_tag):
+                    try:
+                        dpg.configure_item(header_tag, label=label)
+                    except Exception:
+                        pass
+
+        except Exception as e:
+            if gui_running:
+                logger.add_log(f"Error updating HW header counts: {e}")
+
+    except Exception as e:
+        if gui_running:  # Only log if we're still supposed to be running
+            logger.add_log(f"Error in GUI update loop: {e}")
+
+def _force_open_headers():
+    """Force sensor-section collapsing headers open (imgui-bug workaround).
+
+    Runs on the main DPG thread (submitted via the GuiQueue from gui_update_loop).
+    """
+    for sensor in getattr(cm, "sensor_infos", []) or []:
+        hw_id = sensor.get("hw_id")
+        if not hw_id:
+            continue
+        header_tag = f"input_collapsing_{hw_id}"
+        if dpg.does_item_exist(header_tag):
+            try:
+                dpg.set_value(header_tag, True)
+            except Exception:
+                pass
+
 
 def gui_update_loop():
     global gui_running, running
@@ -473,16 +546,7 @@ def gui_update_loop():
         # To overcome the imgui bug
         try:
             if not getattr(cm, "ui_initialized", False):
-               for sensor in getattr(cm, "sensor_infos", []) or []:
-                    hw_id = sensor.get("hw_id")
-                    if not hw_id:
-                        continue
-                    header_tag = f"input_collapsing_{hw_id}"
-                    if dpg.does_item_exist(header_tag):
-                        try:
-                            dpg.set_value(header_tag, True)
-                        except Exception:
-                            pass
+                _gui_submit(_force_open_headers)
         except Exception:
             pass
 
@@ -491,49 +555,15 @@ def gui_update_loop():
             time.sleep(1)  # Sleep until tray is not active
 
         if not running:
-            try:
-                if fps_utils.current_stepped_limits():
-                    warnings = get_active_warnings(dpg, cm, rtss_manager, int(min(fps_utils.current_stepped_limits())))
-                    warning_visible = bool(warnings)
-                    warning_message = "\n".join(warnings)
-
-                    dpg.configure_item("warning_text", show=warning_visible)
-                    dpg.configure_item("warning_tooltip", show=warning_visible)
-                    dpg.set_value("warning_tooltip_text", warning_message)
-
-                # Update FPS limit visualization based on current input values
-                    fps_utils.update_fps_cap_visualization()
-
-                try:
-                    # Use ConfigManager helper to build a map of enabled params per hw/section
-                    enable_map = cm.build_sensor_enable_map(dpg)
-                    for hw_id, info in enable_map.items():
-                        hw_name = info.get("hw_name", hw_id)
-                        enabled_count = info.get("enabled_count", 0)
-                        header_tag = info.get("header_tag", f"input_collapsing_{hw_id}")
-                        label = f"{hw_name} : +{enabled_count}" if enabled_count > 0 else hw_name
-                        if dpg.does_item_exist(header_tag):
-                            try:
-                                dpg.configure_item(header_tag, label=label)
-                            except Exception:
-                                pass
-
-                except Exception as e:
-                    if gui_running:
-                        logger.add_log(f"Error updating HW header counts: {e}")
-
-
-
-            except Exception as e:
-                if gui_running:  # Only log if we're still supposed to be running
-                    logger.add_log(f"Error in GUI update loop: {e}")
+            # Idle-UI refresh runs on the main DPG thread via the GuiQueue
+            _gui_submit(_update_idle_ui)
         time.sleep(0.1)
 
 def autopilot_loop():
     global gui_running, running
     while gui_running:
         if cm.autopilot and not running:
-            autopilot_on_check(cm, rtss_manager, dpg, logger, running, start_stop_callback)
+            autopilot_on_check(cm, rtss_manager, dpg, logger, running, start_stop_callback, gui_submit=_gui_submit)
         time.sleep(1)  
 
 def exit_gui():
@@ -1201,6 +1231,15 @@ gui_queue = GuiQueue(on_error=_gui_queue_error)
 # they run on the main render thread where DearPyGui is safe.
 logger.set_gui_queue(gui_queue)
 tray.set_gui_queue(gui_queue)
+
+# Route the remaining background-thread dpg.* calls (monitoring/plotting/autopilot
+# loops and the LibreHardwareMonitor poll thread) through the same queue. The loop
+# functions above reference _gui_submit at call time, so defining it here (before
+# any thread starts) is sufficient.
+def _gui_submit(fn, *args, **kwargs):
+    gui_queue.submit(fn, *args, **kwargs)
+
+lhm_sensor.set_gui_queue(gui_queue)
 
 #TODO: If needed, possibility of added monitoring method check for these
 gpu_monitor = GPUUsageMonitor(lambda: running, logger, dpg, themes_manager, gui_queue=gui_queue, interval=(cm.gpupollinginterval/1000), max_samples=cm.gpupollingsamples, percentile=cm.gpupercentile)

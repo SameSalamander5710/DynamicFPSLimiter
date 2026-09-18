@@ -125,10 +125,11 @@ def get_all_sensor_infos(base_dir, logger=None):
     return sensors
 
 class LHMSensor:
-    def __init__(self, get_running, logger_instance, dpg_instance, themes_instance, interval=0.1, max_samples=20, percentile=70, base_dir=None):
+    def __init__(self, get_running, logger_instance, dpg_instance, themes_instance, interval=0.1, max_samples=20, percentile=70, base_dir=None, gui_queue=None):
         self._running = get_running  # This should be a callable, e.g. lambda: running
         self.logger = logger_instance
         self.dpg = dpg_instance
+        self.gui_queue = gui_queue
         self.themes = themes_instance
         self.interval = interval
         self.max_samples = max_samples
@@ -181,6 +182,21 @@ class LHMSensor:
 
         self.cpu_name = self.get_cpu_name()
         self.gpu_name = self.get_gpu_name()
+
+    def set_gui_queue(self, gui_queue):
+        """Attach the GuiQueue used to defer dpg.* calls from the poll thread."""
+        self.gui_queue = gui_queue
+
+    def _submit_dpg(self, fn, *args, **kwargs):
+        """Run a dpg.* call on the main render thread when a GuiQueue is attached.
+
+        Called from the LHM poll thread; without a queue the call runs directly
+        (used by tests and legacy single-threaded callers).
+        """
+        if self.gui_queue is not None:
+            self.gui_queue.submit(fn, *args, **kwargs)
+        else:
+            fn(*args, **kwargs)
 
     def get_cpu_name(self):
         for hw in self.computer.Hardware:
@@ -303,7 +319,7 @@ class LHMSensor:
                 ) + "\n\n"
             readings = cpu_str + "\n\n" + gpu_str
             try:
-                self.dpg.set_value("ReadingsText", readings)
+                self._submit_dpg(self.dpg.set_value, "ReadingsText", readings)
             except Exception as e:
                 print("Failed to update ReadingsText:", e)
                 self.logger.add_log(f"Failed to update ReadingsText: {e}")
