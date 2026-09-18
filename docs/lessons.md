@@ -41,7 +41,7 @@ Kill sequence:
    in the buffer) and all queued button feedback is invisible. No exception anywhere.
 
 **Rule:** the only reliable per-frame drain point is the **explicit main render loop**.
-`DFL_v5.py` ends with:
+`app.py` ends with:
 
 ```python
 while dpg.is_dearpygui_running():
@@ -74,7 +74,7 @@ lock. (Done: S2 — every `Pdh*` call on the shared query in `gpu_monitor.py` is
 
 `GuiQueue(on_error=...)` must be wired to `logging.error`. A silent drain failure is how the
 N2 bug hid for days — every visible symptom (frozen log, dead buttons) pointed at the queue,
-but the queue itself swallowed the evidence. (Done: S3 — `DFL_v5.py` constructs
+but the queue itself swallowed the evidence. (Done: S3 — `app.py` constructs
 `GuiQueue(on_error=_gui_queue_error)`, which logs via `logging.error(..., exc_info=exc)`.)
 Note: root `logging` is configured by `logger.init_logging` at startup, so `logging.error(...)`
 reaches `error_log.txt`.
@@ -82,7 +82,7 @@ reaches `error_log.txt`.
 ## N6 — Testing patterns that catch this class of bug
 
 - **Source-level wiring guards** for module-level scripts that cannot be imported in tests
-  (`DFL_v5` runs the app on import): assert the required wiring is present *and* the banned
+  (`core.app` runs the app on import): assert the required wiring is present *and* the banned
   pattern is absent (`tests/test_dfl_main_loop.py`).
 - **"Across frames" simulation**: interleave slow and failing queue items across repeated
   drain cycles and assert order, isolation, and an eventually-empty queue
@@ -128,7 +128,7 @@ and is **not** a blocker for S4.
 
 **How to run the app for S4 (user, 2026-08-21):** VSCode is run **as Administrator** so that
 `opencode` (launched from the VSCode integrated terminal) can execute the app and run the tests
-end-to-end — the app must be admin because RTSS runs elevated. Launching `src/core/DFL_v5.py`
+end-to-end — the app must be admin because RTSS runs elevated. Launching `src/core/app.py`
 directly (e.g. the Python debugger's "Run") is also a valid, working way to start the app and is
 expected to work from the agent's terminal too.
 

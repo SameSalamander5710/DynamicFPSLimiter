@@ -1,7 +1,7 @@
-"""A6: monitor_idle is a stateless, non-blocking idle check wired into DFL_v5.
+"""A6: monitor_idle is a stateless, non-blocking idle check wired into app.py.
 
 The low-level get_idle_duration() stays as the raw utility; monitor_idle wraps it
-with threshold comparison and error tolerance. DFL_v5 must call monitor_idle
+with threshold comparison and error tolerance. app.py must call monitor_idle
 instead of get_idle_duration directly. These tests cover the behavior and guard
 the source invariants.
 """
@@ -14,7 +14,7 @@ from core import idle_timer
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SRC_DIR = REPO_ROOT / "src"
 IDLE_TIMER = SRC_DIR / "core" / "idle_timer.py"
-DFL_V5 = SRC_DIR / "core" / "DFL_v5.py"
+APP = SRC_DIR / "core" / "app.py"
 
 
 def _read(path: Path) -> str:
@@ -47,8 +47,8 @@ def test_monitor_idle_non_blocking_no_debug_print_loop():
     assert "monitor_idle()" not in src
 
 
-def test_dfl_v5_uses_monitor_idle():
-    src = _read(DFL_V5)
+def test_app_uses_monitor_idle():
+    src = _read(APP)
     assert "monitor_idle(cm.idle_fps_delay)" in src
     assert "idle_secs =" not in src
     assert "get_idle_duration" not in src

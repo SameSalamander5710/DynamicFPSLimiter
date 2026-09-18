@@ -1,6 +1,6 @@
 """F1 regression tests: cap step-down policy (src/core/cap_policy.py).
 
-The original code in DFL_v5.monitoring_loop had a dead
+The original code in app.monitoring_loop had a dead
 ``if current_index < 0:`` branch (``list.index`` raises instead of
 returning negative), so the intended one-rung step-down never executed.
 The policy was extracted to ``cap_policy.next_cap_on_decrease`` and is
@@ -47,10 +47,10 @@ def test_next_cap_on_decrease(ladder, current_cap, fps_mean, expected):
     assert next_cap_on_decrease(ladder, current_cap, fps_mean) == expected
 
 
-def test_dfl_v5_wired_to_policy_and_dead_check_removed():
-    """Guard the integration point: DFL_v5's decrease branch must call the
+def test_app_wired_to_policy_and_dead_check_removed():
+    """Guard the integration point: app's decrease branch must call the
     policy and must not contain the dead ``current_index < 0`` check."""
-    src = (SRC_DIR / "core" / "DFL_v5.py").read_text(encoding="utf-8")
+    src = (SRC_DIR / "core" / "app.py").read_text(encoding="utf-8")
     assert "from core.cap_policy import next_cap_on_decrease" in src
     assert "next_cap_on_decrease(fps_limit_list, current_fps_cap, fps_mean)" in src
     assert "current_index < 0" not in src

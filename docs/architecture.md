@@ -64,15 +64,15 @@ sustained load is high and raises it (with a cooldown) when load is low, reactin
 ## 3. Threading model
 
 The **main thread** owns the DearPyGui render loop (the explicit loop at the end of
-`DFL_v5.py`). Everything else is a daemon thread. **DearPyGui is not thread-safe**; all
+`app.py`). Everything else is a daemon thread. **DearPyGui is not thread-safe**; all
 background-thread DPG calls are marshalled onto the main thread via the `GuiQueue`, which the
 main render loop drains once per frame (F3 fix — see `status.md` §1.2).
 
 | Thread | Started by | Period | Touches DPG? |
 |---|---|---|---|
-| Main (render) | explicit loop, end of `DFL_v5.py` | continuous | yes (owner) |
-| `gui_update_loop` | module init (DFL_v5:1213) | 0.1 s | yes (warnings, log, cap viz) |
-| `autopilot_loop` | module init (DFL_v5:1217) | 1 s | yes (profile switch) |
+| Main (render) | explicit loop, end of `app.py` | continuous | yes (owner) |
+| `gui_update_loop` | module init (app:1214) | 0.1 s | yes (warnings, log, cap viz) |
+| `autopilot_loop` | module init (app:1218) | 1 s | yes (profile switch) |
 | `monitoring_loop` | Start button | 1 s | yes (series, plots) |
 | `plotting_loop` | Start button | `lcm(gpu,cpu interval)` | yes (usage plot) |
 | `LHMSensor._poll_loop` | Start | `lhwmonitorpollinginterval` ms | yes (readings table) |
@@ -91,14 +91,15 @@ are shared **without locks**; `monitoring_loop` writes them while GUI callbacks 
 | Module | Role |
 |---|---|
 | `src/__main__.py` | Entry point: UAC self-elevation (dev mode), `--build` PyInstaller runner |
-| `src/core/DFL_v5.py` | Main app: all DPG UI, the four background loops, orchestration (~1,270 lines, no app class) |
+| `src/core/app.py` | Main app: all DPG UI, the four background loops, orchestration (~1,270 lines, no app class) |
+| `src/core/version.py` | **Single source of truth** for the app version (`VERSION`); the GUI strings (`display_version()`) and the PyInstaller version resource (`version.txt`) are derived from it (A4 fix) |
 | `src/core/config_manager.py` | INI load/save, defaults, profile management, GUI↔config sync, dynamic LHM keys; maintains a `current_method` snapshot (init + `current_method_callback`) for the tray hover text (F3 fix) |
 | `src/core/fps_utils.py` | FPS-cap ladder (custom/step/ratio) + core `evaluate_cap_change` decision engine; `current_stepped_limits()` is total — always returns a non-empty list, falling back to the stepped ladder on bad/unknown capmethod (F5 fix) |
-| `src/core/cap_policy.py` | Pure cap **decrease** policy (`next_cap_on_decrease`), extracted from `DFL_v5` (F1 fix); no GUI/RTSS/.NET deps |
+| `src/core/cap_policy.py` | Pure cap **decrease** policy (`next_cap_on_decrease`), extracted from `app` (F1 fix); no GUI/RTSS/.NET deps |
 | `src/core/librehardwaremonitor.py` | `LHMSensor` polling thread + `get_all_sensor_infos` hardware discovery; degrades to a disabled no-sensor state when LHM is unavailable (F2 fix); `start()` re-opens a closed `Computer` so Stop→Start keeps working and `get_all_sensor_infos` closes its one-shot `Computer` (F7 fix) |
 | `src/core/lhm_loader.py` | pythonnet CLR bootstrap, .NET runtime detection, DLL-variant selection; raises `LHMLoadError` on load failure (F2 fix) |
 | `src/core/gpu_monitor.py` | Legacy GPU usage via PDH performance counters (per-LUID 3D engine); `initialize()` closes the prior PDH query before re-opening and `reinitialize()` re-assigns `counter_handles` (F8 fix); `get_gpu_usage()` reuses the live query (no re-init), `self.luid` reads/writes are lock-guarded, and its `dpg.*` calls defer to the `GuiQueue` (F9 fix) |
-| `src/core/gui_queue.py` | Thread-safe `GuiQueue` — background threads `submit(fn, *args, **kwargs)`; the main render loop in `DFL_v5.py` `drain()`s the queue once per frame on the main thread (per-callback exception isolation, optional `on_error`) so DearPyGui is only touched on the main thread. Injected into `GPUUsageMonitor`, `logger`, and `TrayManager` (F3 fix — complete) |
+| `src/core/gui_queue.py` | Thread-safe `GuiQueue` — background threads `submit(fn, *args, **kwargs)`; the main render loop in `app.py` `drain()`s the queue once per frame on the main thread (per-callback exception isolation, optional `on_error`) so DearPyGui is only touched on the main thread. Injected into `GPUUsageMonitor`, `logger`, and `TrayManager` (F3 fix — complete) |
 | `src/core/cpu_monitor.py` | Legacy CPU usage via psutil (per-core max) |
 | `src/core/rtss_functions.py` | `RTSSController`: loads `RTSSHooks64.dll`, profile API + `.cfg` edits; `set_fractional_fps_direct` safely appends missing `Limit=`/`LimitDenominator=` lines (F4 fix); all profile file + API mutations are serialized behind an `RLock` and file writes are atomic via `_atomic_write_lines` (tmp + `os.replace`) (F6 fix) |
 | `src/core/rtss_interface.py` | `RTSSInterface`: reads live FPS from `RTSSSharedMemoryV2` |
@@ -117,7 +118,7 @@ are shared **without locks**; `monitoring_loop` writes them while GUI callbacks 
 
 ## 5. Core control loop (the decision engine)
 
-`monitoring_loop` (DFL_v5, 1 s tick) is the heart of the app. Each tick:
+`monitoring_loop` (app, 1 s tick) is the heart of the app. Each tick:
 
 1. **Read FPS** — `rtss_manager.get_fps_for_active_window()` → `(Decimal fps, process_name)`
    from RTSS shared memory.
@@ -202,9 +203,10 @@ Config lives in `<app dir>/config/` (`src/config/` in dev, next to the exe when 
 
 - **Dev run**: `python -m venv .venv` → activate → `pip install -r src/requirements.txt`
   → `python src/__main__.py` (relaunches elevated if not admin).
-- **Build**: `python src/__main__.py --build` → PyInstaller with entry `src/core/DFL_v5.py`,
+- **Build**: `python src/__main__.py --build` → PyInstaller with entry `src/core/app.py`,
   `--onedir --uac-admin --noconsole`, dynamic `--add-data` for every file under
-  `src/core/assets`, `--version-file src/metadata/version.txt`, output to `output/dist/`.
+  `src/core/assets`, `--version-file src/metadata/version.txt` (regenerated from the single
+  version source `src/core/version.py` on every build), output to `output/dist/`.
 - **Frozen layout**: `Base_dir = sys._MEIPASS` (`_internal`), so assets resolve under
   `_internal/assets/` and config/error-log resolve next to the exe.
 - `DynamicFPSLimiter.spec` at the repo root is a **stale artifact** (hardcoded `E:\…` paths,
@@ -229,7 +231,7 @@ See the module map (§4) for Python sources. Non-code:
 | Path | Role |
 |---|---|
 | `src/config/settings.ini`, `profiles.ini` | Runtime config (gitignored, created on first run) |
-| `src/metadata/version.txt` | PyInstaller `VSVersionInfo` (5.0.0.0) |
+| `src/metadata/version.txt` | PyInstaller `VSVersionInfo` (generated from `src/core/version.py`) |
 | `src/requirements.txt` | dearpygui, psutil, pyinstaller, pystray, pythonnet, numpy |
 | `src/core/assets/*.ico`, `*.png` | App/tray icons + window-control icons |
 | `src/core/assets/faqs.csv` | FAQ rows shown in the GUI |
@@ -242,7 +244,7 @@ See the module map (§4) for Python sources. Non-code:
 
 Glaring, fix-first issues are all resolved — see **`status.md` §1.2**. Lower-priority debt worth noting:
 
-- **Single-file orchestrator** — `DFL_v5.py` is ~1,270 lines of module-level script with heavy
+- **Single-file orchestrator** — `app.py` is ~1,270 lines of module-level script with heavy
   global state and import-order-dependent startup; hard to test or reason about.
 - **GUI coupling in core** — several non-GUI modules (`logger`, `cpu_monitor`, `autostart`,
   `tray_functions`) import DearPyGui at module top, preventing headless use.
@@ -251,7 +253,7 @@ Glaring, fix-first issues are all resolved — see **`status.md` §1.2**. Lower-
 - **Two competing RTSS write paths** (API vs direct `.cfg` edits) and non-atomic INI writes.
 - **Dead / stray code** — `idle_timer.monitor_idle` (debug loop), `video2gif.py` and
   `backup_snippets.py` (not part of the app; the latter is not even valid Python).
-- **Pending refactor** — the A1–A6 modular split of `DFL_v5.py`/`ConfigManager` is tracked in
+- **Pending refactor** — the A1–A6 modular split of `app.py`/`ConfigManager` is tracked in
   `status.md` §2.1.
 - **Latent type hazards** — `Decimal` vs `float` in the plot math (currently consistent because
   the FPS reader returns `Decimal`), and `copy_from_plot` truncates fractional custom limits.

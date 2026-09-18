@@ -1,7 +1,5 @@
-# DFL_v5.py
-# Dynamic FPS Limiter v5.0.0
-
-version = "v5.0.0"
+# app.py
+# Dynamic FPS Limiter
 
 import dearpygui.dearpygui as dpg
 import threading
@@ -45,8 +43,9 @@ from core.tray_functions import TrayManager
 from core.autopilot import autopilot_on_check, get_foreground_process_name
 from core.launch_popup import show_loading_popup, hide_loading_popup, show_rtss_error_and_exit
 from core.idle_timer import monitor_idle
+from core.version import display_version
 
-show_loading_popup(f"Loading Dynamic FPS Limiter {version}...", Base_dir=Base_dir, dpg=dpg)
+show_loading_popup(f"Loading Dynamic FPS Limiter {display_version()}...", Base_dir=Base_dir, dpg=dpg)
 
 # Default viewport size
 Viewport_width = 610
@@ -862,7 +861,7 @@ with dpg.window(label=app_title, tag="Primary Window"):
         dpg.add_image(textures["DynamicFPSLimiter_icon"], tag="icon", width=20, height=20)
         dpg.add_text(app_title, tag="app_title")
         #dpg.bind_item_font("app_title", bold_font)
-        dpg.add_text(f"{version}")
+        dpg.add_text(f"{display_version()}")
         dpg.add_spacer(width=310)
 
         dpg.add_image_button(texture_tag=textures["minimize_button"], tag="minimize", callback=tray.minimize_to_tray, width=20, height=20)

@@ -27,10 +27,16 @@ def run_app():
     except Exception:
         pass
 
-    # Import and run DFL_v5 directly
-    import core.DFL_v5
+    # Import and run the app directly
+    import core.app
 
 def build_executable():
+    from core.version import write_version_txt
+
+    # Regenerate the PyInstaller version resource from the single source
+    # (src/core/version.py) so the exe metadata can never drift.
+    write_version_txt(os.path.join(os.path.dirname(__file__), 'metadata', 'version.txt'))
+
     assets_dir = os.path.join(os.path.dirname(__file__), 'core', 'assets')
     add_data_args = []
 
@@ -46,7 +52,7 @@ def build_executable():
             add_data_args.extend(['--add-data', f'{src_path}{os.pathsep}{dest}'])
 
     base_args = [
-        'src/core/DFL_v5.py',
+        'src/core/app.py',
         '--onedir',
         '--uac-admin',
         '--clean',

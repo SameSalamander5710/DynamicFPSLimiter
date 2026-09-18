@@ -1,5 +1,5 @@
 # cap_policy.py
-# Pure FPS cap decrease policy, extracted from DFL_v5.monitoring_loop so it
+# Pure FPS cap decrease policy, extracted from app.monitoring_loop so it
 # can be unit-tested without a GUI, RTSS, or .NET.
 
 

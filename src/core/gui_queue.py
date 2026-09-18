@@ -3,7 +3,7 @@
 DearPyGui is not thread-safe: every ``dpg.*`` call must run on the thread that owns
 the render context (the main thread). Background threads (monitoring, plotting, tray,
 .NET callbacks) therefore cannot call ``dpg.*`` directly. They instead submit a
-callable to a :class:`GuiQueue`, which the main render loop (``DFL_v5.py``) drains
+callable to a :class:`GuiQueue`, which the main render loop (``app.py``) drains
 once per frame on the main thread.
 """
 
@@ -19,7 +19,7 @@ class GuiQueue:
         gui_queue = GuiQueue()
         # from any thread:
         gui_queue.submit(dpg.set_value, "some_tag", "hello")
-        # main thread, once per frame (main render loop in DFL_v5.py):
+        # main thread, once per frame (main render loop in app.py):
         gui_queue.drain()
     """
 

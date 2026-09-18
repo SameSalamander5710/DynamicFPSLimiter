@@ -1,6 +1,6 @@
 """A2: dpg is injected into core modules instead of imported at module top.
 
-DFL_v5.py is the single module that imports ``dearpygui`` and hands the
+app.py is the single module that imports ``dearpygui`` and hands the
 instance to every submodule (via constructor params or ``set_dpg``). These
 tests guard (1) the source invariant that no other core module keeps the
 module-level import and (2) that the injected fake ``dpg`` is actually used
@@ -16,7 +16,7 @@ CORE_DIR = SRC_DIR / "core"
 
 MODULE_LEVEL_IMPORT = "import dearpygui.dearpygui as dpg"
 
-# Every core module (except DFL_v5.py) must drop the module-level dpg import.
+# Every core module (except app.py) must drop the module-level dpg import.
 NON_ORCHESTRATOR_MODULES = [
     "autostart.py",
     "cpu_monitor.py",
@@ -46,8 +46,8 @@ def test_no_module_level_dpg_import(filename):
     )
 
 
-def test_dfl_v5_keeps_exactly_one_module_level_dpg_import():
-    src = (CORE_DIR / "DFL_v5.py").read_text(encoding="utf-8")
+def test_app_keeps_exactly_one_module_level_dpg_import():
+    src = (CORE_DIR / "app.py").read_text(encoding="utf-8")
     count = sum(
         1 for line in src.splitlines()
         if line.startswith(MODULE_LEVEL_IMPORT)

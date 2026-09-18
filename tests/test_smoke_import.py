@@ -7,7 +7,7 @@ Every importable core module must import cleanly without:
 - starting background threads.
 
 Excluded on purpose:
-- ``core.DFL_v5``: importing it *runs* the application (module-level GUI
+- ``core.app``: importing it *runs* the application (module-level GUI
   setup, threads, RTSS enable). See docs/status.md §2.1 (A1) for the split that
   makes the app importable.
 - ``core.video2gif`` / ``core.backup_snippets``: gitignored local utilities.
@@ -42,6 +42,7 @@ CORE_MODULES = [
     "core.themes",
     "core.tooltips",
     "core.tray_functions",
+    "core.version",
     "core.warning",
 ]
 

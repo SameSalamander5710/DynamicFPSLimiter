@@ -1,6 +1,6 @@
-"""Regression guard for the GuiQueue drain wiring in DFL_v5.py.
+"""Regression guard for the GuiQueue drain wiring in app.py.
 
-core.DFL_v5 cannot be imported in tests (importing it runs the application), so
+core.app cannot be imported in tests (importing it runs the application), so
 this test guards the wiring at the source level: the app must drain the GuiQueue
 from the main render loop, NOT from a self-rescheduling ``dpg.set_frame_callback``
 hook. In DearPyGui 2.x all callbacks run on a dedicated background thread and
@@ -12,11 +12,11 @@ freezing the in-app log and every queued GUI update.
 from pathlib import Path
 
 SRC_DIR = Path(__file__).resolve().parent.parent / "src"
-DFL_V5 = SRC_DIR / "core" / "DFL_v5.py"
+APP = SRC_DIR / "core" / "app.py"
 
 
 def _source() -> str:
-    return DFL_V5.read_text(encoding="utf-8")
+    return APP.read_text(encoding="utf-8")
 
 
 def test_main_loop_drains_gui_queue():

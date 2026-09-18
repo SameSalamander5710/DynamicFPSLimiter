@@ -79,7 +79,7 @@ def show_rtss_error_and_exit(rtss_path, dpg=None):
     This function handles the complete workflow and exits the application.
     """
     dpg_mod = dpg if dpg is not None else _default_dpg()
-    # Get the base directory for themes manager (same as in DFL_v4.py)
+    # Get the base directory for themes manager
     Base_dir = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
     
     dpg_mod.create_context()
@@ -207,7 +207,7 @@ if __name__ == "__main__":
     # Test the popup by running this file directly using: python src\core\launch_popup.py
     print("Testing RTSS error popup...")
     
-    # Get the base directory (same as in DFL_v4.py)
+    # Get the base directory
     Base_dir = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
     
     dpg_mod = _default_dpg()

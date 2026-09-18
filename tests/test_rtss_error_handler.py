@@ -53,6 +53,6 @@ def test_rtss_functions_has_no_launch_popup_reference():
     assert "show_rtss_error_and_exit" not in src
 
 
-def test_dfl_v5_injects_rtss_error_handler():
-    src = (SRC_DIR / "core" / "DFL_v5.py").read_text(encoding="utf-8")
+def test_app_injects_rtss_error_handler():
+    src = (SRC_DIR / "core" / "app.py").read_text(encoding="utf-8")
     assert "error_handler=show_rtss_error_and_exit" in src

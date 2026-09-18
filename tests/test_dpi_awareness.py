@@ -2,7 +2,7 @@
 
 DPI must be set exactly once, in ``src/__main__.py`` ``run_app()``, before the
 app module is imported. It must NOT be a module-level side effect of importing
-core modules (``core.DFL_v5`` imports run the application, so it cannot be
+core modules (``core.app`` imports run the application, so it cannot be
 imported in-process here — the same reason ``test_dfl_main_loop.py`` guards its
 wiring at the source level).
 
@@ -24,8 +24,8 @@ def _source(rel_path: str) -> str:
     return (SRC_DIR / rel_path).read_text(encoding="utf-8")
 
 
-def test_dfl_v5_has_no_dpi_call_at_import():
-    src = _source("core/DFL_v5.py")
+def test_app_has_no_dpi_call_at_import():
+    src = _source("core/app.py")
     assert "SetProcessDpiAwareness" not in src
     assert "shcore" not in src
 

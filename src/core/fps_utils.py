@@ -326,7 +326,7 @@ class FPSUtils:
         fps_avg, fps_std, fps_med, fps_mode = compute_stats(self.summary_fps)
         cap_avg, cap_std, cap_med, cap_mode = compute_stats(self.summary_cap)
 
-        # Write to DPG fields (tags defined in DFL_v5.py)
+        # Write to DPG fields (tags defined in app.py)
         try:
             dpg.set_value("summary_fps_avg", fps_avg)
             dpg.set_value("summary_fps_std", fps_std)

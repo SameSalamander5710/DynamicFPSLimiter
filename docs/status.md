@@ -21,7 +21,7 @@ Status legend: ✅ Done · 🟨 Pending · ⏸️ Deferred · ❌ Not started
 
 | ID | Severity | What was fixed | Tests |
 |---|---|---|---|
-| F1 | High | Cap step-down silently skipped — dead `current_index < 0` check meant the cap stalled under load. Extracted pure `next_cap_on_decrease()` into `src/core/cap_policy.py`; `DFL_v5.monitoring_loop` decrease branch calls it. | `tests/test_cap_policy.py` |
+| F1 | High | Cap step-down silently skipped — dead `current_index < 0` check meant the cap stalled under load. Extracted pure `next_cap_on_decrease()` into `src/core/cap_policy.py`; `app.monitoring_loop` decrease branch calls it. | `tests/test_cap_policy.py` |
 | F2 | High | LHM load failure crashed startup. `lhm_loader.ensure_loaded` now raises `LHMLoadError` (carries DLL path); all bootstrap sites degrade gracefully: `get_all_sensor_infos` → `[]`, `LHMSensor` disabled, `FPSUtils` keeps `None` types. | `tests/test_lhm_failure.py` |
 | F3 | Med | Cross-thread `dpg.*` calls (logger, tray, monitoring, autopilot, LHM poll). New `src/core/gui_queue.py` (`GuiQueue`: thread-safe `submit`/`drain`, per-callback error isolation); logger + `TrayManager` route through it via `set_gui_queue`; `update_hover_text` reads the ConfigManager snapshot. | `tests/test_logger.py`, `tests/test_tray.py`, `tests/test_gui_queue.py` |
 | F4 | Med | `set_fractional_fps_direct` `NameError` on profile files missing `Limit=`/`LimitDenominator=`. Flags initialized to `False`; missing lines appended; dead `found` flag removed. | `tests/test_rtss_fractional_direct.py` |
@@ -35,10 +35,10 @@ Status legend: ✅ Done · 🟨 Pending · ⏸️ Deferred · ❌ Not started
 
 | ID | What was fixed | Tests |
 |---|---|---|
-| Main-loop fix | The self-rescheduling `_frame_hook` drain could be orphaned by a long callback (froze every queued GUI update). Replaced with an **explicit main render loop** at the end of `DFL_v5.py` that drains `GuiQueue` every frame; one-shot startup work runs synchronously pre-loop. | `tests/test_dfl_main_loop.py` (+ source guard: no `set_frame_callback`/`_frame_hook`) |
+| Main-loop fix | The self-rescheduling `_frame_hook` drain could be orphaned by a long callback (froze every queued GUI update). Replaced with an **explicit main render loop** at the end of `app.py` that drains `GuiQueue` every frame; one-shot startup work runs synchronously pre-loop. | `tests/test_dfl_main_loop.py` (+ source guard: no `set_frame_callback`/`_frame_hook`) |
 | S1 | Moved LUID detection off the DPG callback thread → short-lived daemon worker + queued `_apply` closure; `_detecting` flag ignores double-clicks. | `tests/test_gpu_monitor_luid.py` |
 | S2 | Locked the shared PDH query (`self._pdh_lock`, RLock) around every `Pdh*` call in `gpu_run`/`get_gpu_usage`/`initialize`/`reinitialize`/`cleanup`. | `tests/test_gpu_monitor_luid.py` (concurrency cases) |
-| S3 | `GuiQueue` drain failures visible — `DFL_v5.py` constructs `GuiQueue(on_error=...)` → `logging.error`. | `tests/test_gui_queue.py` (+ source guard) |
+| S3 | `GuiQueue` drain failures visible — `app.py` constructs `GuiQueue(on_error=...)` → `logging.error`. | `tests/test_gui_queue.py` (+ source guard) |
 | S4 | End-to-end "Detect Render GPU" verification (S4a detect / S4b revert / S4c no-handle-growth). Spike OVERALL PASS; app launches clean as admin. | `tests/spike_fake_game.py` (S4a/b/c), `tests/fake_game.py` |
 
 ### 1.4 Idle-FPS persistence fix (merged from `origin/main`, `0a857c1`/`f3dbeab`)
@@ -55,7 +55,7 @@ Status legend: ✅ Done · 🟨 Pending · ⏸️ Deferred · ❌ Not started
 | L11 | Removed the no-op `self.dpg = dpg or dpg` fallback in `FPSUtils`; plain `self.dpg = dpg` with `dpg=None` default retained. | `tests/test_fps_utils_dpg_assignment.py` |
 | L13 | Typo fixed: "This setting can be changes" → "can be changed" in the min-valid-FPS warning. | `tests/test_warning_typo.py` |
 | L14 | Dropped `shell=True` from all four `schtasks` `subprocess.run` calls in `autostart.py`; argument lists passed instead. | `tests/test_autostart.py` |
-| L15 | DPI awareness set **once** in `src/__main__.py` (`run_app`, failure-tolerant); removed import-time `SetProcessDpiAwareness(2)` from `DFL_v5.py` and `launch_popup.py`. | `tests/test_dpi_awareness.py` |
+| L15 | DPI awareness set **once** in `src/__main__.py` (`run_app`, failure-tolerant); removed import-time `SetProcessDpiAwareness(2)` from `app.py` and `launch_popup.py`. | `tests/test_dpi_awareness.py` |
 | L16 | Extracted a reusable `ViewportDragHandler` into `src/core/drag_helper.py`; popups no longer construct a full `TrayManager` just for drag handling. | `tests/test_drag_helper.py` |
 | L18 | Plotting-loop sleep now `min(gpupollinginterval, cpupollinginterval)` instead of meaningless `math.lcm`; removed unused `import math`. | `tests/test_dfl_main_loop.py` |
 | L20 | Limiting gate now uses `gpuUsage is not None` so a valid 0% GPU reading doesn't silently disable limiting. | `tests/test_dfl_main_loop.py` |
@@ -64,9 +64,10 @@ Status legend: ✅ Done · 🟨 Pending · ⏸️ Deferred · ❌ Not started
 
 | ID | What was fixed | Tests |
 |---|---|---|
-| A2 | Inject `dpg` instead of module-level imports (`config_manager.py:3`, `fps_utils.py:4`, `logger.py:1`, `DFL_v5.py:9`, plus `cpu_monitor.py`, `launch_popup.py`, `themes.py`, `rtss_interface.py`, `tray_functions.py`, `autostart.py`, and `drag_helper.py`). `DFL_v5.py` is now the single module that imports dpg and injects it downstream (`logger.set_dpg`, ctor/function params on themes/tray/drag/launch-popup; `self.dpg` everywhere else). | `tests/test_dpg_injection.py`, source guards |
-| A3 | Remove `rtss_functions.py:6` import-time coupling (`from core.launch_popup import show_rtss_error_and_exit`) → inject an error handler into `RTSSController.__init__` as `error_handler=None` (called with the DLL path on `OSError`, or re-raise). `DFL_v5.py` passes `show_rtss_error_and_exit`. | `tests/test_rtss_error_handler.py` |
-| A6 | `idle_timer.monitor_idle` rewritten from a blocking debug print-loop into a stateless, error-tolerant check (`True` when idle ≥ threshold) and wired into the `DFL_v5.py` monitoring loop (`not monitor_idle(cm.idle_fps_delay) or not cm.idle_mode`); raw `get_idle_duration()` call dropped. Module kept, not deleted. | `tests/test_idle_timer.py` |
+| A2 | Inject `dpg` instead of module-level imports (`config_manager.py:3`, `fps_utils.py:4`, `logger.py:1`, `app.py:9`, plus `cpu_monitor.py`, `launch_popup.py`, `themes.py`, `rtss_interface.py`, `tray_functions.py`, `autostart.py`, and `drag_helper.py`). `app.py` is now the single module that imports dpg and injects it downstream (`logger.set_dpg`, ctor/function params on themes/tray/drag/launch-popup; `self.dpg` everywhere else). | `tests/test_dpg_injection.py`, source guards |
+| A3 | Remove `rtss_functions.py:6` import-time coupling (`from core.launch_popup import show_rtss_error_and_exit`) → inject an error handler into `RTSSController.__init__` as `error_handler=None` (called with the DLL path on `OSError`, or re-raise). `app.py` passes `show_rtss_error_and_exit`. | `tests/test_rtss_error_handler.py` |
+| A6 | `idle_timer.monitor_idle` rewritten from a blocking debug print-loop into a stateless, error-tolerant check (`True` when idle ≥ threshold) and wired into the `app.py` monitoring loop (`not monitor_idle(cm.idle_fps_delay) or not cm.idle_mode`); raw `get_idle_duration()` call dropped. Module kept, not deleted. | `tests/test_idle_timer.py` |
+| A4 | Renamed `DFL_v5.py` → `src/core/app.py` (stable name); updated `src/__main__.py` (import + PyInstaller entry) and removed stale `DFL_v4.py` comments in `launch_popup.py`. Version is now a single source of truth in `src/core/version.py`: the app's loading popup / title bar use `display_version()`, the build regenerates `src/metadata/version.txt` from it, and `tests/test_version.py` guards the sync (including a PyInstaller deserialization round-trip). | `tests/test_version.py` (+ re-pointed guards in `test_dpg_injection.py`, `test_cap_policy.py`, `test_dpi_awareness.py`, `test_dfl_main_loop.py`, `test_idle_timer.py`, `test_rtss_error_handler.py`, `test_smoke_import.py`) |
 
 ---
 
@@ -79,8 +80,7 @@ Status legend: ✅ Done · 🟨 Pending · ⏸️ Deferred · ❌ Not started
 
 | ID | Item | Current state / why |
 |---|---|---|
-| A1 | Split the god module `DFL_v5.py` (**1,102 lines**) into `src/core/state.py`, `loops.py`, `view.py`, `app.py`. The explicit main render loop (`gui_queue.drain()`) must live in the new orchestration module; `tests/test_dfl_main_loop.py` re-pointed to guard it there. | Not started |
-| A4 | (Optional, last) Rename `DFL_v5.py` to a stable name; update `src/__main__.py`; remove stale `DFL_v4` references. | Not started |
+| A1 | Split the god module `app.py` (**1,102 lines**) into `src/core/state.py`, `loops.py`, `view.py`, `app.py`. The explicit main render loop (`gui_queue.drain()`) must live in the new orchestration module; `tests/test_dfl_main_loop.py` re-pointed to guard it there. | Not started |
 | A5 | Split `ConfigManager` (**690 lines**): config I/O (`load_or_init_configs`, saving, key maps) vs GUI population (input field wiring, tooltips). | Not started |
 
 ---
@@ -89,7 +89,7 @@ Status legend: ✅ Done · 🟨 Pending · ⏸️ Deferred · ❌ Not started
 
 Lower-priority debt; glaring issues are all resolved (see §1.2).
 
-- **Single-file orchestrator** — `DFL_v5.py` is a ~1,100-line module-level script with heavy
+- **Single-file orchestrator** — `app.py` is a ~1,100-line module-level script with heavy
   global state and import-order-dependent startup (tracked as **A1**; the dpg-coupling part was
   resolved by **A2**).
 - **Undeclared direct dependency** — `PIL`/Pillow used by `tray_functions` but only present as a
