@@ -66,6 +66,7 @@ Status legend: ✅ Done · 🟨 Pending · ⏸️ Deferred · ❌ Not started
 |---|---|---|
 | A2 | Inject `dpg` instead of module-level imports (`config_manager.py:3`, `fps_utils.py:4`, `logger.py:1`, `DFL_v5.py:9`, plus `cpu_monitor.py`, `launch_popup.py`, `themes.py`, `rtss_interface.py`, `tray_functions.py`, `autostart.py`, and `drag_helper.py`). `DFL_v5.py` is now the single module that imports dpg and injects it downstream (`logger.set_dpg`, ctor/function params on themes/tray/drag/launch-popup; `self.dpg` everywhere else). | `tests/test_dpg_injection.py`, source guards |
 | A3 | Remove `rtss_functions.py:6` import-time coupling (`from core.launch_popup import show_rtss_error_and_exit`) → inject an error handler into `RTSSController.__init__` as `error_handler=None` (called with the DLL path on `OSError`, or re-raise). `DFL_v5.py` passes `show_rtss_error_and_exit`. | `tests/test_rtss_error_handler.py` |
+| A6 | `idle_timer.monitor_idle` rewritten from a blocking debug print-loop into a stateless, error-tolerant check (`True` when idle ≥ threshold) and wired into the `DFL_v5.py` monitoring loop (`not monitor_idle(cm.idle_fps_delay) or not cm.idle_mode`); raw `get_idle_duration()` call dropped. Module kept, not deleted. | `tests/test_idle_timer.py` |
 
 ---
 
@@ -81,7 +82,6 @@ Status legend: ✅ Done · 🟨 Pending · ⏸️ Deferred · ❌ Not started
 | A1 | Split the god module `DFL_v5.py` (**1,102 lines**) into `src/core/state.py`, `loops.py`, `view.py`, `app.py`. The explicit main render loop (`gui_queue.drain()`) must live in the new orchestration module; `tests/test_dfl_main_loop.py` re-pointed to guard it there. | Not started |
 | A4 | (Optional, last) Rename `DFL_v5.py` to a stable name; update `src/__main__.py`; remove stale `DFL_v4` references. | Not started |
 | A5 | Split `ConfigManager` (**690 lines**): config I/O (`load_or_init_configs`, saving, key maps) vs GUI population (input field wiring, tooltips). | Not started |
-| A6 | `idle_timer.py`: wire `monitor_idle` into the monitoring loop (currently only prints at `src/core/idle_timer.py:48`) or delete the module. Prefer wiring — `get_idle_duration` is already used in `DFL_v5.py:350`. | Not started |
 
 ---
 
@@ -90,16 +90,14 @@ Status legend: ✅ Done · 🟨 Pending · ⏸️ Deferred · ❌ Not started
 Lower-priority debt; glaring issues are all resolved (see §1.2).
 
 - **Single-file orchestrator** — `DFL_v5.py` is a ~1,100-line module-level script with heavy
-  global state and import-order-dependent startup (tracked as **A1/A2**).
-- **GUI coupling in core** — several non-GUI modules (`logger`, `cpu_monitor`, `autostart`,
-  `tray_functions`, …) import `dpg` at module top (tracked as **A2**).
+  global state and import-order-dependent startup (tracked as **A1**; the dpg-coupling part was
+  resolved by **A2**).
 - **Undeclared direct dependency** — `PIL`/Pillow used by `tray_functions` but only present as a
   transitive dependency of pystray.
 - **Non-atomic INI writes** — `settings.ini`/`profiles.ini` are rewritten immediately on every
   preference change with no tmp+rename; a crash mid-write can corrupt them (RTSS `.cfg` writes
   are already atomic — F6; INI is not).
-- **Dead / stray code** — `idle_timer.monitor_idle` (debug loop, tracked as **A6**),
-  `video2gif.py` and `backup_snippets.py` (not part of the app; the latter is not even valid Python).
+- **Dead / stray code** — `video2gif.py` and `backup_snippets.py` (not part of the app; the latter is not even valid Python).
 - **Latent type hazards** — `Decimal` vs `float` in plot math (consistent today only because the
   FPS reader returns `Decimal`); `copy_from_plot` truncates fractional custom limits.
 - **`faqs.csv`** present in both dev and frozen builds — its import-time `open()` only crashes if

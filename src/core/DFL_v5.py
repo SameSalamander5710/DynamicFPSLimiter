@@ -44,7 +44,7 @@ from core.cap_policy import next_cap_on_decrease
 from core.tray_functions import TrayManager
 from core.autopilot import autopilot_on_check, get_foreground_process_name
 from core.launch_popup import show_loading_popup, hide_loading_popup, show_rtss_error_and_exit
-from core.idle_timer import get_idle_duration
+from core.idle_timer import monitor_idle
 
 show_loading_popup(f"Loading Dynamic FPS Limiter {version}...", Base_dir=Base_dir, dpg=dpg)
 
@@ -348,12 +348,10 @@ def monitoring_loop():
             cpu_values.pop(0)
         cpu_values.append(cpuUsage)
 
-        idle_secs = get_idle_duration()
-
         #TODO: if no LHM sensor selected, pass through without limiting
         # To prevent loading screens from affecting the fps cap
         if gpuUsage is not None and process_name not in {"DynamicFPSLimiter.exe"}:
-            if idle_secs < cm.idle_fps_delay or not cm.idle_mode:
+            if not monitor_idle(cm.idle_fps_delay) or not cm.idle_mode:
                 if idle_state:
                     rtss.set_fractional_framerate(current_profile, last_active_fps_cap)
                     idle_state = False

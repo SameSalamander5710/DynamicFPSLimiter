@@ -1,5 +1,4 @@
 import ctypes
-import time
 
 def get_idle_duration():
     """Return seconds since last user input (mouse/keyboard) on Windows."""
@@ -25,24 +24,13 @@ def get_idle_duration():
         delta_ms = (int(ticks) - int(lii.dwTime)) & 0xFFFFFFFF
     return delta_ms / 1000.0
 
-def monitor_idle(threshold=5, interval=0.5):
-    """Monitor idle time."""
-    while True:
-        try:
-            idle = get_idle_duration()
-        except Exception as exc:
-            print(f"[error] get_idle_duration() raised: {exc!r}", flush=True)
-            time.sleep(max(0.5, interval))
-            continue
-
-        # always-print for debugging; keep verbose behavior for less output later
-        print(f"[debug] idle={idle:.1f}s (threshold={threshold}s)", flush=True)
-
-        if idle >= threshold:
-            print(f"User idle for {int(idle)} seconds — triggering idle event.", flush=True)
-
-        time.sleep(interval)
+def monitor_idle(threshold=5):
+    """Return True if the user has been idle for at least *threshold* seconds."""
+    try:
+        return get_idle_duration() >= threshold
+    except Exception:
+        return False
 
 if __name__ == "__main__":
 
-    monitor_idle()
+    print(monitor_idle(5))
