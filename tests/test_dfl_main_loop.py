@@ -46,3 +46,12 @@ def test_gui_queue_wired_with_on_error():
     callback is diagnosable in error_log.txt instead of vanishing."""
     src = _source()
     assert "GuiQueue(on_error=" in src
+
+
+def test_gpu_gating_branch_uses_is_not_none():
+    """L20: the limiter-decision gating branch must treat 0% as a valid GPU
+    reading. A bare truthiness test on gpuUsage silently disables limiting
+    whenever the GPU percentile is 0."""
+    src = _source()
+    assert "if gpuUsage is not None and process_name" in src
+    assert "if gpuUsage and process_name" not in src

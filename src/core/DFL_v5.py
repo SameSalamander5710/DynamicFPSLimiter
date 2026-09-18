@@ -351,7 +351,7 @@ def monitoring_loop():
 
         #TODO: if no LHM sensor selected, pass through without limiting
         # To prevent loading screens from affecting the fps cap
-        if gpuUsage and process_name not in {"DynamicFPSLimiter.exe"}:
+        if gpuUsage is not None and process_name not in {"DynamicFPSLimiter.exe"}:
             if idle_secs < cm.idle_fps_delay or not cm.idle_mode:
                 if idle_state:
                     rtss.set_fractional_framerate(current_profile, last_active_fps_cap)
