@@ -37,6 +37,7 @@ Watch the demo here! (App version v5.0.1)
 
 > [!CAUTION]
 > - The executable in the release was packaged using PyInstaller and may be flagged by some antivirus software as a Trojan.
+> - Unblock the downloaded release `.zip` file to ensure it works correctly.
 > - You can confirm whether the app is signed by me using the public certificate [here](/src/Public_SameSalamander5710_2026.cer).
 
 ## The Concept
