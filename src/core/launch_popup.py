@@ -12,6 +12,11 @@ from core.themes import ThemesManager
 from core.tray_functions import TrayManager
 from core.drag_helper import ViewportDragHandler
 
+# True while the loading popup owns a live DearPyGui context. DPG 2.0.0 cannot
+# call setup_dearpygui() twice on the same context (it crashes), so any code
+# that builds a second popup must destroy the loading context first.
+_loading_popup_active = False
+
 def _default_dpg():
     import dearpygui.dearpygui as dpg
     return dpg
@@ -78,10 +83,17 @@ def show_rtss_error_and_exit(rtss_path, dpg=None):
     Shows an RTSS error popup with full DearPyGui context creation and execution.
     This function handles the complete workflow and exits the application.
     """
+    global _loading_popup_active
     dpg_mod = dpg if dpg is not None else _default_dpg()
     # Get the base directory for themes manager
     Base_dir = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
     
+    # If the loading popup still owns a live context, tear it down first.
+    # Calling setup_dearpygui() again on that same live context crashes DPG 2.0.0,
+    # so the error popup must build its own fresh context instead.
+    if _loading_popup_active:
+        hide_loading_popup(dpg=dpg_mod)
+
     dpg_mod.create_context()
     
     # Create themes and fonts for the popup
@@ -173,6 +185,9 @@ def show_loading_popup(message="Loading...", width=300, height=50, title="Dynami
         # viewport may already exist
         pass
 
+    global _loading_popup_active
+    _loading_popup_active = True
+
     dpg_mod.setup_dearpygui()
     dpg_mod.show_viewport()
     dpg_mod.set_primary_window("LoadingWindow", True)
@@ -188,6 +203,8 @@ def hide_loading_popup(dpg=None):
     Destroys the temporary loading viewport/context created by show_loading_popup.
     Call this before creating the main application context/viewport.
     """
+    global _loading_popup_active
+    _loading_popup_active = False
     dpg_mod = dpg if dpg is not None else _default_dpg()
     try:
         # destroy viewport if present
