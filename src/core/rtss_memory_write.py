@@ -3,6 +3,8 @@
 #   python -m core.rtss_memory_write 42.32 mygame.exe   # fractional fps, up to MAX_DECIMALS places
 #   python -m core.rtss_memory_write 144                # all hooked processes
 #   python -m core.rtss_memory_write                    # just list hooked processes
+# Compatible with RTSS 7.3.7
+
 
 import ctypes
 import ctypes.wintypes as w
