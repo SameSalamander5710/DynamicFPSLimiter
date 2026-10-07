@@ -1,15 +1,19 @@
-# python rtss_fps.py 60 mygame.exe
-# python rtss_fps.py 42.32 mygame.exe   # fractional fps, up to MAX_DECIMALS places
-# python rtss_fps.py 144                # all hooked processes
-# python rtss_fps.py                    # just list hooked processes
+# Standalone CLI (run from src/):
+#   python -m core.rtss_memory_write 60 mygame.exe
+#   python -m core.rtss_memory_write 42.32 mygame.exe   # fractional fps, up to MAX_DECIMALS places
+#   python -m core.rtss_memory_write 144                # all hooked processes
+#   python -m core.rtss_memory_write                    # just list hooked processes
 
 import ctypes
 import ctypes.wintypes as w
+import os
 import struct
 import sys
 from decimal import Decimal, InvalidOperation
 
 import psutil
+
+from core.rtss_functions import get_rtss_install_path
 
 DLL_NAME = "rtsshooks64.dll"
 
@@ -93,10 +97,13 @@ def write_mem(h, addr, data):
 
 
 def parse_fps(text):
-    """Parse exactly as typed (no float). Returns (numerator, denominator).
+    """Parse exactly as typed (no float). Accepts str or any number type.
+    Returns (numerator, denominator).
 
     42.32 -> (4232, 100), 60 -> (60, 1), 60.0 -> (60, 1)
     """
+    if not isinstance(text, str):
+        text = str(text)
     try:
         d = Decimal(text.strip())
     except InvalidOperation:
@@ -110,6 +117,38 @@ def parse_fps(text):
     den = 10 ** decimals
     num = int(d * den)
     return num, den
+
+
+def list_rtss_profile_names():
+    """Lowercase exe names of every specific RTSS profile on disk.
+
+    Reads <RTSS install>\\Profiles\\*.cfg (mygame.exe.cfg -> mygame.exe).
+    The Global profile itself is not included.
+    """
+    profiles_dir = os.path.join(get_rtss_install_path(), "Profiles")
+    names = set()
+    try:
+        entries = os.listdir(profiles_dir)
+    except OSError:
+        return names
+    for entry in entries:
+        if entry.lower().endswith(".cfg"):
+            names.add(entry[:-4].lower())
+    return names
+
+
+def resolve_targets(hooked, profile_name, profile_names=frozenset()):
+    """Pick the hooked (pid, name) pairs a profile applies to.
+
+    profile_name is matched directly against the process name (same string
+    the app uses as the RTSS profile name). "Global" keeps only processes
+    with no specific RTSS profile.
+    """
+    name = str(profile_name).lower()
+    if name == "global":
+        return [(pid, pname) for pid, pname in hooked
+                if pname.lower() not in profile_names]
+    return [(pid, pname) for pid, pname in hooked if pname.lower() == name]
 
 
 def set_fps_limit(pid, num, den):
@@ -148,6 +187,58 @@ def set_fps_limit(pid, num, den):
         k32.CloseHandle(h)
 
 
+def set_frameratelimit_memory_write(profile_name, framerate, logger=None):
+    """Set the RTSS framerate limit by writing into hooked game processes.
+
+    profile_name is the process name (e.g. mygame.exe); "Global" targets
+    every hooked process that has no specific RTSS profile.
+    Returns (numerator, denominator) when at least one process was written,
+    else None. Errors are logged, not raised.
+    """
+    def log(message):
+        if logger is not None:
+            logger.add_log(message)
+
+    profile_name = str(profile_name)
+    try:
+        num, den = parse_fps(framerate)
+    except ValueError as e:
+        log(f"Memory write {profile_name}: {e}")
+        return None
+
+    try:
+        hooked = hooked_pids()
+        if profile_name.lower() == "global":
+            targets = resolve_targets(hooked, profile_name,
+                                      list_rtss_profile_names())
+        else:
+            targets = resolve_targets(hooked, profile_name)
+    except Exception as e:
+        log(f"Memory write {profile_name}: process search failed: {e}")
+        return None
+
+    if not targets:
+        log(f"Memory write {profile_name}: no hooked process found "
+            "(is the game running?)")
+        return None
+
+    written = 0
+    for pid, name in targets:
+        try:
+            set_fps_limit(pid, num, den)
+            written += 1
+        except Exception as e:
+            log(f"Memory write {name} (PID {pid}) failed: {e}")
+
+    if written == 0:
+        return None
+    total = len(targets)
+    suffix = "" if written == total else f" ({written}/{total} ok)"
+    log(f"Memory write {profile_name}: {num / den:g} ({num}/{den}) "
+        f"on {total} process(es){suffix}")
+    return num, den
+
+
 def hooked_pids():
     """All processes that currently have the RTSS hook loaded."""
     out = []
@@ -165,10 +256,10 @@ def hooked_pids():
 
 
 if __name__ == "__main__":
-    # usage: python rtss_fps.py <fps> [pid|exe_name]
+    # usage: python -m core.rtss_memory_write <fps> [pid|exe_name]
     if len(sys.argv) < 2:
         print("Hooked processes:", hooked_pids())
-        print("usage: python rtss_fps.py <fps> [pid|exe_name]")
+        print("usage: python -m core.rtss_memory_write <fps> [pid|exe_name]")
         sys.exit(1)
 
     try:

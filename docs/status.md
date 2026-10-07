@@ -83,6 +83,12 @@ Status legend: ✅ Done · 🟨 Pending · ⏸️ Deferred · ❌ Not started
 | A1 | Split the god module `app.py` (**1,102 lines**) into `src/core/state.py`, `loops.py`, `view.py`, `app.py`. The explicit main render loop (`gui_queue.drain()`) must live in the new orchestration module; `tests/test_dfl_main_loop.py` re-pointed to guard it there. | Not started |
 | A5 | Split `ConfigManager` (**690 lines**): config I/O (`load_or_init_configs`, saving, key maps) vs GUI population (input field wiring, tooltips). | Not started |
 
+### 2.2 Memory-write RTSS cap path
+
+| ID | Item | Current state / why |
+|---|---|---|
+| M1 | Optional third write path: `src/core/rtss_memory_write.py` writes the cap into hooked game processes via `WriteProcessMemory` (fast live writes, no `.cfg` / DLL API). | Module converted to callable `set_frameratelimit_memory_write(profile_name, framerate, logger=None)`; profile name = process name, `Global` = hooked processes with no RTSS profile. No call sites switched yet. See `docs/RTSS.md` (write path C). |
+
 ---
 
 ## 3. Known issues & tech debt (carried forward from `architecture.md` §11)

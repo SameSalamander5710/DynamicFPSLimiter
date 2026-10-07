@@ -4,12 +4,30 @@ import threading
 import winreg
 from decimal import Decimal, InvalidOperation
 
+
+def get_rtss_install_path():
+    try:
+        key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\WOW6432Node\Unwinder\RTSS")
+        path, _ = winreg.QueryValueEx(key, "InstallPath")
+        winreg.CloseKey(key)
+    except FileNotFoundError:
+        try:
+            key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Unwinder\RTSS")
+            path, _ = winreg.QueryValueEx(key, "InstallPath")
+            winreg.CloseKey(key)
+        except FileNotFoundError:
+            path = r"C:\Program Files (x86)\RivaTuner Statistics Server"
+    if path.lower().endswith("rtss.exe"):
+        path = os.path.dirname(path)
+    return path
+
+
 class RTSSController:
     RTSSHOOKSFLAG_LIMITER_DISABLED = 4
 
     def __init__(self, logger_instance, error_handler=None):
         self._error_handler = error_handler
-        self.rtss_install_path = self.get_rtss_install_path()
+        self.rtss_install_path = get_rtss_install_path()
         self.rtss_path = os.path.join(self.rtss_install_path, "RTSSHooks64.dll")
         self.logger = logger_instance
         # Serializes profile file + DLL-API mutations so concurrent callers (e.g. the
@@ -62,22 +80,6 @@ class RTSSController:
 #        self.GetFlags = self.dll.GetFlags
 #        self.GetFlags.argtypes = []
 #        self.GetFlags.restype = ctypes.c_uint
-
-    def get_rtss_install_path(self):
-        try:
-            key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\WOW6432Node\Unwinder\RTSS")
-            path, _ = winreg.QueryValueEx(key, "InstallPath")
-            winreg.CloseKey(key)
-        except FileNotFoundError:
-            try:
-                key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Unwinder\RTSS")
-                path, _ = winreg.QueryValueEx(key, "InstallPath")
-                winreg.CloseKey(key)
-            except FileNotFoundError:
-                path = r"C:\Program Files (x86)\RivaTuner Statistics Server"
-        if path.lower().endswith("rtss.exe"):
-            path = os.path.dirname(path)
-        return path
 
     def delete_profile(self, profile_name):
         self.DeleteProfile(profile_name.encode('ascii'))

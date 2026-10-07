@@ -11,13 +11,13 @@ The app must run as Administrator because RTSS runs elevated. RTSS must be runni
 | Write cap | `RTSSHooks64.dll` profile API | `src/core/rtss_functions.py` |
 | Write cap | Direct edit of profile `.cfg` files | `src/core/rtss_functions.py` |
 | Read FPS | `RTSSSharedMemoryV2` shared memory | `src/core/rtss_interface.py` |
-| Write cap (new) | `WriteProcessMemory` into the hooked game process | `src/core/rtss_memory_write.py` (standalone, not wired in) |
+| Write cap (new) | `WriteProcessMemory` into the hooked game process | `src/core/rtss_memory_write.py` (callable, not wired into call sites) |
 
 ## Module map
 
 - `rtss_functions.py` - `RTSSController` class. Owns write path A (DLL API) and write path B (`.cfg` edit). Single production instance created in `app.py` at import time, passed into `ConfigManager`.
 - `rtss_interface.py` - `RTSSInterface` class. Read path (shared memory). Single instance in `app.py` (`rtss_manager`), used by `monitoring_loop`, `autopilot`, and `warning.py`.
-- `rtss_memory_write.py` - new standalone script, copied in from outside the repo. Not imported anywhere yet, untracked in git.
+- `rtss_memory_write.py` - converted from the standalone script into a callable module: `set_frameratelimit_memory_write(profile_name, framerate, logger=None)`. Not wired into any call site yet.
 
 ## Fractional limit encoding
 
@@ -80,24 +80,25 @@ Constants (specific to one RTSS build; the signature check guards this):
 | `MAX_FPS` | `1000` | accepted range for the cap |
 | `MAX_DECIMALS` | `4` | denominator capped at `10**4` |
 
-Supporting helpers: `hooked_pids()` lists all processes with the RTSS hook loaded; `parse_fps()` parses the cap value; `read_mem` / `write_mem` wrap `ReadProcessMemory` / `WriteProcessMemory`.
+Supporting helpers: `set_frameratelimit_memory_write()` (the callable entry point, below); `hooked_pids()` lists all processes with the RTSS hook loaded; `parse_fps()` parses the cap value; `list_rtss_profile_names()` reads the RTSS profile names from disk; `resolve_targets()` picks the processes a profile applies to; `read_mem` / `write_mem` wrap `ReadProcessMemory` / `WriteProcessMemory`.
 
-### What a future `set_frameratelimit_memory_write` needs
+### `set_frameratelimit_memory_write(profile_name, framerate, logger=None)`
 
-The plan is to convert this standalone script into a callable function so individual call sites can switch to it alongside (not instead of) the existing methods:
+The callable entry point. Meant to be swapped in at individual call sites alongside (not instead of) `set_fractional_framerate`:
 
-- Parse the framerate with the existing `parse_fps` (exact `Decimal`, returns `(num, den)`).
-- Resolve the profile name to a PID: match the exe-name profile against `hooked_pids()`. Open question: what "Global" means here (one process? all hooked processes?).
-- Log through `logger.add_log` and follow the existing failure pattern (try/except + log, like other call sites) instead of bare `print`.
-- Return shape close to `set_fractional_framerate` (current/fractional values) so call sites stay interchangeable.
-- Keep the signature check and read-back verification.
+- Parses the framerate with `parse_fps` (exact `Decimal`, accepts str/int/float/Decimal, returns `(num, den)`).
+- `profile_name` is used directly as the process name - the same string the app already uses as the RTSS profile name (e.g. `mygame.exe`). Matched case-insensitively against `hooked_pids()`.
+- `Global` targets every hooked process that has no specific RTSS profile: the profile names come from `list_rtss_profile_names()` (the `Profiles\*.cfg` files in the RTSS install dir, which mirrors how RTSS itself resolves a profile per exe).
+- Writes with `set_fps_limit` (signature check + read-back included) into every target process. Global can hit several processes; each is written independently.
+- Logs through `logger.add_log` (optional `logger` arg). Errors are logged, never raised, so the monitoring loop survives a failure (same degrade-gracefully pattern as `rtss_interface`).
+- Returns `(numerator, denominator)` when at least one process was written, else `None`.
 
 Constraints to remember:
 
 - Bypasses `_profile_lock`; the lock only serializes `.cfg` + DLL-API writers.
 - Does not persist to the `.cfg`. An RTSS profile reload (`UpdateProfiles`, RTSS UI save) overwrites the live value.
-- Requires admin rights and the matching RTSS build (signature check).
-- Unknown RTSS version -> refuses to write, raises `RuntimeError`.
+- Needs the game process to be running (no process -> logs + `None`), unlike the DLL-API path which works on profiles alone.
+- Requires admin rights and the matching RTSS build (signature check). Unknown RTSS version -> refuses to write.
 
 ## Read path: shared memory
 
@@ -145,14 +146,15 @@ No live callers: `disable_limiter`, `get_framerate_limit`, `create_profile`, `re
 | `tests/test_rtss_fractional_direct.py` | F4: missing `Limit=` / `LimitDenominator=` lines get appended |
 | `tests/test_rtss_atomic.py` | F6: concurrent writers serialized, atomic replace |
 | `tests/test_rtss_error_handler.py` | injected `error_handler` on DLL load failure |
-| `tests/test_smoke_import.py` | import guards for `rtss_functions` / `rtss_interface` (`rtss_memory_write` not covered yet) |
+| `tests/test_rtss_memory_write.py` | `set_frameratelimit_memory_write`: parsing, profile/Global target resolution, log-and-return-`None` failures |
+| `tests/test_smoke_import.py` | import guards for all core modules incl. `rtss_memory_write` |
 | `tests/conftest.py` | `rtss_stub` fixture (file-based methods real, DLL methods stubbed) |
 
 ## Known gaps / future work
 
 - No config toggle between write paths; each call site hardcodes one. This is the seam the memory-write method is meant to slot into.
-- `rtss_memory_write.py` is not integrated: no logger, no profile->PID resolution, not in `test_smoke_import.py`, not in the `architecture.md` module map, untracked in git.
+- `set_frameratelimit_memory_write` exists but no call site uses it yet; not in the `architecture.md` module map.
 - Memory-write path persists nothing; a profile reload overwrites it.
 - Offsets/signatures are build-specific. RTSS update -> signature mismatch -> path stops working until the offsets are re-found (Cheat Engine search, per the script header).
-- Two parsers with different rounding behavior (`float` round vs exact `Decimal`). New code should prefer `parse_fps`.
+- Two parsers with different rounding behavior: `set_fractional_framerate`'s inline str/float split vs exact `Decimal`. New code should prefer `parse_fps` (now accepts str and number types).
 - `architecture.md` already lists "two competing RTSS write paths" as a known issue; this doc is the detail behind it.

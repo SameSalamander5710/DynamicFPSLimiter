@@ -39,6 +39,7 @@ CORE_MODULES = [
     "core.pre_launch",
     "core.rtss_functions",
     "core.rtss_interface",
+    "core.rtss_memory_write",
     "core.themes",
     "core.tooltips",
     "core.tray_functions",
@@ -53,6 +54,7 @@ WIN32_ONLY_MODULES = {
     "core.launch_popup",
     "core.rtss_functions",
     "core.rtss_interface",
+    "core.rtss_memory_write",
 }
 
 
