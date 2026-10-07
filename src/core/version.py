@@ -1,7 +1,7 @@
 # src/core/version.py
 # Single source of truth for the DynamicFPSLimiter version.
 
-VERSION = (5, 0, 1, 0)  # major, minor, patch, build
+VERSION = (5, 1, 0, 0)  # major, minor, patch, build
 
 _APP_NAME = "DynamicFPSLimiter"
 _COMPANY_NAME = "SameSalamander5710"
