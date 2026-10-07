@@ -7,6 +7,7 @@ Navigation for the project's design and status documentation.
 | [`status.md`](./status.md) | **Single source of truth** — what's done / pending / deferred, one table per area. | On *every* fix or change (rule in §4). |
 | [`architecture.md`](./architecture.md) | Current system design: threading model, module map, core control loop, config, integrations, packaging, error handling. | When the design changes. |
 | [`lessons.md`](./lessons.md) | Durable engineering lessons (DearPyGui threading, PDH/GPU quirks, testing patterns). Read **before** touching GUI threading, callbacks, or PDH code. | When a new gotcha is learned. |
+| [`RTSS.md`](./RTSS.md) | RTSS integration detail: all write/read paths, fractional encoding, call sites, locking, memory-write notes. Read before changing FPS-cap write or FPS read code. | When RTSS behavior or a write path changes. |
 | [`README.md`](../README.md) | User-facing overview (root). | With a release. |
 | `src/BUILD.md` | Build / packaging instructions. | When the build changes. |
 
