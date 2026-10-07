@@ -11,13 +11,13 @@ The app must run as Administrator because RTSS runs elevated. RTSS must be runni
 | Write cap | `RTSSHooks64.dll` profile API | `src/core/rtss_functions.py` |
 | Write cap | Direct edit of profile `.cfg` files | `src/core/rtss_functions.py` |
 | Read FPS | `RTSSSharedMemoryV2` shared memory | `src/core/rtss_interface.py` |
-| Write cap (new) | `WriteProcessMemory` into the hooked game process | `src/core/rtss_memory_write.py` (callable, not wired into call sites) |
+| Write cap (live, during gameplay) | `WriteProcessMemory` into the hooked game process | `src/core/rtss_memory_write.py` (used by `monitoring_loop`) |
 
 ## Module map
 
 - `rtss_functions.py` - `RTSSController` class. Owns write path A (DLL API) and write path B (`.cfg` edit). Single production instance created in `app.py` at import time, passed into `ConfigManager`.
 - `rtss_interface.py` - `RTSSInterface` class. Read path (shared memory). Single instance in `app.py` (`rtss_manager`), used by `monitoring_loop`, `autopilot`, and `warning.py`.
-- `rtss_memory_write.py` - converted from the standalone script into a callable module: `set_frameratelimit_memory_write(profile_name, framerate, logger=None)`. Not wired into any call site yet.
+- `rtss_memory_write.py` - `set_frameratelimit_memory_write(profile_name, framerate, logger=None)`. Write path C. Used by `monitoring_loop` for all live cap changes.
 
 ## Fractional limit encoding
 
@@ -27,7 +27,7 @@ RTSS stores a fractional cap as an integer numerator plus a denominator. Actual 
 - `.cfg` keys: `Limit=` (numerator) and `LimitDenominator=`.
 - Whole numbers use denominator 1. `0` is typically "unlimited" in RTSS.
 
-Important subtlety: `set_fractional_framerate(profile, framerate, update=False, denominator=False)` writes the denominator only when the caller passes a truthy `denominator` argument. All production callers in `monitoring_loop` and `exit_gui` use the default, so they write only the numerator. The matching numerator + denominator pair is written together only by `start_stop_callback`, which first writes both keys with `set_fractional_fps_direct`, then re-applies the same value through the DLL API (call-site comment: "To update GUI").
+Important subtlety: `set_fractional_framerate(profile, framerate, update=False, denominator=False)` writes the denominator only when the caller passes a truthy `denominator` argument. Its remaining production callers (`start_stop_callback` GUI refresh, `exit_gui`) use the default, so they write only the numerator. The matching numerator + denominator pair is written together only by `start_stop_callback`, which first writes both keys with `set_fractional_fps_direct`, then re-applies the same value through the DLL API (call-site comment: "To update GUI"). The memory-write path (`set_frameratelimit_memory_write`) always writes numerator + denominator as one 8-byte pair.
 
 ### Value parsing (two implementations)
 
@@ -50,13 +50,21 @@ Important subtlety: `set_fractional_framerate(profile, framerate, update=False, 
 - `set_limit_denominator` rewrites only `LimitDenominator=`.
 - Both write through `_atomic_write_lines`: sibling `.tmp` file, flush + `fsync`, then `os.replace`. A crash or concurrent RTSS read never sees a half-written profile (F6 fix).
 
-### Why two write paths coexist
+### Which path each call site uses
 
-By design, not by accident (see `docs/status.md` F6): file edits and DLL-API calls are separate writers kept apart deliberately. `start_stop_callback` uses the pair (file write persists both keys, API call makes RTSS pick it up live); the monitoring loop uses only the API path for fast live cap changes. There is no config setting that switches write paths; each call site hardcodes its path.
+There is no config setting that switches write paths; each call site hardcodes its path:
 
-## Write path C (new): process memory write
+- `start_stop_callback`: paths A + B (file write persists both keys, API call makes RTSS pick it up live). OK there - not during gameplay.
+- `monitoring_loop`: path C for every live cap change (idle exit restore, decrease, increase, fallback, idle enter). A/B are unusable here - see the microstutter reason below.
+- `exit_gui`: path A (Global reset on exit).
+
+F6 history: file edits and DLL-API calls are separate writers kept apart deliberately (see `docs/status.md` F6).
+
+## Write path C: process memory write
 
 `src/core/rtss_memory_write.py` writes the live numerator/denominator pair directly inside the game process, into the copy of `RTSSHooks64.dll` that RTSS injected there. It does not touch the `.cfg` file and does not use the DLL API.
+
+Why it exists: paths A and B go through RTSS's profile modification system, and RTSS applying any profile change causes a microstutter. That is acceptable at start/stop, on exit, or during pauses, but it ruins active gameplay. Path C side-steps profile modification entirely and changes the live limit with no hitch, so `monitoring_loop` uses it exclusively.
 
 Flow (`set_fps_limit(pid, num, den)`):
 
@@ -127,7 +135,7 @@ Missing shared memory (RTSS not running or OSD disabled) is handled as a normal 
 | `app.py` module init | `rtss.enable_limiter()` | once, after monitors start |
 | `app.py` module init | `RTSSInterface(logger, dpg)` | `rtss_manager` |
 | `start_stop_callback` | `set_fractional_fps_direct` then `set_fractional_framerate` | both keys via file, then API refresh |
-| `monitoring_loop` | `set_fractional_framerate` x5 | idle exit restore, cap decrease, cap increase, nearest-higher fallback, idle enter; all use `denominator=False` default |
+| `monitoring_loop` | `set_frameratelimit_memory_write` x5 | idle exit restore, cap decrease, cap increase, nearest-higher fallback, idle enter; path C, no profile modification during gameplay |
 | `exit_gui` | `set_fractional_framerate("Global", ...)` | only if `globallimitonexit` |
 | `config_manager.delete_selected_profile_callback` | `delete_profile` | |
 
@@ -135,9 +143,9 @@ No live callers: `disable_limiter`, `get_framerate_limit`, `create_profile`, `re
 
 ## Locking and threads
 
-- `_profile_lock` (re-entrant `RTSSController`) serializes every `.cfg` edit and DLL-API mutation. Writers: monitoring thread (live cap changes), main/GUI thread (start/stop, exit), autopilot thread.
+- `_profile_lock` (re-entrant `RTSSController`) serializes every `.cfg` edit and DLL-API mutation. Writers: main/GUI thread (start/stop, exit). The monitoring thread no longer writes profiles at all (path C).
 - Re-entrant so `set_fractional_framerate` can call `set_limit_denominator` / `set_profile_property` while holding it.
-- The memory-write path takes no lock; it writes a different resource (process memory). If it ever runs next to profile reloads, ordering matters: reload wins.
+- The memory-write path takes no lock; it writes a different resource (process memory). A profile reload (start/stop, exit) overwrites the live value; reload wins.
 
 ## Tests
 
@@ -152,9 +160,10 @@ No live callers: `disable_limiter`, `get_framerate_limit`, `create_profile`, `re
 
 ## Known gaps / future work
 
-- No config toggle between write paths; each call site hardcodes one. This is the seam the memory-write method is meant to slot into.
-- `set_frameratelimit_memory_write` exists but no call site uses it yet; not in the `architecture.md` module map.
-- Memory-write path persists nothing; a profile reload overwrites it.
+- No config toggle between write paths; each call site hardcodes its path (monitoring = C, start/stop = A+B, exit = A).
+- Path C failures are log-only: after an RTSS update (signature mismatch) or with the game not hooked, live cap changes stop working with a log line, while start/stop still work through A/B.
+- Not in the `architecture.md` module map.
+- Memory-write path persists nothing; a profile reload (start/stop, exit) overwrites the live value.
 - Offsets/signatures are build-specific. RTSS update -> signature mismatch -> path stops working until the offsets are re-found (Cheat Engine search, per the script header).
 - Two parsers with different rounding behavior: `set_fractional_framerate`'s inline str/float split vs exact `Decimal`. New code should prefer `parse_fps` (now accepts str and number types).
 - `architecture.md` already lists "two competing RTSS write paths" as a known issue; this doc is the detail behind it.

@@ -87,7 +87,7 @@ Status legend: ✅ Done · 🟨 Pending · ⏸️ Deferred · ❌ Not started
 
 | ID | Item | Current state / why |
 |---|---|---|
-| M1 | Optional third write path: `src/core/rtss_memory_write.py` writes the cap into hooked game processes via `WriteProcessMemory` (fast live writes, no `.cfg` / DLL API). | Module converted to callable `set_frameratelimit_memory_write(profile_name, framerate, logger=None)`; profile name = process name, `Global` = hooked processes with no RTSS profile. No call sites switched yet. See `docs/RTSS.md` (write path C). |
+| M1 | Optional third write path: `src/core/rtss_memory_write.py` writes the cap into hooked game processes via `WriteProcessMemory` (no `.cfg` / DLL API, so no RTSS profile-reload microstutter). | All 5 live cap-change sites in `app.monitoring_loop` now call `set_frameratelimit_memory_write`; start/stop + exit keep the profile-based paths on purpose. See `docs/RTSS.md` (write path C). |
 
 ---
 

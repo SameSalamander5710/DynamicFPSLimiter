@@ -37,6 +37,7 @@ from core.tooltips import get_tooltips, add_tooltip, apply_all_tooltips, update_
 from core.warning import get_active_warnings
 from core.autostart import AutoStartManager
 from core.rtss_functions import RTSSController
+from core.rtss_memory_write import set_frameratelimit_memory_write
 from core.fps_utils import FPSUtils
 from core.cap_policy import next_cap_on_decrease
 from core.tray_functions import TrayManager
@@ -366,7 +367,7 @@ def monitoring_loop():
         if gpuUsage is not None and process_name not in {"DynamicFPSLimiter.exe"}:
             if not monitor_idle(cm.idle_fps_delay) or not cm.idle_mode:
                 if idle_state:
-                    rtss.set_fractional_framerate(current_profile, last_active_fps_cap)
+                    set_frameratelimit_memory_write(current_profile, last_active_fps_cap, logger)
                     idle_state = False
                 else:
                     if gpuUsage > cm.minvalidgpu and fps_mean > cm.minvalidfps: 
@@ -378,7 +379,7 @@ def monitoring_loop():
                             next_fps = next_cap_on_decrease(fps_limit_list, current_fps_cap, fps_mean)
                             if next_fps is not None:
                                 CurrentFPSOffset = next_fps - current_maxcap
-                                rtss.set_fractional_framerate(current_profile, next_fps)
+                                set_frameratelimit_memory_write(current_profile, next_fps, logger)
 
                         # --- COOLDOWN LOGIC ---
                         if increase_cooldown > 0:
@@ -402,7 +403,7 @@ def monitoring_loop():
                                 if next_index > current_index:
                                     next_fps = fps_limit_list[next_index]
                                     CurrentFPSOffset = next_fps - current_maxcap
-                                    rtss.set_fractional_framerate(current_profile, next_fps)
+                                    set_frameratelimit_memory_write(current_profile, next_fps, logger)
                                     increase_cooldown = cm.delaybeforeincrease  # Start cooldown
                             except ValueError:
                                 # If current FPS not in list, find nearest higher value
@@ -414,14 +415,14 @@ def monitoring_loop():
                                     next_index = min(min_higher_index + steps - 1, len(fps_limit_list) - 1)
                                     next_fps = fps_limit_list[next_index]
                                     CurrentFPSOffset = next_fps - current_maxcap
-                                    rtss.set_fractional_framerate(current_profile, next_fps)
+                                    set_frameratelimit_memory_write(current_profile, next_fps, logger)
                                     increase_cooldown = cm.delaybeforeincrease  # Start cooldown
             else:
                 if idle_state:
                     pass
                 else:
                     last_active_fps_cap = current_maxcap + CurrentFPSOffset
-                    rtss.set_fractional_framerate(current_profile, cm.idle_fps_cap)
+                    set_frameratelimit_memory_write(current_profile, cm.idle_fps_cap, logger)
                     idle_state = True
 
         if running:
