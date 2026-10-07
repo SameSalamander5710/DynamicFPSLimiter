@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## [v5.1.0-alpha.1] - 2026-10-07
+
+### Added
+- New RTSS write method that sets the framerate cap by writing directly into RTSS's hook module (`RTSSHooks64.dll`) as loaded in the hooked game process (via `WriteProcessMemory`), rather than only editing RTSS profile files. This avoids the hitch RTSS causes when profiles change. Compatible with RTSS 7.3.7.
+- The new memory-write method is now used for all live FPS limit changes made during monitoring (idle mode enter/exit and increase/decrease adjustments).
+- New documentation of the RTSS integration (`docs/RTSS.md`) describing the write paths and fractional limit encoding.
+
+### Changed
+- The standalone memory-write CLI can now also be run as a module: `python -m core.rtss_memory_write <fps> [pid|exe_name]` (supports fractional FPS and listing hooked processes).
+- RTSS install path resolution is factored into a shared `get_rtss_install_path()` helper used by both write paths.
+
 ## [v5.0.1] - 2026-09-18
 
 ### Changed
